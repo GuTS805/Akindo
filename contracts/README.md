@@ -86,6 +86,8 @@ receipt; the script prints an explorer link to check.
 - While the oracle is stale, deposits, rebalances and exits that touch the trove revert. This
   comes from MUSD itself: BorrowerOperations reads the oracle on every trove change and close.
   Funds are not at risk; exits wait for the oracle.
+- In MUSD recovery mode (total collateral ratio under 150%) MUSD blocks `closeTrove` and restricts
+  collateral withdrawals, so exits that need them wait until the system leaves recovery mode.
 - The exit that closes the trove must buy the LP's MUSD gap on the DEX. On a thin pool the
   oracle guard can refuse that swap until arbitrage or new liquidity brings the pool back; the
   vault prefers waiting to selling BTC cheap. On testnet the pool holds ~1,300 BTC, so this

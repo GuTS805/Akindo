@@ -6,7 +6,7 @@ with the other 25% of the BTC in the BTC/MUSD pool and stakes the LP in the pool
 You hold one token, `mbLP`, and your exposure stays about 1x BTC.
 
 - **App:** https://mblp.vercel.app (mirror: https://guts805.github.io/Akindo/)
-- **Vault (Mezo testnet):** [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4)
+- **Vault (Mezo testnet):** [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4) ([verified source](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4?tab=contract))
 - **Contracts, tests and deployment notes:** [`contracts/`](contracts/)
 
 ## Why
@@ -73,6 +73,7 @@ would earn **~24% before MUSD interest**, falling as more liquidity joins the ga
 - Rewards are MEZO, which has little on-chain liquidity today; the vault pays them out and never sells them.
 - Impermanent loss on the ~25% of value in the pool.
 - While Mezo's oracle is stale, MUSD pauses all trove changes, so deposits and exits wait.
+- In MUSD recovery mode (system collateral ratio under 150%) MUSD blocks closing troves and restricts collateral withdrawals, so exits that need either wait until the system recovers.
 - The exit that closes the trove buys the LP's MUSD gap on the DEX and waits rather than sell BTC
   below the oracle band. Not binding on testnet (the pool holds ~1,300 BTC); it can be on mainnet.
 - The testnet gauge streams no rewards, so harvest is a no-op there.
