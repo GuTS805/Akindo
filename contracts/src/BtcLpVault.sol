@@ -111,6 +111,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     event Harvest(uint256 reward, uint256 fee);
     event RewardClaimed(address indexed user, uint256 amount);
     event Deployed(uint256 musdIntoPool, uint256 btcIntoPool, uint256 lpMinted);
+    event Unwound(uint256 debtRepaid);
 
     error BadConfig();
     error DepositTooSmall();
@@ -119,7 +120,6 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     error PoolPriceOffOracle(uint256 poolPrice, uint256 oraclePrice);
     error NothingToRebalance();
     error BelowMinCR(uint256 cr);
-    error MinDebtWouldBreak();
     error OracleUnavailable();
     error InsolventVault();
 
@@ -203,56 +203,40 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
 
     /// @notice Burn shares for a pro-rata slice of every position. Pays BTC, plus any MUSD left
     ///         after repaying this slice of the debt.
+    /// @dev    If the exit would leave less than MUSD's minimum debt, the whole position is
+    ///         unwound (LP removed, trove closed) and everyone keeps their share as idle assets.
+    ///         So nobody is ever stuck behind the minimum-debt rule.
     function withdraw(uint256 shares, uint256 minBtcOut) external nonReentrant returns (uint256 btcOut, uint256 musdOut) {
         if (shares == 0) revert ZeroShares();
         _harvest();
         _claimSurplus();
 
-        uint256 price = _fetchPrice(); // 0 when the oracle is stale: allowed unless a swap is needed
+        uint256 price = _fetchPrice(); // only needed when the trove is touched
         Snapshot memory s = _snapshot(price, 0);
         uint256 supply = totalSupply();
         _burn(msg.sender, shares);
-        bool last = totalSupply() == DEAD_SHARES;
 
-        // Idle slice
-        btcOut = Math.mulDiv(s.idleBtc, shares, supply);
-        uint256 musdHave = Math.mulDiv(s.idleMusd, shares, supply);
-
-        // LP slice
-        uint256 lpOut = last ? s.lp : Math.mulDiv(s.lp, shares, supply);
-        if (lpOut > 0) {
-            (uint256 b, uint256 m) = _removeLiquidity(lpOut);
-            btcOut += b;
-            musdHave += m;
-        }
-
-        // Trove slice
         if (s.troveActive) {
-            uint256 repay = last ? s.netDebt : Math.mulDiv(s.netDebt, shares, supply);
-            if (!last && s.netDebt - repay < borrowerOperations.minNetDebt()) revert MinDebtWouldBreak();
-
-            if (musdHave < repay) {
-                if (price == 0) revert OracleUnavailable();
-                uint256 used;
-                (used, musdHave) = _topUpMusd(repay - musdHave, btcOut, price, musdHave);
-                btcOut -= used;
-            }
-
-            uint256 balBefore = address(this).balance;
-            if (last) {
-                borrowerOperations.closeTrove();
+            // MUSD reads the oracle on every trove change, so nothing can exit while it is stale.
+            if (price == 0) revert OracleUnavailable();
+            uint256 repay = Math.mulDiv(s.netDebt, shares, supply);
+            if (totalSupply() == DEAD_SHARES || s.netDebt - repay < borrowerOperations.minNetDebt()) {
+                _unwind(s, price);
+                (btcOut, musdOut) = _idleSlice(shares, supply);
             } else {
-                uint256 collOut = Math.mulDiv(s.coll, shares, supply);
-                (address up, address low) = _hints(s.coll - collOut, s.debt - repay);
-                borrowerOperations.adjustTrove(collOut, repay, false, up, low);
+                (btcOut, musdOut) = _proRataExit(s, shares, supply, repay);
             }
-            btcOut += address(this).balance - balBefore;
-            musdHave -= repay;
+        } else {
+            (btcOut, musdOut) = _idleSlice(shares, supply);
+            uint256 lpOut = Math.mulDiv(s.lp, shares, supply);
+            if (lpOut > 0) {
+                (uint256 b, uint256 m) = _removeLiquidity(lpOut);
+                btcOut += b;
+                musdOut += m;
+            }
         }
 
         if (btcOut < minBtcOut) revert Slippage();
-        musdOut = musdHave;
-
         emit Withdraw(msg.sender, shares, btcOut, musdOut);
         if (musdOut > 0) musd.safeTransfer(msg.sender, musdOut);
         Address.sendValue(payable(msg.sender), btcOut);
@@ -463,6 +447,53 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
 
         (address up, address low) = _hints(s.coll + btcBack, s.debt - repay);
         borrowerOperations.adjustTrove{value: btcBack}(0, repay, false, up, low);
+    }
+
+    // ---------------------------------------------------------------- exit helpers
+
+    function _idleSlice(uint256 shares, uint256 supply) internal view returns (uint256 btcOut, uint256 musdOut) {
+        btcOut = Math.mulDiv(address(this).balance - rewardReserveIf(btc), shares, supply);
+        musdOut = Math.mulDiv(musd.balanceOf(address(this)) - rewardReserveIf(musd), shares, supply);
+    }
+
+    /// @dev Take this share of idle assets and LP, repay this share of the debt and withdraw
+    ///      this share of the collateral. CR of the remaining trove is unchanged.
+    function _proRataExit(Snapshot memory s, uint256 shares, uint256 supply, uint256 repay)
+        internal
+        returns (uint256 btcOut, uint256 musdOut)
+    {
+        btcOut = Math.mulDiv(s.idleBtc, shares, supply);
+        uint256 musdHave = Math.mulDiv(s.idleMusd, shares, supply);
+        uint256 lpOut = Math.mulDiv(s.lp, shares, supply);
+        if (lpOut > 0) {
+            (uint256 b, uint256 m) = _removeLiquidity(lpOut);
+            btcOut += b;
+            musdHave += m;
+        }
+        if (musdHave < repay) {
+            uint256 used;
+            (used, musdHave) = _topUpMusd(repay - musdHave, btcOut, s.price, musdHave);
+            btcOut -= used;
+        }
+
+        uint256 collOut = Math.mulDiv(s.coll, shares, supply);
+        (address up, address low) = _hints(s.coll - collOut, s.debt - repay);
+        uint256 balBefore = address(this).balance;
+        borrowerOperations.adjustTrove(collOut, repay, false, up, low);
+        btcOut += address(this).balance - balBefore;
+        musdOut = musdHave - repay;
+    }
+
+    /// @dev Remove all LP and close the trove. Leaves only idle BTC and MUSD.
+    function _unwind(Snapshot memory s, uint256 price) internal {
+        if (s.lp > 0) _removeLiquidity(s.lp);
+        uint256 musdHave = musd.balanceOf(address(this)) - rewardReserveIf(musd);
+        if (musdHave < s.netDebt) {
+            uint256 idleBtc = address(this).balance - rewardReserveIf(btc);
+            _topUpMusd(s.netDebt - musdHave, idleBtc, price, musdHave);
+        }
+        borrowerOperations.closeTrove();
+        emit Unwound(s.netDebt);
     }
 
     // ---------------------------------------------------------------- pool helpers
