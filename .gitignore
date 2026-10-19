@@ -4,3 +4,5 @@ contracts/lib/
 contracts/broadcast/
 .env
 *.log
+app/node_modules/
+app/dist/
