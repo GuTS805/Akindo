@@ -1,0 +1,6 @@
+contracts/cache/
+contracts/out/
+contracts/lib/
+contracts/broadcast/
+.env
+*.log
