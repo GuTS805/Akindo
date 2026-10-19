@@ -340,39 +340,55 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         return Math.mulDiv(navMusd, 1e18, targetCR + 1e18);
     }
 
+    /// @dev Debt a new trove can take without swapping. With B = all BTC held (idle + LP),
+    ///      M = all MUSD held, the pool needs (D + M) MUSD worth of BTC and the trove keeps the
+    ///      rest at targetCR:  B*P - (D + M) = targetCR * (D + gasComp)
+    ///      =>  D = (B*P - M - targetCR*gasComp) / (targetCR + 1).
+    ///      After a liquidation M is large and D is usually 0: the vault then stays plain LP.
+    function _openableDebt(Snapshot memory s) internal view returns (uint256) {
+        uint256 btcValue = Math.mulDiv(s.idleBtc + s.lpBtc, s.price, 1e18);
+        uint256 reserved = s.idleMusd + s.lpMusd + Math.mulDiv(MUSD_GAS_COMPENSATION, targetCR, 1e18);
+        if (btcValue <= reserved) return 0;
+        uint256 d = Math.mulDiv(btcValue - reserved, 1e18, targetCR + 1e18);
+        return Math.min(d, _targetNetDebt(s.navMusd));
+    }
+
     function _needsRebalance(Snapshot memory s) internal view returns (bool) {
         if (s.navMusd == 0) return false;
         uint256 idleValue = Math.mulDiv(s.idleBtc, s.price, 1e18) + s.idleMusd;
         bool idleHigh = idleValue * BPS > s.navMusd * IDLE_THRESHOLD_BPS;
         if (!s.troveActive) {
-            return _targetNetDebt(s.navMusd) >= borrowerOperations.minNetDebt();
+            return _openableDebt(s) >= borrowerOperations.minNetDebt();
         }
         uint256 cr = Math.mulDiv(s.coll, s.price, s.debt);
         return idleHigh || cr < minCR || cr > maxCR;
     }
 
     function _rebalance(Snapshot memory s, bool strict) internal {
-        uint256 target = _targetNetDebt(s.navMusd);
         uint256 minNet = borrowerOperations.minNetDebt();
-        if (target < minNet) {
-            if (!s.troveActive) {
+        uint256 before = s.netDebt;
+
+        if (!s.troveActive) {
+            uint256 debt = _openableDebt(s);
+            if (debt < minNet) {
                 if (strict) revert NothingToRebalance();
                 return;
             }
-            target = minNet; // a small vault stays slightly above target leverage
+            if (s.lp > 0) {
+                // Trove was liquidated or redeemed while LP remained: unwind the LP and
+                // rebuild both legs together.
+                _removeLiquidity(s.lp);
+                s = _snapshot(s.price, 0);
+            }
+            _open(s, debt);
+            _finishRebalance(s.price, before);
+            return;
         }
-        uint256 before = s.netDebt;
 
-        if (!s.troveActive && s.lp > 0) {
-            // Trove was liquidated or fully redeemed while LP remained: pull it all back
-            // to idle and start over from a clean state.
-            _removeLiquidity(s.lp);
-            s = _snapshot(s.price, 0);
-        }
+        uint256 target = _targetNetDebt(s.navMusd);
+        if (target < minNet) target = minNet; // a small vault stays slightly above target leverage
 
-        if (!s.troveActive) {
-            _open(s, target);
-        } else if (target > s.netDebt) {
+        if (target > s.netDebt) {
             _lever(s, target - s.netDebt);
         } else if (target < s.netDebt) {
             _delever(s, s.netDebt - target, minNet);
@@ -381,22 +397,29 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
             borrowerOperations.adjustTrove{value: s.idleBtc}(0, 0, false, up, low);
         }
 
-        _stakeAll();
-        uint256 cr = _troveCR(s.price);
-        if (cr != 0 && cr < minCR) revert BelowMinCR(cr);
-        emit Rebalance(before, _netDebt(), cr);
+        _finishRebalance(s.price, before);
     }
 
+    function _finishRebalance(uint256 price, uint256 netDebtBefore) internal {
+        _stakeAll();
+        uint256 cr = _troveCR(price);
+        if (cr != 0 && cr < minCR) revert BelowMinCR(cr);
+        emit Rebalance(netDebtBefore, _netDebt(), cr);
+    }
+
+    /// @dev Open the trove and pair all MUSD held (new debt + idle) with BTC in the pool.
     function _open(Snapshot memory s, uint256 netDebt) internal {
-        uint256 btcForPool = Math.mulDiv(netDebt, 1e18, s.poolPrice);
+        uint256 musdForPool = netDebt + s.idleMusd;
+        uint256 btcForPool = Math.mulDiv(musdForPool, 1e18, s.poolPrice);
         if (btcForPool >= s.idleBtc) revert BelowMinCR(0);
         uint256 coll = s.idleBtc - btcForPool;
         uint256 debtWithComp = netDebt + MUSD_GAS_COMPENSATION;
-        if (Math.mulDiv(coll, s.price, debtWithComp) < minCR) revert BelowMinCR(Math.mulDiv(coll, s.price, debtWithComp));
+        uint256 cr = Math.mulDiv(coll, s.price, debtWithComp);
+        if (cr < minCR) revert BelowMinCR(cr);
 
         (address up, address low) = _hints(coll, debtWithComp);
         borrowerOperations.openTrove{value: coll}(netDebt, up, low);
-        _addLiquidity(musd.balanceOf(address(this)) - rewardReserveIf(musd), btcForPool);
+        _addLiquidity(musdForPool, btcForPool);
     }
 
     /// @dev Borrow more and add it to the pool with matching BTC, taken from idle BTC first and
