@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mbLP · BTC LP Vault on Mezo</title>
+    <meta name="description" content="Deposit BTC only. The vault borrows MUSD, provides BTC/MUSD liquidity on Mezo Pools and stakes it for gauge rewards." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23f7931a'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">₿</span>
+        <div>
+          <strong>mbLP</strong>
+          <span class="muted">BTC LP Vault on Mezo</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="badge" id="network-badge">Mezo Testnet</span>
+        <button class="btn" id="connect">Connect wallet</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Deposit BTC. Earn as BTC/MUSD liquidity.</h1>
+        <p>
+          The vault keeps ~75% of your BTC as collateral in one MUSD trove, borrows MUSD, pairs it with the
+          other ~25% in the BTC/MUSD pool on Mezo and stakes the LP in the pool's gauge. Your exposure stays
+          about 1x BTC. No owner, no admin key: rebalancing and harvesting are open to anyone.
+        </p>
+      </section>
+
+      <div id="alert" class="alert" hidden></div>
+
+      <section class="grid stats">
+        <div class="card stat">
+          <span class="label">Total value</span>
+          <span class="value" id="tvl">–</span>
+          <span class="sub" id="tvl-usd">–</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Share price</span>
+          <span class="value" id="pps">–</span>
+          <span class="sub">BTC per mbLP</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Trove collateral ratio</span>
+          <span class="value" id="cr">–</span>
+          <div class="crbar" aria-hidden="true">
+            <div class="crbar-band" id="cr-band"></div>
+            <div class="crbar-mark" id="cr-mark"></div>
+          </div>
+          <span class="sub" id="cr-sub">–</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Pool vs oracle</span>
+          <span class="value" id="gap">–</span>
+          <span class="sub" id="gap-sub">–</span>
+        </div>
+      </section>
+
+      <section class="grid two">
+        <div class="card">
+          <div class="tabs" role="tablist">
+            <button class="tab active" role="tab" data-tab="deposit" aria-selected="true">Deposit</button>
+            <button class="tab" role="tab" data-tab="withdraw" aria-selected="false">Withdraw</button>
+          </div>
+
+          <div class="tab-panel" id="panel-deposit">
+            <label class="field">
+              <span>Amount <span class="muted" id="btc-balance"></span></span>
+              <div class="input-row">
+                <input id="deposit-amount" type="text" inputmode="decimal" placeholder="0.001" autocomplete="off" />
+                <span class="unit">BTC</span>
+                <button class="btn ghost small" id="deposit-max">Max</button>
+              </div>
+              <span class="hint" id="deposit-sats"></span>
+            </label>
+            <div class="preview" id="deposit-preview"></div>
+            <button class="btn primary wide" id="deposit-btn" disabled>Deposit</button>
+          </div>
+
+          <div class="tab-panel" id="panel-withdraw" hidden>
+            <label class="field">
+              <span>Share of your position <span class="muted" id="share-balance"></span></span>
+              <div class="pct-row">
+                <button class="btn ghost small pct" data-pct="25">25%</button>
+                <button class="btn ghost small pct" data-pct="50">50%</button>
+                <button class="btn ghost small pct" data-pct="75">75%</button>
+                <button class="btn ghost small pct" data-pct="100">100%</button>
+              </div>
+            </label>
+            <div class="preview" id="withdraw-preview"></div>
+            <button class="btn primary wide" id="withdraw-btn" disabled>Withdraw</button>
+          </div>
+          <div class="txstatus" id="txstatus" hidden></div>
+        </div>
+
+        <div class="card">
+          <h2>Your position</h2>
+          <dl class="kv">
+            <dt>Shares</dt><dd id="my-shares">–</dd>
+            <dt>Value</dt><dd id="my-value">–</dd>
+            <dt>Claimable rewards</dt><dd id="my-rewards">–</dd>
+          </dl>
+          <button class="btn wide" id="claim-btn" disabled>Claim rewards</button>
+
+          <h2 class="spaced">Keeper actions <span class="muted small-text">anyone can call</span></h2>
+          <dl class="kv">
+            <dt>Needs rebalance</dt><dd id="needs-rebalance">–</dd>
+          </dl>
+          <div class="btn-row">
+            <button class="btn" id="rebalance-btn" disabled>Rebalance</button>
+            <button class="btn" id="harvest-btn" disabled>Harvest</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid two">
+        <div class="card">
+          <h2>Position breakdown</h2>
+          <dl class="kv">
+            <dt>Collateral in trove</dt><dd id="b-coll">–</dd>
+            <dt>MUSD debt</dt><dd id="b-debt">–</dd>
+            <dt>LP staked in gauge</dt><dd id="b-lp">–</dd>
+            <dt>Idle BTC / MUSD</dt><dd id="b-idle">–</dd>
+            <dt>Oracle BTC price</dt><dd id="b-price">–</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>Mainnet yield today <span class="muted small-text">live from Mezo mainnet</span></h2>
+          <dl class="kv">
+            <dt>BTC/MUSD gauge emissions</dt><dd id="m-emissions">–</dd>
+            <dt>Staked LP value</dt><dd id="m-staked">–</dd>
+            <dt>LP APR (MEZO rewards)</dt><dd id="m-lpapr">–</dd>
+            <dt>Vault depositor APR</dt><dd id="m-vaultapr">–</dd>
+          </dl>
+          <p class="note">
+            Staked LPs earn only gauge rewards (swap fees go to voters). About half of the vault's value is LP,
+            so depositors earn about half the LP APR, minus the 10% fee and MUSD interest. It falls as more LP
+            joins the gauge. The testnet gauge streams no rewards.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Activity</h2>
+        <ul class="activity" id="activity"><li class="muted">Loading…</li></ul>
+      </section>
+
+      <section class="grid two">
+        <div class="card">
+          <h2>How it works</h2>
+          <ol class="steps">
+            <li><strong>Deposit BTC.</strong> You get mbLP shares priced from the Mezo oracle, so a moved pool cannot dilute you.</li>
+            <li><strong>Borrow.</strong> Most BTC becomes collateral in one MUSD trove at ~300% CR; the vault borrows MUSD against it.</li>
+            <li><strong>Provide liquidity.</strong> MUSD plus the rest of the BTC go into the BTC/MUSD pool; the LP is staked in the gauge.</li>
+            <li><strong>Stay balanced without swaps.</strong> Debt is held at NAV / (target CR + 1) by borrowing, repaying and moving BTC between trove and pool.</li>
+            <li><strong>Exit any time.</strong> Withdraw your slice. If an exit would leave less than MUSD's minimum debt, the vault unwinds instead of blocking you.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h2>Risks</h2>
+          <ul class="risks">
+            <li>Impermanent loss on the ~25% of value in the pool.</li>
+            <li>Rewards are MEZO, which has little on-chain liquidity today.</li>
+            <li>While Mezo's oracle is stale, MUSD pauses trove changes, so deposits and exits wait.</li>
+            <li>The exit that closes the trove buys MUSD on the DEX and waits rather than sell BTC more than the oracle band below price.</li>
+            <li>Unaudited hackathon code on testnet.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a id="vault-link" target="_blank" rel="noopener">Vault contract</a>
+      <span>·</span>
+      <a id="github-link" target="_blank" rel="noopener">Source</a>
+      <span>·</span>
+      <a href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Testnet faucet</a>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
