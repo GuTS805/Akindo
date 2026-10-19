@@ -1,5 +1,7 @@
 # mbLP: BTC-only LP vault on Mezo
 
+[![CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml)
+
 Deposit BTC. The vault turns it into staked BTC/MUSD liquidity on Mezo with one transaction:
 about 75% becomes collateral in a MUSD trove, the vault borrows MUSD against it, pairs that MUSD
 with the other 25% of the BTC in the BTC/MUSD pool and stakes the LP in the pool's gauge.
@@ -59,8 +61,12 @@ deployment.
 - The tests found real bugs (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by min debt, exits walking a thin pool); each fix is its own `fix:` commit
 
 ```shell
-cd contracts && forge test
+cd contracts
+forge install foundry-rs/forge-std@v1.17.0 OpenZeppelin/openzeppelin-contracts@v5.4.0 --no-git
+forge test
 ```
+
+CI runs the full suite plus the testnet fork test on every push.
 
 ## Mainnet yield, today
 
