@@ -1,100 +1,194 @@
-# mbLP: BTC-only LP vault on Mezo
+# mbLP — BTC-only liquidity vault on Mezo
 
 [![CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml)
+![Network](https://img.shields.io/badge/network-Mezo%20testnet-e36b32)
+![Solidity](https://img.shields.io/badge/solidity-0.8.28-363636)
+![Tests](https://img.shields.io/badge/tests-42%20%2B%20invariant%20%2B%20fork-1f8a4c)
+![Admin keys](https://img.shields.io/badge/admin%20keys-none-0e1c3b)
 
-Deposit BTC. The vault turns it into staked BTC/MUSD liquidity on Mezo with one transaction:
-about 75% becomes collateral in a MUSD trove, the vault borrows MUSD against it, pairs that MUSD
-with the other 25% of the BTC in the BTC/MUSD pool and stakes the LP in the pool's gauge.
-You hold one token, `mbLP`, and your exposure stays about 1x BTC.
+**Deposit BTC, hold one token, earn as BTC/MUSD liquidity on Mezo.** In a single transaction the
+vault opens a MUSD trove against your BTC, borrows MUSD, pairs it with BTC in Mezo's BTC/MUSD pool
+and stakes the LP in the pool's gauge. Your exposure stays about 1x BTC, and nobody has to manage
+a collateral ratio.
 
-- **App:** https://mblp.vercel.app (mirror: https://guts805.github.io/Akindo/)
-- **Vault, MEZO rewards (Mezo testnet):** [`0xc41192A186C0ee2F593D611b0D0C00501B5Eea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) ([verified source](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract)), staked in a [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) streaming testnet MEZO
-- **Vault, official gauge:** [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4), same contract staked in Mezo's testnet gauge
-- **Contracts, tests and deployment notes:** [`contracts/`](contracts/)
+<p align="center">
+  <a href="https://mblp.vercel.app"><img src="assets/readme/home.png" alt="mbLP home page" width="100%"></a>
+</p>
 
-## Why
+<p align="center">
+  <a href="https://mblp.vercel.app"><b>Live app</b></a> ·
+  <a href="https://mblp.vercel.app/docs/">Docs</a> ·
+  <a href="https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract">Verified contract</a> ·
+  <a href="contracts/">Contracts &amp; tests</a>
+</p>
 
-Mezo has 800+ BTC locked in veBTC but only about 1.2 BTC of BTC/MUSD liquidity across all its
-pools (mainnet, October 2026). Buying BTC with MUSD costs 1–2% against the oracle at $1k–$10k
-sizes. The gauges already pay for that liquidity: the volatile BTC/MUSD gauge streams about
-42k MEZO a day. But providing it takes a trove, a borrow, a pool deposit and a stake, and then
-watching the collateral ratio.
+---
 
-mbLP does all of that from a plain BTC deposit. Every deposit adds MUSD debt and BTC/MUSD depth
-on Mezo, and nobody has to manage a position.
+## The problem
 
-## Try it (testnet)
+Mezo has plenty of BTC, but almost none of it is liquid. On mainnet (20 Oct 2026) about
+**806 BTC is locked in veBTC**, while all BTC/MUSD pools together hold about **1.07 BTC**. Buying
+BTC with MUSD costs 1–2% against the oracle at $1k–$10k sizes.
 
-1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
-2. Open the [app](https://mblp.vercel.app) and connect an EVM wallet; it adds Mezo Testnet for you.
-3. **Deposit** any amount from 0.001 BTC. It goes into the trove and pool in the same transaction.
-4. **Withdraw** 25–100% of your shares. The app simulates exactly what you get back before you sign.
-5. **Rebalance** and **Harvest** are open to anyone; the buttons light up when there is work to do.
+```mermaid
+xychart-beta
+    title "Mezo mainnet BTC, 20 Oct 2026"
+    x-axis ["Locked in veBTC", "In BTC/MUSD pools"]
+    y-axis "BTC" 0 --> 900
+    bar [806, 1.07]
+```
+
+The gauges already pay for liquidity (the volatile BTC/MUSD gauge streams ~42k MEZO a day), but
+providing it takes a trove, a borrow, a pool deposit, a gauge stake and constant attention to the
+collateral ratio. mbLP collapses that into one deposit, and every deposit adds MUSD debt and
+BTC/MUSD depth to Mezo.
 
 ## How it works
 
+```mermaid
+flowchart LR
+    U([BTC deposit]) --> V{{mbLP vault}}
+    V -- "~75% of BTC as collateral" --> T[MUSD trove<br/>target CR 300%]
+    T -- "borrow MUSD" --> V
+    V -- "MUSD + ~25% of BTC" --> P[BTC/MUSD pool<br/>Mezo Pools]
+    P -- "LP tokens" --> G[Gauge]
+    G -- "MEZO rewards" --> V
+    V -- "mbLP shares + rewards" --> U
+```
+
 | Step | What the vault does |
 | --- | --- |
-| Deposit | Mints shares priced from the Mezo oracle (pool manipulation cannot dilute holders), then deploys the BTC if the pool is within the oracle band |
-| Borrow | One MUSD trove at a 300% target collateral ratio (band 250–350%) |
-| Provide | MUSD plus matching BTC into the volatile BTC/MUSD pool on Mezo Pools, LP staked in the gauge |
-| Rebalance | Holds debt at `NAV / (targetCR + 1)` by borrowing, repaying and moving BTC between trove and pool. **Never swaps.** |
-| Harvest | Pulls gauge rewards and credits them per share; claims are exact across share transfers |
-| Exit | Pro-rata slice of every position. If the LP returned less MUSD than the debt slice, the gap stays in the trove with collateral worth gap + 0.5% at the oracle price, so exits do not move the pool. An exit that would break MUSD's 1,800 minimum debt unwinds the position instead of blocking anyone |
+| **Deposit** | Mints shares priced from the Mezo oracle, so a moved pool cannot dilute holders. Deploys the BTC in the same transaction when the pool is inside the oracle band. |
+| **Borrow** | Keeps one MUSD trove at a 300% target collateral ratio (band 250–350%), far from MUSD's 110% liquidation line. |
+| **Provide** | Adds the MUSD plus matching BTC to the volatile BTC/MUSD pool and stakes the LP. |
+| **Rebalance** | Holds debt at `NAV / (targetCR + 1)` by borrowing, repaying and moving BTC between trove and pool. It **never swaps**. |
+| **Harvest** | Pulls gauge rewards, takes a 10% fee and credits the rest per share. Claims stay exact across share transfers. |
+| **Exit** | Pays a pro-rata slice of every position. A MUSD shortfall is settled inside the vault at the oracle price + 0.5%, so exits do not move the pool. An exit that would break MUSD's 1,800 minimum debt unwinds the position instead of blocking anyone. |
 
-Mezo integration: MUSD (BorrowerOperations, TroveManager, hint helpers, PriceFeed), Mezo Pools
-(Router, volatile BTC/MUSD pool, Gauge), the BTC precompile as native collateral, and redemption
-and liquidation recovery.
+Because the MUSD in the pool roughly matches the MUSD debt, the position is BTC plus yield, not
+leverage. By value it sits at about 61% trove collateral and 39% staked LP (live testnet vault):
 
-No owner, no admin key, no upgrades. The fee (10% of rewards) and all parameters are fixed at
-deployment.
+```mermaid
+pie showData
+    title Testnet vault by value (MUSD)
+    "Collateral in trove" : 7128
+    "Staked LP (fair value)" : 4502
+```
+
+<p align="center">
+  <img src="assets/readme/vault.png" alt="Vault page: deposit, withdraw and claim" width="100%">
+</p>
+
+The vault page does all of it in one place: deposit, withdraw 25–100% of your shares with the exact
+payout simulated before you sign, claim rewards, and the permissionless keeper actions.
+
+## Built on Mezo
+
+| Mezo component | How mbLP uses it |
+| --- | --- |
+| **BTC precompile** | Native BTC is the only asset a user deposits and receives |
+| **MUSD** — BorrowerOperations, TroveManager, HintHelpers, SortedTroves | Opens, adjusts and closes the vault's trove; sorted-list hints on every change |
+| **PriceFeed** | Prices shares, bands every pool action, values LP at the fair price `2·√(k·price)` |
+| **Mezo Pools** — Router, volatile BTC/MUSD pool, Gauge | Liquidity, LP staking and MEZO rewards |
+| **Redemptions and liquidations** | Surplus collateral is reclaimed automatically; after a liquidation the vault keeps its LP and rebuilds the trove |
+| **Mainnet data** | Gauge emissions, pool depth, MEZO price, MUSD supply and veBTC are read live in the app |
+
+**No owner, no admin key, no upgrades.** The fee and every parameter are fixed at deployment, and
+`rebalance` and `harvest` can be called by anyone.
+
+## Try it on testnet
+
+1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
+2. Open **[mblp.vercel.app](https://mblp.vercel.app)** and connect an EVM wallet. The app adds Mezo Testnet for you.
+3. **Deposit** from 0.001 BTC. It goes into the trove and pool in the same transaction.
+4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
+5. **Withdraw** any share of your position.
+
+The testnet runs two deployments of the same vault contract, selectable at the top of the Vault,
+Portfolio and Analytics pages:
+
+| Vault | Gauge | Why |
+| --- | --- | --- |
+| **MEZO rewards** (default) — [`0xc411…Ea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) | [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b), streaming 250 testnet MEZO over 7 days | Mezo's official testnet gauge has no emissions and only the Voter can fund it. This gauge has the same interface and anyone can fund it, so harvest and claim pay out for real. |
+| **Official gauge** — [`0x1879…B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4) | Mezo's testnet BTC/MUSD gauge | The setup the vault would use on mainnet. |
+
+<p align="center">
+  <img src="assets/readme/analytics.png" alt="Analytics page with share price and vault value history" width="100%">
+</p>
+
+The **Analytics** page reads everything from chain: share price and vault value sampled from
+historical state, what the vault holds, the keeper and reward-stream status, the live Mezo mainnet
+BTC/MUSD market, and a filterable log of every vault event. **Portfolio** shows your position, its
+result against simply holding the BTC, and your transaction history.
+
+## Yield
+
+The app reads the mainnet gauge live. On 20 Oct 2026 the volatile BTC/MUSD gauge paid ~42k MEZO a
+day on ~82k MUSD of staked LP, about a **55% LP APR** in MEZO. Roughly half of the vault's value is
+LP, so a depositor would earn about **24% a year before MUSD interest** (1%), falling as more
+liquidity joins the gauge.
+
+<p align="center">
+  <img src="assets/readme/simulator.png" alt="Simulator comparing mbLP with holding BTC" width="100%">
+</p>
+
+The **Simulator** compares mbLP with holding BTC over any period and BTC price move, splitting the
+result into MEZO rewards, impermanent loss on the pool share and MUSD interest. Without rewards
+the vault tracks plain BTC closely around today's price; the rewards are what put it ahead.
 
 ## Security and testing
 
-- 27 unit and fuzz tests, 5 recovery tests (liquidation, redemption, share transfers, donation)
-- Invariant suite: random sequences of deposits, withdrawals, transfers, reward streams, oracle
-  moves, pool manipulation, rebalances, liquidations and redemptions. Checks that shares and
-  rewards add up, the trove keeps MUSD's rules, no LP is left unstaked, and every holder can exit
-- Fork test of a full deposit → partial → full withdraw cycle against the deployed testnet MUSD
-  and Mezo Pools contracts (returns 0.9997 BTC per BTC)
-- Oracle-band guard on every pool action; LP valued at the manipulation-resistant fair price
-  `2·sqrt(k·price)`; dead shares against first-depositor inflation; reentrancy guards
-- The tests found real bugs (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by min debt, exits walking a thin pool); each fix is its own `fix:` commit
+| Suite | Tests | Covers |
+| --- | --- | --- |
+| Unit and fuzz | 27 | Share pricing, deposit and exit paths, rebalancing in every direction, slippage, donations, reward accounting |
+| Recovery | 5 | Liquidation fallback and trove reopening, redemption surplus, reward leaks on share transfers, donation attacks |
+| Reward gauge | 9 | Streaming, top-ups, stake splits, vault harvest → claim end to end |
+| Invariant | 65,536 random actions | Deposits, withdrawals, transfers, reward streams, oracle moves, pool manipulation, liquidations and redemptions. Checks that shares and rewards add up, the trove obeys MUSD's rules, no LP is left unstaked and **every holder can exit** |
+| Fork | 1 | Full deposit → partial → full withdraw against the deployed testnet MUSD and Mezo Pools contracts (0.9997 BTC back per BTC) |
 
-```shell
-cd contracts
-forge install foundry-rs/forge-std@v1.17.0 OpenZeppelin/openzeppelin-contracts@v5.4.0 --no-git
-forge test
-```
-
-CI runs the full suite plus the testnet fork test on every push.
-
-## Mainnet yield, today
-
-The app reads the mainnet BTC/MUSD gauge live. On 2026-10-20: 42k MEZO/day on ~82k MUSD of
-staked LP, about a **55% LP APR** in MEZO. About half of the vault's value is LP, so depositors
-would earn **~24% before MUSD interest**, falling as more liquidity joins the gauge.
+- Oracle-band guard on every pool action, oracle-based minimum outputs on every swap
+- LP valued at the manipulation-resistant fair price; dead shares against first-depositor inflation; reentrancy guards
+- The tests caught five real bugs before deployment (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by minimum debt, exits walking a thin pool); each fix is its own `fix:` commit
+- [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) runs every suite, the testnet fork test and the app build on each push
+- Source verified on the Mezo explorer. **Not audited.**
 
 ## Known limits
 
-- Rewards are MEZO, which has little on-chain liquidity today; the vault pays them out and never sells them.
-- Impermanent loss on the ~25% of value in the pool.
-- While Mezo's oracle is stale, MUSD pauses all trove changes, so deposits and exits wait.
-- In MUSD recovery mode (system collateral ratio under 150%) MUSD blocks closing troves and restricts collateral withdrawals, so exits that need either wait until the system recovers.
-- The exit that closes the trove buys the LP's MUSD gap on the DEX and waits rather than sell BTC
-  below the oracle band. Not binding on testnet (the pool holds ~1,300 BTC); it can be on mainnet.
-- Mezo's official testnet BTC/MUSD gauge has no emissions and only the Voter can fund it, so the testnet demo runs a second vault on a `RewardGauge` (same interface, funded with testnet MEZO). On mainnet the vault uses the official gauge.
-- Unaudited.
+- **MEZO rewards** have little on-chain liquidity today. The vault pays them out and never sells them.
+- **Impermanent loss** applies to the ~25% of value in the pool.
+- **Stale oracle:** MUSD reads the oracle on every trove change, so deposits and exits wait while it is stale.
+- **MUSD recovery mode** (system CR under 150%) blocks closing troves and restricts collateral withdrawals; exits that need either wait for the system to recover.
+- **The last exit** buys the LP's MUSD gap on the DEX and waits rather than sell BTC below the oracle band. Not binding on testnet; it can be on a thin mainnet pool.
 
-## Next (Wave 2)
+## Roadmap
 
-- Concentrated-liquidity BTC/MUSD pool, which currently gets the larger gauge share
-- Optional MEZO → veMEZO compounding
-- Mezo Passport for Bitcoin-native wallets
-- Mainnet deployment
+- **Concentrated BTC/MUSD pool**, which currently receives the larger gauge share
+- **Optional MEZO → veMEZO compounding**
+- **Mezo Passport** for Bitcoin-native wallets
+- **Mainnet deployment** on the official gauge
 
-## Repo
+## Development
 
-- `contracts/`: Foundry project (vault, interfaces, tests, deploy and keeper scripts)
-- `app/`: static multi-page frontend (Vite + viem), deployed to Vercel and GitHub Pages: Home, Vault, Portfolio, Analytics (share-price history, live Mezo market), Simulator (mbLP vs holding BTC) and Docs
-- `.github/workflows/`: Pages deploy and a keeper that calls `rebalance`/`harvest` every 30 minutes
+```shell
+# Contracts
+cd contracts
+forge install foundry-rs/forge-std@v1.17.0 OpenZeppelin/openzeppelin-contracts@v5.4.0 --no-git
+forge test                                                        # unit, fuzz, recovery, gauge, invariant
+MEZO_TESTNET_RPC=https://rpc.test.mezo.org forge test --mc ForkTest  # against live testnet contracts
+
+# App
+cd app
+npm ci
+npm run dev
+```
+
+| Path | Contents |
+| --- | --- |
+| [`contracts/src/`](contracts/src/) | `BtcLpVault.sol`, `RewardGauge.sol`, Mezo interfaces |
+| [`contracts/test/`](contracts/test/) | Unit, recovery, gauge, invariant and fork suites with mocks of MUSD and Mezo Pools |
+| [`contracts/script/`](contracts/script/) | Testnet deploy, reward funding and keeper scripts |
+| [`contracts/deployments/`](contracts/deployments/testnet.json) | Deployed addresses and transactions |
+| [`app/`](app/) | Vite + TypeScript + viem frontend: Home, Vault, Portfolio, Analytics, Simulator, Docs |
+| [`.github/workflows/`](.github/workflows/) | CI, GitHub Pages deploy and a keeper that calls `rebalance` / `harvest` every 30 minutes |
+
+Deployment details, addresses and the full parameter set are in [`contracts/README.md`](contracts/README.md).
