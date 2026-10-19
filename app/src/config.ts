@@ -32,6 +32,21 @@ export const MAINNET = {
   btcMusdPool: "0x52e604c44417233b6CcEDDDc0d640A405Caacefb",
   btcMusdGauge: "0x8Be20a5fF57E381025aE5E3A121B697269569AaF",
   mezoBtcClPool: "0x907D055978943c69cffD5eD969F5603Af104aCc5", // token0 BTC, token1 MEZO
+  clBtcMusdPool: "0x9CBc1537d255768b431488305b1C7EFc2ac95022", // concentrated, tick spacing 200
+  clBtcMusdGauge: "0x21d7AcB0D128fA039064B6aCe8Db88c0aDe0209E",
+  musd: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
+  veBtc: "0x3D4b1b884A7a1E59fE8589a3296EC8f8cBB6f279",
+} as const;
+
+export const TESTNET = {
+  borrowerOperations: "0xCdF7028ceAB81fA0C6971208e83fa7872994beE5",
+  troveManager: "0xE47c80e8c23f6B4A1aE41c34837a0599D5D16bb0",
+  priceFeed: "0x86bCF0841622a5dAC14A313a15f96A95421b9366",
+  router: "0x9a1ff7FE3a0F69959A3fBa1F1e5ee18e1A9CD7E9",
+  pool: "0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9",
+  gauge: "0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3",
+  btc: "0x7b7C000000000000000000000000000000000000",
+  musd: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
 } as const;
 
 export const erc20Abi = parseAbi([
@@ -57,4 +72,6 @@ export const borrowerOpsAbi = parseAbi(["function minNetDebt() view returns (uin
 
 export const clPoolAbi = parseAbi([
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)",
+  "function liquidity() view returns (uint128)",
+  "function stakedLiquidity() view returns (uint128)",
 ]);

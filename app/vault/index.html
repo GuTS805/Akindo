@@ -3,59 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mbLP · BTC LP Vault on Mezo</title>
-    <meta name="description" content="Deposit BTC only. The vault borrows MUSD, provides BTC/MUSD liquidity on Mezo Pools and stakes it for gauge rewards." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23f7931a'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <title>Vault · mbLP</title>
+    <meta name="description" content="Deposit BTC into the mbLP vault on Mezo, withdraw, claim rewards and run keeper actions." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">
-        <span class="logo" aria-hidden="true"><span class="logo-sun"></span><span class="logo-hill"></span></span>
-        <div>
-          <strong>mbLP</strong>
-          <span class="muted">BTC LP Vault on Mezo</span>
-        </div>
-      </div>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="#vault">Vault</a>
-        <a href="#how-it-works">How it works</a>
-        <a href="#risks">Risks</a>
-        <a href="#details">Details</a>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge" id="network-badge">Mezo Testnet</span>
-        <button class="btn" id="connect">Connect wallet</button>
-      </div>
-    </header>
-
-    <main id="vault">
-      <section class="hero">
-        <span class="eyebrow">BTC LP Vault on Mezo</span>
-        <h1>Deposit BTC. Earn as BTC/MUSD liquidity.</h1>
+    <main id="vault" class="page-vault">
+      <section class="hero hero-compact">
+        <span class="eyebrow">Vault</span>
+        <h1>Deposit, withdraw, claim.</h1>
         <p>
-          The vault keeps ~75% of your BTC as collateral in one MUSD trove, borrows MUSD, pairs it with the
-          other ~25% in the BTC/MUSD pool on Mezo and stakes the LP in the pool's gauge. Your exposure stays
-          about 1x BTC. No owner, no admin key: rebalancing and harvesting are open to anyone.
+          Your BTC becomes collateral in one MUSD trove plus staked BTC/MUSD liquidity, in one transaction.
+          New here? Read <a data-page="home" data-hash="#how">how it works</a> or try the
+          <a data-page="simulator">simulator</a> first.
         </p>
       </section>
 
-      <section class="card process" id="how-it-works">
-        <h2>How it works</h2>
-        <ol class="steps">
-          <li><strong>Deposit BTC.</strong> You get mbLP shares priced from the Mezo oracle, so a moved pool cannot dilute you.</li>
-          <li><strong>Borrow.</strong> Most BTC becomes collateral in one MUSD trove at ~300% CR; the vault borrows MUSD against it.</li>
-          <li><strong>Provide liquidity.</strong> MUSD plus the rest of the BTC go into the BTC/MUSD pool; the LP is staked in the gauge.</li>
-          <li><strong>Stay balanced without swaps.</strong> Debt is held at NAV / (target CR + 1) by borrowing, repaying and moving BTC between trove and pool.</li>
-          <li><strong>Exit any time.</strong> Withdraw your slice. If an exit would leave less than MUSD's minimum debt, the vault unwinds instead of blocking you.</li>
-        </ol>
-      </section>
-
       <div id="alert" class="alert" hidden></div>
-      <div id="notice" class="alert notice" role="alert" hidden>
-        <span id="notice-text"></span>
-        <button class="btn ghost small" id="notice-close" aria-label="Dismiss">×</button>
-      </div>
 
       <section class="grid stats" id="details">
         <div class="card stat">
@@ -126,7 +91,7 @@
         </div>
 
         <div class="card">
-          <h2>Your position</h2>
+          <h2>Your position <a class="card-link" data-page="portfolio">Full portfolio →</a></h2>
           <dl class="kv">
             <dt>Shares</dt><dd id="my-shares">–</dd>
             <dt>Value</dt><dd id="my-value">–</dd>
@@ -177,13 +142,13 @@
       </section>
 
       <section class="card">
-        <h2>Activity</h2>
+        <h2>Recent activity <a class="card-link" data-page="analytics" data-hash="#history">All activity →</a></h2>
         <ul class="activity" id="activity"><li class="muted">Loading…</li></ul>
       </section>
 
       <section class="grid two risk-section" id="risks">
         <div class="card">
-          <h2>Risks</h2>
+          <h2>Risks <a class="card-link" data-page="docs" data-hash="#risks">Details →</a></h2>
           <ul class="risks">
             <li>Impermanent loss on the ~25% of value in the pool.</li>
             <li>Rewards are MEZO, which has little on-chain liquidity today.</li>
@@ -195,22 +160,6 @@
       </section>
     </main>
 
-    <footer class="footer">
-      <a id="vault-link" target="_blank" rel="noopener">Vault contract</a>
-      <span>·</span>
-      <a id="source-link" target="_blank" rel="noopener">Verified source</a>
-      <span>·</span>
-      <a id="github-link" target="_blank" rel="noopener">Source</a>
-      <span>·</span>
-      <a href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Testnet faucet</a>
-    </footer>
-
-    <dialog id="wallet-picker" aria-labelledby="wallet-picker-title">
-      <h2 id="wallet-picker-title">Choose a wallet</h2>
-      <ul id="wallet-list" class="wallet-list"></ul>
-      <button class="btn ghost wide" id="wallet-cancel">Cancel</button>
-    </dialog>
-
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/pages/vault.ts"></script>
   </body>
 </html>
