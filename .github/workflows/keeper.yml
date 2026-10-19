@@ -1,0 +1,24 @@
+name: Keeper
+
+# Rebalances and harvests the testnet vault. Both calls are permissionless; this is just one
+# keeper anyone could run. Needs a funded testnet key in the KEEPER_PRIVATE_KEY secret,
+# otherwise it only logs the vault's state.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: keeper
+  cancel-in-progress: false
+
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: bash contracts/script/keeper.sh
+        env:
+          KEEPER_PRIVATE_KEY: ${{ secrets.KEEPER_PRIVATE_KEY }}
