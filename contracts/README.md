@@ -53,6 +53,10 @@ value, since precompiles do not run in a local EVM. Everything else is the deplo
 **BtcLpVault: [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4)**
 (also in `deployments/testnet.json`)
 
+Seed deposit of 0.12 BTC ([tx](https://explorer.test.mezo.org/tx/0xa36213e3f99118eb2a91839453d3ceb495661ae4db765ab45376ce9fbe60435a))
+opened the trove at 296% CR, borrowed ~2,310 MUSD, added it with matching BTC to the BTC/MUSD
+pool and staked the LP in the gauge, all in that one transaction.
+
 To deploy your own:
 
 ```shell
