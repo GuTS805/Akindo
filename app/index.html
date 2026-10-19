@@ -70,6 +70,10 @@
           </div>
 
           <div class="tab-panel" id="panel-deposit">
+            <p class="faucet" id="faucet-hint" hidden>
+              Your wallet needs testnet BTC to deposit.
+              <a href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Get some from the Mezo faucet</a>, then come back.
+            </p>
             <label class="field">
               <span>Amount <span class="muted" id="btc-balance"></span></span>
               <div class="input-row">
@@ -105,8 +109,12 @@
             <dt>Shares</dt><dd id="my-shares">–</dd>
             <dt>Value</dt><dd id="my-value">–</dd>
             <dt>Claimable rewards</dt><dd id="my-rewards">–</dd>
+            <dt id="musd-row" hidden>MUSD in wallet</dt><dd id="my-musd" hidden></dd>
           </dl>
-          <button class="btn wide" id="claim-btn" disabled>Claim rewards</button>
+          <div class="btn-row">
+            <button class="btn" id="claim-btn" disabled>Claim rewards</button>
+            <button class="btn ghost" id="watch-btn" hidden>Add mbLP to wallet</button>
+          </div>
 
           <h2 class="spaced">Keeper actions <span class="muted small-text">anyone can call</span></h2>
           <dl class="kv">
@@ -178,10 +186,18 @@
     <footer class="footer">
       <a id="vault-link" target="_blank" rel="noopener">Vault contract</a>
       <span>·</span>
+      <a id="source-link" target="_blank" rel="noopener">Verified source</a>
+      <span>·</span>
       <a id="github-link" target="_blank" rel="noopener">Source</a>
       <span>·</span>
       <a href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Testnet faucet</a>
     </footer>
+
+    <dialog id="wallet-picker" aria-labelledby="wallet-picker-title">
+      <h2 id="wallet-picker-title">Choose a wallet</h2>
+      <ul id="wallet-list" class="wallet-list"></ul>
+      <button class="btn ghost wide" id="wallet-cancel">Cancel</button>
+    </dialog>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

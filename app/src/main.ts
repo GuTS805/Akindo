@@ -15,9 +15,12 @@ import {
 import {
   GITHUB,
   MAINNET,
+  MUSD,
   VAULT,
   VAULT_DEPLOY_BLOCK,
+  borrowerOpsAbi,
   clPoolAbi,
+  erc20Abi,
   gaugeAbi,
   mezoMainnet,
   mezoTestnet,
@@ -67,15 +70,72 @@ type VaultState = {
   feeBps: bigint;
   minDeposit: bigint;
   rewardSymbol: string;
+  minNetDebt: bigint;
 };
 
-type UserState = { btc: bigint; shares: bigint; claimable: bigint };
+type UserState = { btc: bigint; shares: bigint; claimable: bigint; musd: bigint };
 
 let account: Address | undefined;
 let vault: VaultState | undefined;
 let user: UserState | undefined;
 let withdrawPct = 0;
 let busy = false;
+
+// ---------------------------------------------------------------- wallet discovery (EIP-6963)
+
+type Announced = { info: { uuid: string; name: string; icon: string; rdns: string }; provider: EIP1193Provider };
+const announced = new Map<string, Announced>();
+let provider: EIP1193Provider | undefined = window.ethereum;
+const WALLET_KEY = "mblp.wallet";
+
+window.addEventListener("eip6963:announceProvider", (e) => {
+  const d = (e as CustomEvent<Announced>).detail;
+  if (d?.info?.uuid && d.provider) announced.set(d.info.uuid, d);
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+function remember(rdns: string | undefined) {
+  try {
+    if (rdns) localStorage.setItem(WALLET_KEY, rdns);
+  } catch {
+    /* storage may be blocked */
+  }
+}
+
+function remembered(): Announced | undefined {
+  try {
+    const rdns = localStorage.getItem(WALLET_KEY);
+    return [...announced.values()].find((a) => a.info.rdns === rdns);
+  } catch {
+    return undefined;
+  }
+}
+
+function pickWallet(): Promise<Announced> {
+  const list = [...announced.values()];
+  const dialog = $<HTMLDialogElement>("wallet-picker");
+  const ul = $("wallet-list");
+  ul.innerHTML = "";
+  return new Promise((resolve, reject) => {
+    for (const a of list) {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.className = "btn wide wallet-option";
+      const img = document.createElement("img");
+      img.src = a.info.icon;
+      img.alt = "";
+      btn.append(img, document.createTextNode(a.info.name));
+      btn.addEventListener("click", () => {
+        dialog.close();
+        resolve(a);
+      });
+      li.append(btn);
+      ul.append(li);
+    }
+    dialog.addEventListener("close", () => reject(new Error("No wallet chosen.")), { once: true });
+    dialog.showModal();
+  });
+}
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -107,6 +167,15 @@ function short(a: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
 
+function ago(ts: bigint): string {
+  if (ts === 0n) return "";
+  const s = Math.max(0, Math.floor(Date.now() / 1000) - Number(ts));
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86_400)}d ago`;
+}
+
 function txLink(hash: string): string {
   return `<a href="${EXPLORER}/tx/${hash}" target="_blank" rel="noopener">${short(hash)}</a>`;
 }
@@ -130,16 +199,31 @@ async function readVault(): Promise<VaultState> {
   ]);
   // The testnet gauge pays in BTC (the precompile); mainnet gauges pay MEZO.
   const rewardSymbol = rewardToken.toLowerCase() === "0x7b7c000000000000000000000000000000000000" ? "BTC" : "MEZO";
-  return { snap, supply, needsRebalance, minCR, targetCR, maxCR, maxDeviationBps, feeBps, minDeposit, rewardSymbol };
+  const borrowerOps = await read<Address>("borrowerOperations");
+  const minNetDebt = await testnet.readContract({ address: borrowerOps, abi: borrowerOpsAbi, functionName: "minNetDebt" });
+  return {
+    snap,
+    supply,
+    needsRebalance,
+    minCR,
+    targetCR,
+    maxCR,
+    maxDeviationBps,
+    feeBps,
+    minDeposit,
+    rewardSymbol,
+    minNetDebt,
+  };
 }
 
 async function readUser(a: Address): Promise<UserState> {
-  const [bal, shares, claimable] = await Promise.all([
+  const [bal, shares, claimable, musd] = await Promise.all([
     testnet.getBalance({ address: a }),
     testnet.readContract({ address: VAULT, abi: vaultAbi, functionName: "balanceOf", args: [a] }),
     testnet.readContract({ address: VAULT, abi: vaultAbi, functionName: "claimable", args: [a] }),
+    testnet.readContract({ address: MUSD, abi: erc20Abi, functionName: "balanceOf", args: [a] }),
   ]);
-  return { btc: bal, shares, claimable };
+  return { btc: bal, shares, claimable, musd };
 }
 
 function navBtc(v: VaultState): bigint {
@@ -202,6 +286,11 @@ function renderVault(v: VaultState) {
 function renderUser() {
   const connected = !!account;
   $("connect").textContent = connected ? short(account!) : "Connect wallet";
+
+  $("watch-btn").hidden = !connected;
+  $("faucet-hint").hidden = !(user && vault && user.btc < vault.minDeposit + GAS_RESERVE);
+  $("musd-row").hidden = $("my-musd").hidden = !(user && user.musd > 0n);
+  if (user) $("my-musd").textContent = `${musd(user.musd, 2)} MUSD`;
 
   if (!user || !vault) {
     for (const id of ["my-shares", "my-value", "my-rewards"]) $(id).textContent = connected ? "…" : "–";
@@ -280,6 +369,14 @@ function renderDepositPreview() {
   renderButtons();
 }
 
+/** Mirrors the vault: an exit that leaves less than MUSD's minimum debt unwinds everything. */
+function unwinds(shares: bigint): boolean {
+  if (!vault?.snap?.troveActive || vault.supply === 0n) return false;
+  const repay = (vault.snap.netDebt * shares) / vault.supply;
+  const dead = 1000n;
+  return vault.supply - shares === dead || vault.snap.netDebt - repay < vault.minNetDebt;
+}
+
 let previewSeq = 0;
 async function renderWithdrawPreview() {
   const el = $("withdraw-preview");
@@ -307,7 +404,10 @@ async function renderWithdrawPreview() {
     el.innerHTML =
       `You receive <strong>${btc(btcOut, 6)} BTC</strong> (${sats(btcOut)})` +
       (musdOut > 0n ? ` + <strong>${musd(musdOut, 2)} MUSD</strong>` : "") +
-      ".";
+      "." +
+      (unwinds(shares)
+        ? `<br/><span class="warn">This exit would leave the trove under MUSD's ${musd(vault.minNetDebt)} MUSD minimum debt, so the vault closes the trove and removes all LP. Everyone keeps their share as idle BTC/MUSD until deposits reopen it.</span>`
+        : "");
   } catch (e) {
     if (seq !== previewSeq) return;
     el.innerHTML = `<span class="warn">${explain(e)}</span>`;
@@ -318,7 +418,7 @@ async function renderWithdrawPreview() {
 // ---------------------------------------------------------------- wallet
 
 function wallet() {
-  const eth = window.ethereum;
+  const eth = provider;
   if (!eth) throw new Error("No browser wallet found. Install MetaMask or another EVM wallet.");
   return { eth, client: createWalletClient({ chain: mezoTestnet, transport: custom(eth), account: account! }) };
 }
@@ -350,11 +450,48 @@ async function ensureChain() {
 
 async function connect() {
   try {
+    // Several wallets installed: let the user choose; one: use it; none announced: window.ethereum.
+    if (announced.size > 1) {
+      const chosen = await pickWallet();
+      provider = chosen.provider;
+      remember(chosen.info.rdns);
+    } else if (announced.size === 1) {
+      const only = [...announced.values()][0];
+      provider = only.provider;
+      remember(only.info.rdns);
+    }
     const { eth } = wallet();
+    attachListeners(eth);
     const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
     account = accounts[0];
     await ensureChain();
     await refresh();
+  } catch (e) {
+    if (e instanceof Error && e.message === "No wallet chosen.") return;
+    showAlert(explain(e));
+  }
+}
+
+const listening = new WeakSet<EIP1193Provider>();
+function attachListeners(eth: EIP1193Provider) {
+  if (listening.has(eth)) return;
+  listening.add(eth);
+  eth.on?.("accountsChanged", (accs: Address[]) => {
+    if (eth !== provider) return;
+    account = accs[0];
+    refresh();
+  });
+  eth.on?.("chainChanged", () => {
+    if (eth === provider) updateNetworkBadge();
+  });
+}
+
+async function watchAsset() {
+  try {
+    await wallet().eth.request({
+      method: "wallet_watchAsset",
+      params: { type: "ERC20", options: { address: VAULT, symbol: "mbLP", decimals: 18 } },
+    });
   } catch (e) {
     showAlert(explain(e));
   }
@@ -362,7 +499,7 @@ async function connect() {
 
 async function updateNetworkBadge() {
   const badge = $("network-badge");
-  const eth = window.ethereum;
+  const eth = provider;
   if (!eth || !account) {
     badge.textContent = "Mezo Testnet";
     badge.classList.remove("wrong");
@@ -514,6 +651,12 @@ async function renderActivity() {
     el.innerHTML = `<li class="muted">No activity yet.</li>`;
     return;
   }
+  const blocks = [...new Set(logs.map((l) => l.blockNumber!))];
+  const times = new Map(
+    await Promise.all(
+      blocks.map(async (n) => [n, await testnet.getBlock({ blockNumber: n }).then((b) => b.timestamp).catch(() => 0n)] as const),
+    ),
+  );
   el.innerHTML = logs
     .map((log) => {
       const a = log.args as Record<string, bigint | string>;
@@ -526,7 +669,8 @@ async function renderActivity() {
       if (log.eventName === "Harvest") what = `Harvested ${btc(a.reward as bigint, 6)} rewards`;
       if (log.eventName === "RewardClaimed") what = `${short(String(a.user))} claimed ${btc(a.amount as bigint, 6)} rewards`;
       if (log.eventName === "Unwound") what = `Position unwound, ${musd(a.debtRepaid as bigint)} MUSD repaid`;
-      return `<li><span class="what">${what}</span>${txLink(log.transactionHash!)}</li>`;
+      const when = ago(times.get(log.blockNumber!) ?? 0n);
+      return `<li><span class="what">${what}</span><span class="when">${when ? `${when} · ` : ""}${txLink(log.transactionHash!)}</span></li>`;
     })
     .join("");
 }
@@ -628,23 +772,22 @@ function bind() {
     }),
   );
 
-  const eth = window.ethereum;
-  eth?.on?.("accountsChanged", (accs: Address[]) => {
-    account = accs[0];
-    refresh();
-  });
-  eth?.on?.("chainChanged", () => updateNetworkBadge());
+  $("watch-btn").addEventListener("click", watchAsset);
+  $("wallet-cancel").addEventListener("click", () => $<HTMLDialogElement>("wallet-picker").close());
 
   $<HTMLAnchorElement>("vault-link").href = `${EXPLORER}/address/${VAULT}`;
+  $<HTMLAnchorElement>("source-link").href = `${EXPLORER}/address/${VAULT}?tab=contract`;
   $<HTMLAnchorElement>("github-link").href = GITHUB;
 }
 
 async function init() {
   bind();
-  // Reconnect silently if the site is already authorised.
-  const eth = window.ethereum;
-  if (eth) {
-    const accs = (await eth.request({ method: "eth_accounts" }).catch(() => [])) as Address[];
+  // Give EIP-6963 wallets a moment to announce, then reconnect silently to the last one used.
+  await new Promise((r) => setTimeout(r, 150));
+  provider = remembered()?.provider ?? provider;
+  if (provider) {
+    attachListeners(provider);
+    const accs = (await provider.request({ method: "eth_accounts" }).catch(() => [])) as Address[];
     account = accs[0];
   }
   await refresh();
