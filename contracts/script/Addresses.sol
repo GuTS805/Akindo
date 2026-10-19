@@ -35,8 +35,8 @@ library MezoTestnet {
             targetCR: 3e18,
             minCR: 2.5e18,
             maxCR: 3.5e18,
-            // The testnet pool sits a few percent off the oracle; mainnet would use ~200.
-            maxDeviationBps: 500,
+            // The testnet pool sits ~3.9% below the oracle; mainnet would use ~200.
+            maxDeviationBps: 600,
             feeBps: 1_000,
             minDeposit: 0.001e18
         });
