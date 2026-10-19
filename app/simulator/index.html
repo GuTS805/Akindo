@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulator · mbLP</title>
+    <meta name="description" content="Estimate what mbLP earns versus holding BTC: price moves, impermanent loss, MEZO rewards and MUSD interest." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero hero-compact">
+        <span class="eyebrow">Simulator</span>
+        <h1>mbLP vs just holding BTC</h1>
+        <p>Move BTC's price, pick a time frame and see where the vault ends up in BTC: rewards in, impermanent loss and MUSD interest out.</p>
+      </section>
+
+      <section class="grid sim">
+        <div class="card sim-inputs">
+          <h2>Inputs</h2>
+          <label class="field">
+            <span>Deposit</span>
+            <div class="input-row compact"><input id="i-amount" type="text" inputmode="decimal" value="0.1" /><span class="unit">BTC</span></div>
+          </label>
+          <label class="field">
+            <span>BTC price change <strong id="i-move-out">0%</strong></span>
+            <input id="i-move" type="range" min="-50" max="100" step="1" value="0" />
+            <span class="range-scale"><span>−50%</span><span>0</span><span>+100%</span></span>
+          </label>
+          <label class="field">
+            <span>Time held</span>
+            <div class="seg" id="i-days" role="group" aria-label="Time held">
+              <button class="chip" data-days="30">30 days</button>
+              <button class="chip" data-days="90">90 days</button>
+              <button class="chip active" data-days="180">180 days</button>
+              <button class="chip" data-days="365">1 year</button>
+            </div>
+          </label>
+          <label class="field">
+            <span>LP APR in MEZO <span class="muted" id="i-apr-src">loading mainnet…</span></span>
+            <div class="input-row compact"><input id="i-apr" type="text" inputmode="decimal" value="36" /><span class="unit">%</span></div>
+          </label>
+          <label class="field">
+            <span>MEZO price change over the period</span>
+            <div class="input-row compact"><input id="i-mezo" type="text" inputmode="decimal" value="0" /><span class="unit">%</span></div>
+          </label>
+          <label class="field">
+            <span>MUSD interest <span class="muted">(the vault's trove pays 1%)</span></span>
+            <div class="input-row compact"><input id="i-rate" type="text" inputmode="decimal" value="1" /><span class="unit">%</span></div>
+          </label>
+        </div>
+
+        <div class="sim-results">
+          <section class="grid stats-3">
+            <div class="card stat"><span class="label">Just holding BTC</span><span class="value" id="o-hold">–</span><span class="sub" id="o-hold-sub">–</span></div>
+            <div class="card stat"><span class="label">In mbLP</span><span class="value" id="o-vault">–</span><span class="sub" id="o-vault-sub">–</span></div>
+            <div class="card stat"><span class="label">Difference</span><span class="value" id="o-diff">–</span><span class="sub" id="o-diff-sub">–</span></div>
+          </section>
+          <div class="card">
+            <h2>Where the difference comes from</h2>
+            <dl class="kv">
+              <dt>MEZO rewards</dt><dd id="o-rewards">–</dd>
+              <dt>Impermanent loss on the pool share</dt><dd id="o-il">–</dd>
+              <dt>MUSD interest</dt><dd id="o-interest">–</dd>
+              <dt>Trove collateral ratio without rebalancing</dt><dd id="o-cr">–</dd>
+            </dl>
+          </div>
+          <div class="card">
+            <h2>Result across BTC price moves <span class="muted small-text">in BTC, for the chosen period</span></h2>
+            <div id="sim-chart" class="chart-wrap"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>How this is calculated</h2>
+        <ul class="risks">
+          <li>The vault starts at its target: collateral worth 3× the debt, and LP holding the debt's worth of MUSD plus the same worth of BTC. So 75% of the BTC is collateral and 25% is in the pool.</li>
+          <li>After a price move by factor r, collateral is worth 3D·r, the LP 2D·√r (constant-product pool) and the debt D plus interest.</li>
+          <li>Rewards: LP APR × LP value × (1 − 10% fee) × time, scaled by the MEZO price change. Staked LPs get no swap fees.</li>
+          <li>Rebalancing is not modelled. In practice the keeper borrows or repays when the ratio leaves 250–350%, which changes the path but not the overall shape.</li>
+          <li>An estimate for decisions, not a promise: APR moves with MEZO emissions, MEZO's price and how much liquidity joins the gauge.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script type="module" src="/src/pages/simulator.ts"></script>
+  </body>
+</html>
