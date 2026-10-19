@@ -56,7 +56,7 @@ deployment.
   and Mezo Pools contracts (returns 0.9997 BTC per BTC)
 - Oracle-band guard on every pool action; LP valued at the manipulation-resistant fair price
   `2·sqrt(k·price)`; dead shares against first-depositor inflation; reentrancy guards
-- The tests found and drove fixes for 6 real bugs, each in its own commit (see history)
+- The tests found real bugs (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by min debt, exits walking a thin pool); each fix is its own `fix:` commit
 
 ```shell
 cd contracts && forge test
