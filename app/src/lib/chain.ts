@@ -9,6 +9,7 @@ import {
   type Address,
 } from "viem";
 import {
+  ACTIVE_VAULT,
   MAINNET,
   MUSD,
   VAULT,
@@ -17,6 +18,7 @@ import {
   clPoolAbi,
   erc20Abi,
   gaugeAbi,
+  gaugeStreamAbi,
   mezoMainnet,
   mezoTestnet,
   poolAbi,
@@ -78,6 +80,8 @@ export type VaultState = {
   rewardSymbol: string;
   minNetDebt: bigint;
   rewardReserve: bigint;
+  /** What the vault's gauge is streaming right now (rate per second, until `finish`). */
+  stream: { rate: bigint; finish: number; pending: bigint };
 };
 
 export type UserState = { btc: bigint; shares: bigint; claimable: bigint; musd: bigint };
@@ -103,7 +107,14 @@ export async function readVault(): Promise<VaultState> {
     ]);
   // The testnet gauge pays in BTC (the precompile); mainnet gauges pay MEZO.
   const rewardSymbol = rewardToken.toLowerCase() === "0x7b7c000000000000000000000000000000000000" ? "BTC" : "MEZO";
-  const minNetDebt = await testnet.readContract({ address: borrowerOps, abi: borrowerOpsAbi, functionName: "minNetDebt" });
+  const gauge = { address: ACTIVE_VAULT.gauge, abi: gaugeStreamAbi } as const;
+  const [minNetDebt, rate, finish, pending] = await Promise.all([
+    testnet.readContract({ address: borrowerOps, abi: borrowerOpsAbi, functionName: "minNetDebt" }),
+    testnet.readContract({ ...gauge, functionName: "rewardRate" }).catch(() => 0n),
+    testnet.readContract({ ...gauge, functionName: "periodFinish" }).catch(() => 0n),
+    testnet.readContract({ ...gauge, functionName: "earned", args: [VAULT] }).catch(() => 0n),
+  ]);
+  const live = Number(finish) * 1000 > Date.now();
   return {
     snap,
     supply,
@@ -117,6 +128,7 @@ export async function readVault(): Promise<VaultState> {
     rewardSymbol,
     minNetDebt,
     rewardReserve,
+    stream: { rate: live ? rate : 0n, finish: Number(finish), pending },
   };
 }
 

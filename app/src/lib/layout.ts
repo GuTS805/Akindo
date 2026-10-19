@@ -1,7 +1,10 @@
-import { GITHUB, VAULT } from "../config";
+import { ACTIVE_VAULT, GITHUB, VAULT, VAULTS, selectVault, type VaultId } from "../config";
 import { $, EXPLORER } from "./format";
 
 export type PageId = "home" | "vault" | "portfolio" | "analytics" | "simulator" | "docs";
+
+/** Pages that show one vault's state get the vault switch. */
+const VAULT_PAGES: PageId[] = ["vault", "portfolio", "analytics"];
 
 const PAGES: { id: PageId; label: string; path: string }[] = [
   { id: "home", label: "Home", path: "" },
@@ -41,6 +44,29 @@ export function mountShell(active: PageId) {
   );
 
   const main = document.querySelector("main")!;
+  if (VAULT_PAGES.includes(active)) {
+    const options = Object.values(VAULTS)
+      .map(
+        (v) =>
+          `<button class="seg${v.id === ACTIVE_VAULT.id ? " active" : ""}" data-vault="${v.id}" aria-pressed="${
+            v.id === ACTIVE_VAULT.id
+          }">${v.label}</button>`,
+      )
+      .join("");
+    main.insertAdjacentHTML(
+      "afterbegin",
+      `<div class="vault-switch" role="group" aria-label="Choose vault">
+        <span class="muted">Vault</span>
+        <div class="segmented">${options}</div>
+        <span class="muted vault-note">${ACTIVE_VAULT.gaugeNote}</span>
+      </div>`,
+    );
+    main.querySelectorAll<HTMLButtonElement>("[data-vault]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (b.dataset.vault !== ACTIVE_VAULT.id) selectVault(b.dataset.vault as VaultId);
+      }),
+    );
+  }
   main.insertAdjacentHTML(
     "afterbegin",
     `<div id="notice" class="alert notice" role="alert" hidden>

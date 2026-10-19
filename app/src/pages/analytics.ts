@@ -63,6 +63,11 @@ function renderVault(v: VaultState) {
   $("k-needs").textContent = v.needsRebalance ? "Yes" : "No";
   $("k-needs").className = v.needsRebalance ? "warn" : "";
   $("k-reserve").textContent = `${btc(v.rewardReserve, 6)} ${v.rewardSymbol}`;
+  $("k-stream").textContent =
+    v.stream.rate > 0n
+      ? `${num(Number(v.stream.rate * 86_400n) / 1e18, 2)} ${v.rewardSymbol}/day until ${new Date(v.stream.finish * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+      : "Not streaming";
+  $("k-pending").textContent = `${btc(v.stream.pending, 6)} ${v.rewardSymbol}`;
 }
 
 function renderHistory() {

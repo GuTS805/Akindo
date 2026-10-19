@@ -1,10 +1,12 @@
-import { GITHUB, TESTNET, VAULT } from "../config";
+import { GITHUB, TESTNET, VAULTS } from "../config";
 import { $, EXPLORER } from "../lib/format";
 import { mountShell } from "../lib/layout";
 import { initWallet } from "../lib/wallet";
 
 const CONTRACTS: [string, string, string][] = [
-  ["mbLP vault", VAULT, "This vault (verified source)"],
+  ["mbLP vault (MEZO rewards)", VAULTS.rewards.address, "Stakes in the reward gauge below; harvest and claim pay testnet MEZO"],
+  ["RewardGauge", VAULTS.rewards.gauge, "Streams testnet MEZO to staked LP; anyone can fund it"],
+  ["mbLP vault (official gauge)", VAULTS.official.address, "Same contract, staked in Mezo's official testnet gauge (no emissions)"],
   ["BTC", TESTNET.btc, "Native BTC precompile, ERC-20 view of the balance"],
   ["MUSD", TESTNET.musd, "Mezo's BTC-backed stablecoin"],
   ["BorrowerOperations", TESTNET.borrowerOperations, "Opens, adjusts and closes the trove"],
@@ -12,7 +14,8 @@ const CONTRACTS: [string, string, string][] = [
   ["PriceFeed", TESTNET.priceFeed, "BTC price oracle"],
   ["Router", TESTNET.router, "Mezo Pools router"],
   ["BTC/MUSD pool", TESTNET.pool, "Volatile pool the vault provides to"],
-  ["Gauge", TESTNET.gauge, "Where the vault stakes its LP"],
+  ["Official gauge", TESTNET.gauge, "Mezo's testnet BTC/MUSD gauge; only the Voter can fund it"],
+  ["MEZO", "0x7b7C000000000000000000000000000000000001", "MEZO token precompile, the testnet reward token"],
 ];
 
 function init() {

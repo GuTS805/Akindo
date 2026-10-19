@@ -21,8 +21,62 @@ export const mezoMainnet = defineChain({
   contracts: { multicall3 },
 });
 
-export const VAULT = "0x187958091532733eF2f8703F8029Cd72aA85B2d4" as const;
-export const VAULT_DEPLOY_BLOCK = 16_249_561n;
+/**
+ * Two deployments of the same vault contract. The official testnet BTC/MUSD gauge has no
+ * emissions (only Mezo's Voter can fund it), so the second one stakes in a RewardGauge that
+ * streams testnet MEZO, which is where harvest and claim actually pay out.
+ */
+export const VAULTS = {
+  rewards: {
+    id: "rewards",
+    label: "MEZO rewards",
+    address: "0xc41192A186C0ee2F593D611b0D0C00501B5Eea03",
+    deployBlock: 16_252_391n,
+    gauge: "0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b",
+    gaugeNote: "Stakes in a reward gauge that streams testnet MEZO, so rewards accrue and can be claimed.",
+  },
+  official: {
+    id: "official",
+    label: "Official gauge",
+    address: "0x187958091532733eF2f8703F8029Cd72aA85B2d4",
+    deployBlock: 16_249_561n,
+    gauge: "0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3",
+    gaugeNote: "Stakes in Mezo's official testnet BTC/MUSD gauge, which has no emissions on testnet.",
+  },
+} as const;
+export type VaultId = keyof typeof VAULTS;
+
+const VAULT_KEY = "mblp.vault";
+const DEFAULT_VAULT: VaultId = "official";
+
+/** Selected with ?vault=<id> (remembered) or a previous choice; pages reload to switch. */
+function pickVault(): VaultId {
+  const isId = (v: string | null): v is VaultId => !!v && v in VAULTS;
+  const fromUrl = new URLSearchParams(location.search).get("vault");
+  try {
+    if (isId(fromUrl)) localStorage.setItem(VAULT_KEY, fromUrl);
+    const saved = localStorage.getItem(VAULT_KEY);
+    if (isId(saved)) return saved;
+  } catch {
+    /* storage blocked */
+  }
+  return isId(fromUrl) ? fromUrl : DEFAULT_VAULT;
+}
+
+export const ACTIVE_VAULT = VAULTS[pickVault()];
+export const VAULT = ACTIVE_VAULT.address;
+export const VAULT_DEPLOY_BLOCK = ACTIVE_VAULT.deployBlock;
+
+export function selectVault(id: VaultId) {
+  try {
+    localStorage.setItem(VAULT_KEY, id);
+  } catch {
+    /* storage blocked: the URL still carries it */
+  }
+  const url = new URL(location.href);
+  url.searchParams.set("vault", id);
+  location.href = url.toString();
+}
 export const MUSD = "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503" as const;
 export const GITHUB = "https://github.com/GuTS805/Akindo";
 
@@ -52,6 +106,12 @@ export const TESTNET = {
 export const erc20Abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
   "function totalSupply() view returns (uint256)",
+]);
+
+export const gaugeStreamAbi = parseAbi([
+  "function rewardRate() view returns (uint256)",
+  "function periodFinish() view returns (uint256)",
+  "function earned(address) view returns (uint256)",
 ]);
 
 export const poolAbi = parseAbi([

@@ -1215,3 +1215,38 @@ code {
   align-items: center;
   justify-content: center;
 }
+
+/* vault switch (vault, portfolio, analytics) */
+.vault-switch {
+  order: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 13px;
+}
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+.seg {
+  font: inherit;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.seg.active {
+  background: #0e1c3b;
+  color: #fbf4ea;
+}
+.vault-note {
+  flex: 1 1 260px;
+  min-width: 0;
+}

@@ -106,15 +106,25 @@
             </p>
             <p>
               MUSD interest (1% a year on the vault's trove) accrues on the debt and is paid from the position when
-              debt is repaid. On testnet the gauge has no rewards funded, so harvest is a no-op there.
+              debt is repaid.
+            </p>
+            <h3>Two testnet vaults</h3>
+            <p>
+              Mezo's official testnet BTC/MUSD gauge has no emissions, and only Mezo's Voter can fund it, so a vault
+              staked there never has anything to harvest. The same vault contract is therefore deployed twice. The
+              <strong>MEZO rewards</strong> vault stakes in a small <code>RewardGauge</code> with the same interface,
+              which anyone can fund with testnet MEZO; there, rewards accrue every second and harvest and claim pay
+              out for real. The <strong>Official gauge</strong> vault stakes in Mezo's gauge, as the vault would on
+              mainnet. Switch between them at the top of the Vault, Portfolio and Analytics pages.
             </p>
           </section>
 
           <section id="safety">
             <h2>Safety and testing</h2>
             <ul>
-              <li>32 unit, fuzz and recovery tests, covering liquidation, redemption, transfers, donations and slippage.</li>
+              <li>32 unit, fuzz and recovery tests, covering liquidation, redemption, transfers, donations and slippage, plus 9 for the reward gauge and harvesting from it.</li>
               <li>An invariant suite of random action sequences (65,536 actions across 1,024 runs, including pool manipulation, liquidations and redemptions), checking that shares and rewards add up, the trove keeps MUSD's rules and every holder can exit.</li>
+              <li>CI runs every test, and the fork test, on each push.</li>
               <li>A fork test of a full deposit and withdraw cycle against the deployed testnet MUSD and Mezo Pools contracts (0.9997 BTC back per BTC).</li>
               <li>The tests found five real bugs before deployment; each fix is its own commit in the repository.</li>
               <li>Source verified on the Mezo explorer. Reentrancy guards, dead shares against first-depositor inflation, oracle-based minimum outputs on every swap.</li>
