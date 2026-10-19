@@ -1,7 +1,22 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
-// Served from https://<user>.github.io/Akindo/ on GitHub Pages.
+const page = (p: string) => resolve(__dirname, p, "index.html");
+
+// Served from https://<user>.github.io/Akindo/ on GitHub Pages, "/" on Vercel.
 export default defineConfig({
   base: process.env.GITHUB_PAGES ? "/Akindo/" : "/",
-  build: { target: "es2022" },
+  build: {
+    target: "es2022",
+    rollupOptions: {
+      input: {
+        home: resolve(__dirname, "index.html"),
+        vault: page("vault"),
+        portfolio: page("portfolio"),
+        analytics: page("analytics"),
+        simulator: page("simulator"),
+        docs: page("docs"),
+      },
+    },
+  },
 });
