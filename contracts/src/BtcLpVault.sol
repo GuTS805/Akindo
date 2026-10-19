@@ -547,6 +547,17 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         rewardDebt[account] = accrued;
     }
 
+    /// @dev Harvest before shares move, so rewards earned up to now stay with the sender.
+    function transfer(address to, uint256 value) public override nonReentrant returns (bool) {
+        _harvest();
+        return super.transfer(to, value);
+    }
+
+    function transferFrom(address from, address to, uint256 value) public override nonReentrant returns (bool) {
+        _harvest();
+        return super.transferFrom(from, to, value);
+    }
+
     /// @dev Settle rewards on every balance change so transfers keep reward accounting exact.
     function _update(address from, address to, uint256 value) internal override {
         if (from != address(0)) _settle(from);
