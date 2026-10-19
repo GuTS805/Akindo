@@ -4,5 +4,14 @@
   "deployTx": "0x494f7cbdb55db1cd30eae97bf74574949fe51fc5a91ca26bf513770c396e45a5",
   "deployer": "0x6E82652eDb746f6E4132B064E11753D7A7B2ED40",
   "seedDepositTx": "0xa36213e3f99118eb2a91839453d3ceb495661ae4db765ab45376ce9fbe60435a",
-  "explorer": "https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4"
+  "explorer": "https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4",
+  "rewards": {
+    "note": "Second vault, staked in a RewardGauge paying testnet MEZO (the official testnet gauge has no emissions)",
+    "RewardGauge": "0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b",
+    "gaugeDeployTx": "0x6f18affd16e0a207c9ab67d13f0a52ecacf9310088bcb059c447f2693e7bd14a",
+    "BtcLpVault": "0xc41192A186C0ee2F593D611b0D0C00501B5Eea03",
+    "deployTx": "0xf6e25d6458b4f2bcdd607c2fd3f3caa4c988b06124e7df4c95fc6071f1b45af1",
+    "deployBlock": 16252391,
+    "explorer": "https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03"
+  }
 }
