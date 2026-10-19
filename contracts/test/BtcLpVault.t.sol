@@ -120,13 +120,71 @@ contract BtcLpVaultTest is BaseTest {
         vault.withdraw(shares, 1e18);
     }
 
-    function test_withdraw_wouldBreakMinDebt() public {
+    function test_withdraw_belowMinDebt_unwinds() public {
         _deposit(alice, 0.2e18); // 12k NAV -> ~2.9k net debt
         assertEq(troves.getTroveStatus(address(vault)), 1);
         uint256 half = vault.balanceOf(alice) / 2;
         vm.prank(alice);
-        vm.expectRevert(BtcLpVault.MinDebtWouldBreak.selector);
-        vault.withdraw(half, 0);
+        (uint256 btcOut, uint256 musdOut) = vault.withdraw(half, 0);
+
+        // Half of 2.9k would leave less than 1800 debt, so the whole position unwinds.
+        assertEq(troves.getTroveStatus(address(vault)), 2);
+        assertEq(gauge.balanceOf(address(vault)), 0);
+        assertApproxEqRel(_valueOf(btcOut, musdOut), 0.1e18, 0.005e18);
+
+        (btcOut, musdOut) = _withdrawAll(alice);
+        assertApproxEqRel(_valueOf(btcOut, musdOut), 0.1e18, 0.005e18);
+    }
+
+    function test_whaleExit_doesNotStrandSmallHolder() public {
+        _deposit(alice, 1e18);
+        _deposit(bob, 0.05e18);
+        uint256 ppsBefore = vault.pricePerShare();
+
+        // Alice leaving would put debt under the minimum; she must still get out.
+        (uint256 aBtc, uint256 aMusd) = _withdrawAll(alice);
+        assertApproxEqRel(_valueOf(aBtc, aMusd), 1e18, 0.005e18);
+        assertEq(troves.getTroveStatus(address(vault)), 2);
+        assertGe(vault.pricePerShare(), ppsBefore * 995 / 1000, "bob not diluted");
+
+        (uint256 bBtc, uint256 bMusd) = _withdrawAll(bob);
+        assertApproxEqRel(_valueOf(bBtc, bMusd), 0.05e18, 0.005e18);
+    }
+
+    function test_staleOracle_blocksExitsWhileTroveOpen() public {
+        _deposit(alice, 1e18);
+        feed.setStale(true);
+        uint256 shares = vault.balanceOf(alice);
+        vm.prank(alice);
+        vm.expectRevert(BtcLpVault.OracleUnavailable.selector);
+        vault.withdraw(shares / 2, 0);
+
+        feed.setStale(false);
+        _withdrawAll(alice);
+    }
+
+    function test_shortfallSwap_revertsWhenPoolIsPushed() public {
+        _deposit(alice, 1e18);
+        _deposit(bob, 1e18);
+        // Attacker dumps BTC so the vault's top-up swap would sell BTC cheap.
+        _setPoolPrice(PRICE * 95 / 100);
+
+        uint256 shares = vault.balanceOf(alice);
+        // MockBTC moves balances with vm.deal, which a reverted call does not undo; the snapshot
+        // restores state the way the real precompile would.
+        uint256 snap = vm.snapshotState();
+        vm.prank(alice);
+        try vault.withdraw(shares, 0) {
+            fail();
+        } catch (bytes memory reason) {
+            assertEq(keccak256(reason), keccak256(abi.encodeWithSignature("Error(string)", "router: insufficient output")));
+        }
+        vm.revertToState(snap);
+
+        // Once the pool is back near the oracle the same exit goes through.
+        _setPoolPrice(PRICE);
+        (uint256 btcOut, uint256 musdOut) = _withdrawAll(alice);
+        assertApproxEqRel(_valueOf(btcOut, musdOut), 1e18, 0.005e18);
     }
 
     function test_withdraw_zeroSharesReverts() public {
