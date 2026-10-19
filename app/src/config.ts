@@ -47,7 +47,7 @@ export const VAULTS = {
 export type VaultId = keyof typeof VAULTS;
 
 const VAULT_KEY = "mblp.vault";
-const DEFAULT_VAULT: VaultId = "official";
+const DEFAULT_VAULT: VaultId = "rewards";
 
 /** Selected with ?vault=<id> (remembered) or a previous choice; pages reload to switch. */
 function pickVault(): VaultId {

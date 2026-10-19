@@ -12,6 +12,9 @@
     "BtcLpVault": "0xc41192A186C0ee2F593D611b0D0C00501B5Eea03",
     "deployTx": "0xf6e25d6458b4f2bcdd607c2fd3f3caa4c988b06124e7df4c95fc6071f1b45af1",
     "deployBlock": 16252391,
-    "explorer": "https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03"
+    "explorer": "https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03",
+    "seedDepositTx": "0x2323e0357026a4ec0a17edcc43a3b083d0e0f3777adf933f039a8df8a6c4c644",
+    "fundTx": "0x237e1ad9c3981606b7f5fcd0ca234422c3fece0f41ba60b598076550059d8d53",
+    "funded": "250 testnet MEZO over 7 days"
   }
 }

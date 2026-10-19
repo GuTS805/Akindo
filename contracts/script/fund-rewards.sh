@@ -20,8 +20,8 @@ wait_receipt() {
   for _ in $(seq 1 40); do
     status=$("$CAST" receipt "$1" status --rpc-url "$RPC" 2>/dev/null || true)
     case "$status" in
-      *1*) return 0 ;;
-      *0*) echo "reverted: $1" >&2; exit 1 ;;
+      true* | 1*) return 0 ;;
+      false* | 0*) echo "reverted: $1" >&2; exit 1 ;;
     esac
     sleep 3
   done
