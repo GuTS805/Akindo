@@ -74,6 +74,8 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     uint256 public constant HINT_TRIALS = 15;
     /// @notice Idle BTC worth more than this share of NAV makes the vault deployable.
     uint256 public constant IDLE_THRESHOLD_BPS = 100;
+    /// @notice Premium a leaver pays, in collateral, for debt left to remaining holders.
+    uint256 public constant EXIT_SETTLE_PREMIUM_BPS = 50;
     uint8 internal constant TROVE_ACTIVE = 1;
     uint8 internal constant TROVE_CLOSED_BY_REDEMPTION = 4;
 
@@ -457,7 +459,11 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     }
 
     /// @dev Take this share of idle assets and LP, repay this share of the debt and withdraw
-    ///      this share of the collateral. CR of the remaining trove is unchanged.
+    ///      this share of the collateral.
+    ///      When the LP slice holds less MUSD than the debt slice, the gap is settled inside the
+    ///      vault instead of on the DEX: the leaver keeps that debt in the trove and leaves
+    ///      collateral worth the gap at the oracle price plus EXIT_SETTLE_PREMIUM_BPS. Remaining
+    ///      holders come out slightly ahead, and exits never move (or depend on) the thin pool.
     function _proRataExit(Snapshot memory s, uint256 shares, uint256 supply, uint256 repay)
         internal
         returns (uint256 btcOut, uint256 musdOut)
@@ -470,27 +476,62 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
             btcOut += b;
             musdHave += m;
         }
-        if (musdHave < repay) {
-            uint256 used;
-            (used, musdHave) = _topUpMusd(repay - musdHave, btcOut, s.price, musdHave);
-            btcOut -= used;
-        }
 
         uint256 collOut = Math.mulDiv(s.coll, shares, supply);
-        (address up, address low) = _hints(s.coll - collOut, s.debt - repay);
-        uint256 balBefore = address(this).balance;
-        borrowerOperations.adjustTrove(collOut, repay, false, up, low);
-        btcOut += address(this).balance - balBefore;
+        if (musdHave < repay) {
+            uint256 gap = repay - musdHave;
+            uint256 keepColl =
+                Math.mulDiv(gap, 1e18 * (BPS + EXIT_SETTLE_PREMIUM_BPS), s.price * BPS, Math.Rounding.Ceil);
+            // Debt left behind is backed ~1:1, which pulls the trove's CR down. Settle inside
+            // the vault only while the trove stays above minCR; otherwise buy the gap on the DEX.
+            if (_canSettleInside(s, collOut, keepColl, musdHave)) {
+                collOut -= keepColl;
+                repay = musdHave;
+            } else {
+                uint256 used;
+                (used, musdHave) = _topUpMusd(gap, btcOut, s.price, musdHave);
+                btcOut -= used;
+            }
+        }
+
+        if (collOut > 0 || repay > 0) {
+            (address up, address low) = _hints(s.coll - collOut, s.debt - repay);
+            uint256 balBefore = address(this).balance;
+            borrowerOperations.adjustTrove(collOut, repay, false, up, low);
+            btcOut += address(this).balance - balBefore;
+        }
         musdOut = musdHave - repay;
     }
 
+    function _canSettleInside(Snapshot memory s, uint256 collOut, uint256 keepColl, uint256 repaid)
+        internal
+        view
+        returns (bool)
+    {
+        if (keepColl > collOut) return false;
+        return Math.mulDiv(s.coll - collOut + keepColl, s.price, s.debt - repaid) >= minCR;
+    }
+
     /// @dev Remove all LP and close the trove. Leaves only idle BTC and MUSD.
+    ///      Closing needs the full debt in MUSD. When the LP returns less, the gap is bought with
+    ///      BTC; if idle BTC cannot cover it, the MUSD on hand is repaid first and the missing BTC
+    ///      is drawn from collateral.
     function _unwind(Snapshot memory s, uint256 price) internal {
         if (s.lp > 0) _removeLiquidity(s.lp);
         uint256 musdHave = musd.balanceOf(address(this)) - rewardReserveIf(musd);
         if (musdHave < s.netDebt) {
+            uint256 shortfall = s.netDebt - musdHave;
+            uint256 btcNeed = Math.mulDiv(shortfall, 1e18 * (BPS + maxDeviationBps), price * BPS, Math.Rounding.Ceil);
             uint256 idleBtc = address(this).balance - rewardReserveIf(btc);
-            _topUpMusd(s.netDebt - musdHave, idleBtc, price, musdHave);
+            if (idleBtc < btcNeed) {
+                uint256 repay = Math.min(musdHave, s.netDebt - borrowerOperations.minNetDebt());
+                uint256 collOut = btcNeed - idleBtc;
+                (address up, address low) = _hints(s.coll - collOut, s.debt - repay);
+                borrowerOperations.adjustTrove(collOut, repay, false, up, low);
+                musdHave -= repay;
+                idleBtc = address(this).balance - rewardReserveIf(btc);
+            }
+            _topUpMusd(shortfall, idleBtc, price, musdHave);
         }
         borrowerOperations.closeTrove();
         emit Unwound(s.netDebt);
