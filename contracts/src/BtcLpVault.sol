@@ -75,6 +75,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     /// @notice Idle BTC worth more than this share of NAV makes the vault deployable.
     uint256 public constant IDLE_THRESHOLD_BPS = 100;
     uint8 internal constant TROVE_ACTIVE = 1;
+    uint8 internal constant TROVE_CLOSED_BY_REDEMPTION = 4;
 
     IERC20 public immutable btc;
     IERC20 public immutable musd;
@@ -170,6 +171,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     function deposit(uint256 minShares) external payable nonReentrant returns (uint256 shares) {
         if (msg.value < minDeposit) revert DepositTooSmall();
         _harvest();
+        _claimSurplus();
 
         uint256 price = _fetchPrice();
         if (price == 0) revert OracleUnavailable();
@@ -204,6 +206,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     function withdraw(uint256 shares, uint256 minBtcOut) external nonReentrant returns (uint256 btcOut, uint256 musdOut) {
         if (shares == 0) revert ZeroShares();
         _harvest();
+        _claimSurplus();
 
         uint256 price = _fetchPrice(); // 0 when the oracle is stale: allowed unless a swap is needed
         Snapshot memory s = _snapshot(price, 0);
@@ -273,6 +276,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     ///         price is outside the oracle band, so it cannot be used to trade at a bad price.
     function rebalance() external nonReentrant {
         _harvest();
+        _claimSurplus();
         uint256 price = _fetchPrice();
         if (price == 0) revert OracleUnavailable();
         Snapshot memory s = _snapshot(price, 0);
@@ -287,6 +291,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     }
 
     /// @notice After a full redemption of the vault's trove, pull the surplus collateral back.
+    ///         Deposits, withdrawals and rebalances also do this on their own.
     function claimSurplusCollateral() external nonReentrant {
         borrowerOperations.claimCollateral();
     }
@@ -526,6 +531,13 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         accRewardPerShare += Math.mulDiv(toHolders, 1e18, supply);
         emit Harvest(got, fee);
         if (fee > 0) rewardToken.safeTransfer(feeRecipient, fee);
+    }
+
+    /// @dev A redeemed trove leaves surplus BTC in MUSD's surplus pool, outside NAV. Pull it in
+    ///      before pricing shares so nobody exits or enters at a NAV missing that BTC.
+    function _claimSurplus() internal {
+        if (troveManager.getTroveStatus(address(this)) != TROVE_CLOSED_BY_REDEMPTION) return;
+        try borrowerOperations.claimCollateral() {} catch {}
     }
 
     function _settle(address account) internal {
