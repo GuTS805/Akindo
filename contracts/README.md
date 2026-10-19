@@ -48,19 +48,26 @@ the end every holder can exit.
 The fork test swaps in a mock for the BTC precompile and pins `PriceFeed.fetchPrice` to the live
 value, since precompiles do not run in a local EVM. Everything else is the deployed testnet code.
 
-## Deploy (Mezo testnet)
+## Deployment (Mezo testnet)
+
+**BtcLpVault: [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4)**
+(also in `deployments/testnet.json`)
+
+To deploy your own:
 
 ```shell
 cp .env.example .env   # set PRIVATE_KEY
-source .env
-forge script script/Deploy.s.sol --rpc-url mezo_testnet --broadcast --skip-simulation
+bash script/deploy-testnet.sh
 ```
 
-`--skip-simulation` is needed for the same reason: the constructor approves the router on the BTC
-precompile, which forge cannot simulate locally. Addresses live in `script/Addresses.sol`.
+This uses `forge create`, not `forge script`: a script runs the constructor in a local EVM
+first, and the constructor approves the router on the BTC precompile, which only exists on Mezo
+nodes. forge may also report "contract was not deployed" because of how Mezo returns the
+receipt; the script prints an explorer link to check.
 
 | Contract | Testnet address |
 | --- | --- |
+| BtcLpVault | `0x187958091532733eF2f8703F8029Cd72aA85B2d4` |
 | BTC | `0x7b7C000000000000000000000000000000000000` |
 | MUSD | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` |
 | BorrowerOperations | `0xCdF7028ceAB81fA0C6971208e83fa7872994beE5` |
@@ -87,7 +94,8 @@ precompile, which forge cannot simulate locally. Addresses live in `script/Addre
 
 - `src/BtcLpVault.sol`: the vault
 - `src/interfaces/IMezo.sol`: minimal interfaces for MUSD (mezo-org/musd) and Mezo Pools (mezo-org/tigris)
-- `script/Addresses.sol`, `script/Deploy.s.sol`: testnet addresses and deploy script
+- `script/Addresses.sol`, `script/deploy-testnet.sh`: testnet addresses and deploy script
+- `deployments/testnet.json`: deployed vault
 - `test/BtcLpVault.t.sol`, `test/Recovery.t.sol`: unit and fuzz tests
 - `test/Invariant.t.sol`: invariant suite
 - `test/Fork.t.sol`: full cycle against the deployed testnet contracts
