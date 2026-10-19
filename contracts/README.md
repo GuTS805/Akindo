@@ -53,6 +53,8 @@ value, since precompiles do not run in a local EVM. Everything else is the deplo
 **BtcLpVault: [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4)**
 (also in `deployments/testnet.json`)
 
+**Rewards setup:** `RewardGauge` [`0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) on the same BTC/MUSD pool, paying testnet MEZO, and a second BtcLpVault [`0xc41192A186C0ee2F593D611b0D0C00501B5Eea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) staked in it, seeded with 0.115 BTC and funded with 250 MEZO over 7 days. Deployed with `script/deploy-rewards-testnet.sh`; anyone can top it up with `script/fund-rewards.sh`.
+
 Seed deposit of 0.12 BTC ([tx](https://explorer.test.mezo.org/tx/0xa36213e3f99118eb2a91839453d3ceb495661ae4db765ab45376ce9fbe60435a))
 opened the trove at 296% CR, borrowed ~2,310 MUSD, added it with matching BTC to the BTC/MUSD
 pool and staked the LP in the gauge, all in that one transaction.
@@ -71,7 +73,10 @@ receipt; the script prints an explorer link to check.
 
 | Contract | Testnet address |
 | --- | --- |
-| BtcLpVault | `0x187958091532733eF2f8703F8029Cd72aA85B2d4` |
+| BtcLpVault (official gauge) | `0x187958091532733eF2f8703F8029Cd72aA85B2d4` |
+| BtcLpVault (MEZO rewards) | `0xc41192A186C0ee2F593D611b0D0C00501B5Eea03` |
+| RewardGauge | `0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b` |
+| MEZO | `0x7b7C000000000000000000000000000000000001` |
 | BTC | `0x7b7C000000000000000000000000000000000000` |
 | MUSD | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` |
 | BorrowerOperations | `0xCdF7028ceAB81fA0C6971208e83fa7872994beE5` |
@@ -94,7 +99,7 @@ receipt; the script prints an explorer link to check.
   does not bind there; on mainnet BTC/MUSD liquidity is thin and it can.
 - After a liquidation the vault holds the old LP and no trove. It keeps earning as plain LP
   and reopens a trove once deposits bring in enough BTC.
-- The testnet gauge currently streams no rewards, so harvest is a no-op there.
+- The official testnet gauge streams no rewards (only Mezo's Voter can fund it); the `RewardGauge` vault is where testnet harvest and claim pay out.
 
 ## Layout
 

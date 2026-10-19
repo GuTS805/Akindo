@@ -8,7 +8,8 @@ with the other 25% of the BTC in the BTC/MUSD pool and stakes the LP in the pool
 You hold one token, `mbLP`, and your exposure stays about 1x BTC.
 
 - **App:** https://mblp.vercel.app (mirror: https://guts805.github.io/Akindo/)
-- **Vault (Mezo testnet):** [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4) ([verified source](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4?tab=contract))
+- **Vault, MEZO rewards (Mezo testnet):** [`0xc41192A186C0ee2F593D611b0D0C00501B5Eea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) ([verified source](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract)), staked in a [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) streaming testnet MEZO
+- **Vault, official gauge:** [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4), same contract staked in Mezo's testnet gauge
 - **Contracts, tests and deployment notes:** [`contracts/`](contracts/)
 
 ## Why
@@ -82,7 +83,7 @@ would earn **~24% before MUSD interest**, falling as more liquidity joins the ga
 - In MUSD recovery mode (system collateral ratio under 150%) MUSD blocks closing troves and restricts collateral withdrawals, so exits that need either wait until the system recovers.
 - The exit that closes the trove buys the LP's MUSD gap on the DEX and waits rather than sell BTC
   below the oracle band. Not binding on testnet (the pool holds ~1,300 BTC); it can be on mainnet.
-- The testnet gauge streams no rewards, so harvest is a no-op there.
+- Mezo's official testnet BTC/MUSD gauge has no emissions and only the Voter can fund it, so the testnet demo runs a second vault on a `RewardGauge` (same interface, funded with testnet MEZO). On mainnet the vault uses the official gauge.
 - Unaudited.
 
 ## Next (Wave 2)
