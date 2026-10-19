@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mbLP · BTC LP Vault on Mezo</title>
+    <meta name="description" content="Deposit BTC only. mbLP borrows MUSD, provides BTC/MUSD liquidity on Mezo Pools and stakes it for gauge rewards, in one transaction." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="eyebrow">BTC LP Vault on Mezo</span>
+        <h1>Deposit BTC. Earn as BTC/MUSD liquidity.</h1>
+        <p>
+          One deposit does what takes five manual steps today: a MUSD trove, a borrow, a pool deposit, a gauge
+          stake and watching the collateral ratio. Your exposure stays about 1x BTC. No owner, no admin key.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" data-page="vault">Open the vault →</a>
+          <a class="btn" data-page="simulator">Try the simulator</a>
+        </div>
+      </section>
+
+      <section class="grid stats-4">
+        <div class="card stat">
+          <span class="label">Vault value</span>
+          <span class="value" id="h-tvl">–</span>
+          <span class="sub" id="h-tvl-sub">Mezo testnet</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Trove collateral ratio</span>
+          <span class="value" id="h-cr">–</span>
+          <span class="sub" id="h-cr-sub">target 300%</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Depositor APR on mainnet today</span>
+          <span class="value" id="h-apr">–</span>
+          <span class="sub">before MUSD interest, live</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Rebalance swaps</span>
+          <span class="value">0</span>
+          <span class="sub">by design: borrow, repay, move BTC</span>
+        </div>
+      </section>
+
+      <section id="how" class="section">
+        <h2 class="section-title">How it works</h2>
+        <div class="card process">
+          <h2>How it works</h2>
+          <ol class="steps">
+            <li><strong>Deposit BTC.</strong> You get mbLP shares priced from the Mezo oracle, so a moved pool cannot dilute you.</li>
+            <li><strong>Borrow.</strong> Most BTC becomes collateral in one MUSD trove at ~300% CR; the vault borrows MUSD against it.</li>
+            <li><strong>Provide liquidity.</strong> MUSD plus the rest of the BTC go into the BTC/MUSD pool; the LP is staked in the gauge.</li>
+            <li><strong>Stay balanced without swaps.</strong> Debt is held at NAV / (target CR + 1) by borrowing, repaying and moving BTC between trove and pool.</li>
+            <li><strong>Exit any time.</strong> Withdraw your slice. If an exit would leave less than MUSD's minimum debt, the vault unwinds instead of blocking you.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Why Mezo needs this <span class="muted small-text">live from Mezo mainnet</span></h2>
+        <div class="grid stats-4">
+          <div class="card stat">
+            <span class="label">BTC locked in veBTC</span>
+            <span class="value" id="w-vebtc">–</span>
+            <span class="sub">earning governance, not liquidity</span>
+          </div>
+          <div class="card stat">
+            <span class="label">BTC in BTC/MUSD pools</span>
+            <span class="value" id="w-liq">–</span>
+            <span class="sub" id="w-liq-sub">volatile + concentrated pool</span>
+          </div>
+          <div class="card stat">
+            <span class="label">Gauge rewards for that liquidity</span>
+            <span class="value" id="w-emissions">–</span>
+            <span class="sub" id="w-emissions-sub">MEZO per day</span>
+          </div>
+          <div class="card stat">
+            <span class="label">MUSD supply</span>
+            <span class="value" id="w-musd">–</span>
+            <span class="sub">every deposit adds MUSD debt</span>
+          </div>
+        </div>
+        <p class="note center">
+          The gauges already pay for BTC/MUSD liquidity. What is missing is a way to provide it from plain BTC
+          without running a trove by hand. mbLP is that way.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Built for a thin market</h2>
+        <div class="grid features">
+          <div class="card feature"><h3>Rebalance never swaps</h3><p>Borrows, repays and moves BTC between trove and pool to hold the target ratio. It never trades against the pool.</p></div>
+          <div class="card feature"><h3>Oracle-guarded</h3><p>Every pool action checks the pool price against Mezo's oracle and waits if it drifts outside the band.</p></div>
+          <div class="card feature"><h3>Manipulation-resistant shares</h3><p>LP is valued at 2·√(k·price) from the oracle, so trading the pool cannot inflate or dilute shares.</p></div>
+          <div class="card feature"><h3>Exits leave the pool alone</h3><p>A leaver's MUSD gap settles inside the vault at the oracle price + 0.5%, so exits do not walk the thin pool.</p></div>
+          <div class="card feature"><h3>Nobody gets stuck</h3><p>An exit that would break MUSD's minimum debt unwinds the position instead of blocking a large holder.</p></div>
+          <div class="card feature"><h3>No owner</h3><p>Fixed parameters, no upgrades, verified source. Rebalance and harvest are open to anyone.</p></div>
+        </div>
+      </section>
+
+      <section class="card cta-band">
+        <div>
+          <h2>Try it on Mezo testnet</h2>
+          <p>Get testnet BTC from the faucet, deposit from 0.001 BTC and withdraw any time.</p>
+        </div>
+        <div class="cta-row">
+          <a class="btn primary" data-page="vault">Open the vault →</a>
+          <a class="btn" href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Testnet faucet</a>
+          <a class="btn" data-page="docs">Read the docs</a>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/pages/home.ts"></script>
+  </body>
+</html>
