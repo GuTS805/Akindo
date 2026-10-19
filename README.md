@@ -89,5 +89,5 @@ would earn **~24% before MUSD interest**, falling as more liquidity joins the ga
 ## Repo
 
 - `contracts/`: Foundry project (vault, interfaces, tests, deploy and keeper scripts)
-- `app/`: static frontend (Vite + viem), deployed to Vercel and GitHub Pages
+- `app/`: static multi-page frontend (Vite + viem), deployed to Vercel and GitHub Pages: Home, Vault, Portfolio, Analytics (share-price history, live Mezo market), Simulator (mbLP vs holding BTC) and Docs
 - `.github/workflows/`: Pages deploy and a keeper that calls `rebalance`/`harvest` every 30 minutes
