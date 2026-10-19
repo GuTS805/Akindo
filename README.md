@@ -5,7 +5,7 @@ about 75% becomes collateral in a MUSD trove, the vault borrows MUSD against it,
 with the other 25% of the BTC in the BTC/MUSD pool and stakes the LP in the pool's gauge.
 You hold one token, `mbLP`, and your exposure stays about 1x BTC.
 
-- **App:** https://guts805.github.io/Akindo/
+- **App:** https://mblp.vercel.app (mirror: https://guts805.github.io/Akindo/)
 - **Vault (Mezo testnet):** [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4)
 - **Contracts, tests and deployment notes:** [`contracts/`](contracts/)
 
@@ -23,7 +23,7 @@ on Mezo, and nobody has to manage a position.
 ## Try it (testnet)
 
 1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
-2. Open the [app](https://guts805.github.io/Akindo/) and connect an EVM wallet; it adds Mezo Testnet for you.
+2. Open the [app](https://mblp.vercel.app) and connect an EVM wallet; it adds Mezo Testnet for you.
 3. **Deposit** any amount from 0.001 BTC. It goes into the trove and pool in the same transaction.
 4. **Withdraw** 25–100% of your shares. The app simulates exactly what you get back before you sign.
 5. **Rebalance** and **Harvest** are open to anyone; the buttons light up when there is work to do.
@@ -88,5 +88,5 @@ would earn **~24% before MUSD interest**, falling as more liquidity joins the ga
 ## Repo
 
 - `contracts/`: Foundry project (vault, interfaces, tests, deploy and keeper scripts)
-- `app/`: static frontend (Vite + viem), deployed to GitHub Pages
+- `app/`: static frontend (Vite + viem), deployed to Vercel and GitHub Pages
 - `.github/workflows/`: Pages deploy and a keeper that calls `rebalance`/`harvest` every 30 minutes
