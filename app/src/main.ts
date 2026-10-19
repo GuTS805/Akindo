@@ -321,9 +321,14 @@ function renderButtons() {
   $<HTMLButtonElement>("harvest-btn").disabled = !ready;
 }
 
+/** Errors and hints that stay until dismissed (the #alert banner is reserved for oracle state). */
 function showAlert(msg: string) {
-  $("alert").textContent = msg;
-  $("alert").hidden = false;
+  $("notice-text").textContent = msg;
+  $("notice").hidden = false;
+}
+
+function clearNotice() {
+  $("notice").hidden = true;
 }
 
 function setTx(html: string, isError = false) {
@@ -462,11 +467,31 @@ async function connect() {
     }
     const { eth } = wallet();
     attachListeners(eth);
-    const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
-    account = accounts[0];
-    await ensureChain();
+    clearNotice();
+    const btn = $<HTMLButtonElement>("connect");
+    btn.textContent = "Check your wallet…";
+    btn.disabled = true;
+    // Wallet popups often open behind the browser or only badge the toolbar icon.
+    const hint = setTimeout(
+      () =>
+        showAlert(
+          "Waiting for your wallet. No popup? Click the wallet's icon in the browser toolbar (the MetaMask fox) and approve the request there.",
+        ),
+      4_000,
+    );
+    try {
+      const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
+      account = accounts[0];
+      await ensureChain();
+    } finally {
+      clearTimeout(hint);
+      btn.disabled = false;
+    }
+    clearNotice();
     await refresh();
   } catch (e) {
+    console.error("connect failed", e);
+    renderUser();
     if (e instanceof Error && e.message === "No wallet chosen.") return;
     showAlert(explain(e));
   }
@@ -626,6 +651,9 @@ function explain(e: unknown): string {
   }
   const code = (e as { code?: number })?.code;
   if (code === 4001) return "Cancelled in your wallet.";
+  if (code === -32002)
+    return "Your wallet already has a request waiting. Click its icon in the browser toolbar (the MetaMask fox), finish or reject it, then try again.";
+  if (code === 4100) return "Your wallet is locked or has not authorised this site. Unlock it and try again.";
   return e instanceof Error ? e.message : String(e);
 }
 
@@ -773,6 +801,7 @@ function bind() {
   );
 
   $("watch-btn").addEventListener("click", watchAsset);
+  $("notice-close").addEventListener("click", clearNotice);
   $("wallet-cancel").addEventListener("click", () => $<HTMLDialogElement>("wallet-picker").close());
 
   $<HTMLAnchorElement>("vault-link").href = `${EXPLORER}/address/${VAULT}`;

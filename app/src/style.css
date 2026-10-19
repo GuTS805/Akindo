@@ -461,6 +461,19 @@ main {
   color: var(--muted);
 }
 
+.notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.notice[hidden] {
+  display: none;
+}
+
 .faucet {
   margin: 0 0 14px;
   padding: 10px 12px;
