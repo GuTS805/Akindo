@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics · mbLP</title>
+    <meta name="description" content="mbLP vault health, share price history, Mezo BTC/MUSD market data and the full on-chain activity log." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero hero-compact">
+        <span class="eyebrow">Analytics</span>
+        <h1>Vault and market, live</h1>
+        <p>Everything here is read from chain: the vault on Mezo testnet and the BTC/MUSD market on Mezo mainnet.</p>
+      </section>
+
+      <div id="alert" class="alert" hidden></div>
+
+      <section class="grid stats-4">
+        <div class="card stat"><span class="label">Vault value</span><span class="value" id="a-tvl">–</span><span class="sub" id="a-tvl-sub">–</span></div>
+        <div class="card stat"><span class="label">Share price</span><span class="value" id="a-pps">–</span><span class="sub">BTC per mbLP</span></div>
+        <div class="card stat"><span class="label">Trove collateral ratio</span><span class="value" id="a-cr">–</span><span class="sub" id="a-cr-sub">–</span></div>
+        <div class="card stat"><span class="label">Pool vs oracle</span><span class="value" id="a-gap">–</span><span class="sub" id="a-gap-sub">–</span></div>
+      </section>
+
+      <section class="grid cols-2">
+        <div class="card">
+          <h2>Share price <span class="muted small-text">BTC per mbLP, sampled from chain state</span></h2>
+          <div id="chart-pps" class="chart-wrap"><p class="muted">Loading history…</p></div>
+        </div>
+        <div class="card">
+          <h2>Vault value <span class="muted small-text">BTC</span></h2>
+          <div id="chart-nav" class="chart-wrap"><p class="muted">Loading history…</p></div>
+        </div>
+      </section>
+
+      <section class="grid cols-2">
+        <div class="card">
+          <h2>What the vault holds <span class="muted small-text">by value at the oracle price</span></h2>
+          <div class="stack" id="a-stack" aria-hidden="true"></div>
+          <dl class="kv" id="a-holdings">
+            <dt>Collateral in trove</dt><dd id="a-coll">–</dd>
+            <dt>LP staked in gauge</dt><dd id="a-lp">–</dd>
+            <dt>Idle</dt><dd id="a-idle">–</dd>
+            <dt>MUSD debt</dt><dd id="a-debt">–</dd>
+            <dt>LP MUSD vs debt</dt><dd id="a-cover">–</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>Keeper status</h2>
+          <dl class="kv">
+            <dt>Needs rebalance</dt><dd id="k-needs">–</dd>
+            <dt>Last rebalance</dt><dd id="k-last">–</dd>
+            <dt>Rewards waiting in vault</dt><dd id="k-reserve">–</dd>
+            <dt>Keeper</dt><dd>GitHub Action every 30 min, plus anyone</dd>
+          </dl>
+          <p class="note">Rebalance and harvest are permissionless. The buttons are on the <a data-page="vault">vault page</a>.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Mezo BTC/MUSD market <span class="muted small-text">live from Mezo mainnet</span></h2>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Pool</th><th>Pool value</th><th>BTC in pool</th><th>Gauge rewards</th><th>LP APR (MEZO)</th><th>Vault depositor APR</th></tr></thead>
+            <tbody>
+              <tr><td>Volatile BTC/MUSD <span class="muted">(used by mbLP)</span></td><td id="m-v-tvl">–</td><td id="m-v-btc">–</td><td id="m-v-day">–</td><td id="m-v-apr">–</td><td id="m-v-dep">–</td></tr>
+              <tr><td>Concentrated BTC/MUSD <span class="muted">(Wave 2)</span></td><td id="m-c-tvl">–</td><td id="m-c-btc">–</td><td id="m-c-day">–</td><td id="m-c-apr">–</td><td id="m-c-dep">–</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <dl class="kv market-kv">
+          <dt>BTC price (oracle)</dt><dd id="m-price">–</dd>
+          <dt>MEZO price (MEZO/BTC pool)</dt><dd id="m-mezo">–</dd>
+          <dt>MUSD supply</dt><dd id="m-musd">–</dd>
+          <dt>BTC locked in veBTC</dt><dd id="m-vebtc">–</dd>
+        </dl>
+        <p class="note">Concentrated-pool APR assumes its staked liquidity is in range. Depositor APR = LP APR × the LP share of vault value × (1 − 10% fee), before MUSD interest.</p>
+      </section>
+
+      <section class="card" id="history">
+        <h2>All activity</h2>
+        <div class="chips" role="group" aria-label="Filter activity">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="Deposit">Deposits</button>
+          <button class="chip" data-filter="Withdraw">Withdrawals</button>
+          <button class="chip" data-filter="Rebalance">Rebalances</button>
+          <button class="chip" data-filter="rewards">Rewards</button>
+        </div>
+        <ul class="activity" id="a-history"><li class="muted">Loading…</li></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/src/pages/analytics.ts"></script>
+  </body>
+</html>
