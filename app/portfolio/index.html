@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portfolio · mbLP</title>
+    <meta name="description" content="Your mbLP position: value, P&L, your slice of the trove and LP, rewards and history." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero hero-compact">
+        <span class="eyebrow">Portfolio</span>
+        <h1>Your position</h1>
+        <p>What you hold, what it is made of, and everything you have done with the vault.</p>
+      </section>
+
+      <section class="card empty-state" id="p-connect">
+        <h2>Connect your wallet</h2>
+        <p class="muted">Your position, rewards and history are read from Mezo testnet for the connected address.</p>
+        <button class="btn primary" id="p-connect-btn">Connect wallet</button>
+      </section>
+
+      <div id="p-body" hidden>
+        <section class="grid stats-4">
+          <div class="card stat">
+            <span class="label">Position value</span>
+            <span class="value" id="p-value">–</span>
+            <span class="sub" id="p-value-sub">–</span>
+          </div>
+          <div class="card stat">
+            <span class="label">Shares</span>
+            <span class="value" id="p-shares">–</span>
+            <span class="sub" id="p-share-of">–</span>
+          </div>
+          <div class="card stat">
+            <span class="label">Result vs deposits</span>
+            <span class="value" id="p-pnl">–</span>
+            <span class="sub" id="p-pnl-sub">–</span>
+          </div>
+          <div class="card stat">
+            <span class="label">Claimable rewards</span>
+            <span class="value" id="p-rewards">–</span>
+            <span class="sub" id="p-rewards-sub">testnet gauge is unfunded</span>
+          </div>
+        </section>
+
+        <section class="grid cols-2">
+          <div class="card">
+            <h2>What your shares hold</h2>
+            <dl class="kv">
+              <dt>Collateral in the trove</dt><dd id="s-coll">–</dd>
+              <dt>MUSD debt against it</dt><dd id="s-debt">–</dd>
+              <dt>BTC in the pool</dt><dd id="s-lpbtc">–</dd>
+              <dt>MUSD in the pool</dt><dd id="s-lpmusd">–</dd>
+              <dt>Idle BTC / MUSD</dt><dd id="s-idle">–</dd>
+            </dl>
+            <p class="note">Your pro-rata slice of every position the vault holds. Debt is the vault's, repaid from this slice when you exit.</p>
+          </div>
+          <div class="card">
+            <h2>Actions</h2>
+            <dl class="kv">
+              <dt>Wallet BTC</dt><dd id="p-wallet-btc">–</dd>
+              <dt>Wallet MUSD</dt><dd id="p-wallet-musd">–</dd>
+            </dl>
+            <div class="btn-row">
+              <a class="btn primary" data-page="vault">Deposit more</a>
+              <a class="btn" data-page="vault" data-hash="#withdraw">Withdraw</a>
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="p-claim" disabled>Claim rewards</button>
+              <button class="btn ghost" id="p-watch">Add mbLP to wallet</button>
+            </div>
+            <div class="txstatus" id="txstatus" hidden></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Your history</h2>
+          <ul class="activity" id="p-history"><li class="muted">Loading…</li></ul>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/src/pages/portfolio.ts"></script>
+  </body>
+</html>
