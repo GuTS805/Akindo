@@ -163,11 +163,28 @@ contract BtcLpVaultTest is BaseTest {
         _withdrawAll(alice);
     }
 
-    function test_shortfallSwap_revertsWhenPoolIsPushed() public {
+    function test_partialExit_settlesGapWithoutSwapping() public {
         _deposit(alice, 1e18);
         _deposit(bob, 1e18);
-        // Attacker dumps BTC so the vault's top-up swap would sell BTC cheap.
-        _setPoolPrice(PRICE * 95 / 100);
+        // LP now holds less MUSD than the debt it backs, and the pool is pushed as well.
+        _movePrice(55_000e18);
+        _setPoolPrice(55_000e18 * 95 / 100);
+        uint256 ppsBefore = vault.pricePerShare();
+        uint256 swaps = router.swapCount();
+
+        (uint256 btcOut, uint256 musdOut) = _withdrawAll(alice);
+
+        assertEq(router.swapCount(), swaps, "partial exit must not swap");
+        assertGt(_valueOf(btcOut, musdOut), 0.95e18);
+        assertGe(vault.pricePerShare(), ppsBefore, "bob gains the settle premium");
+        assertEq(troves.getTroveStatus(address(vault)), 1);
+    }
+
+    function test_finalExitSwap_revertsWhenPoolIsPushed() public {
+        _deposit(alice, 1e18);
+        _movePrice(55_000e18);
+        // Attacker dumps BTC so the closing top-up swap would sell BTC cheap.
+        _setPoolPrice(55_000e18 * 95 / 100);
 
         uint256 shares = vault.balanceOf(alice);
         // MockBTC moves balances with vm.deal, which a reverted call does not undo; the snapshot
@@ -182,9 +199,10 @@ contract BtcLpVaultTest is BaseTest {
         vm.revertToState(snap);
 
         // Once the pool is back near the oracle the same exit goes through.
-        _setPoolPrice(PRICE);
+        _setPoolPrice(55_000e18);
         (uint256 btcOut, uint256 musdOut) = _withdrawAll(alice);
-        assertApproxEqRel(_valueOf(btcOut, musdOut), 1e18, 0.005e18);
+        assertGt(_valueOf(btcOut, musdOut), 0.95e18);
+        assertEq(troves.getTroveStatus(address(vault)), 2);
     }
 
     function test_withdraw_zeroSharesReverts() public {
