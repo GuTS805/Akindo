@@ -29,7 +29,9 @@ posts the incentive (see the mainnet fork below).
 A wallet outside the project's scripts then deposited through the app with MetaMask:
 [`0x28b44f15…fb52`](https://explorer.test.mezo.org/tx/0x28b44f1569f1a764c8ce7ebc3c879ed341ea04b44a6caa215f9dd69c827cfb52),
 0.001 BTC into v2 for 0.0010003 mbLP worth 0.00099999 BTC (a 2-sat cost), using 290,801 of the
-581,603 gas the app set, so the headroom from the out-of-gas finding below is doing its job.
+581,603 gas the app set, so the headroom from the out-of-gas finding below is doing its job. Thirteen
+minutes later the same wallet claimed 0.001229 MEZO through the Portfolio page:
+[`0x6efa97b8…c5a2`](https://explorer.test.mezo.org/tx/0x6efa97b8bfd354c4231516b55f6fb845a0eaf4caba3f7f3bfc93800a5349c5a2).
 
 ## The full user cycle, live
 
