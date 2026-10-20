@@ -7,6 +7,8 @@
 #   - tops up a RewardGauge with the keeper's testnet MEZO when its stream has under
 #     TOPUP_BELOW seconds left (default 3 days), at most TOPUP_MAX MEZO (default 100)
 # Without KEEPER_PRIVATE_KEY it only reports state. FORCE_HARVEST=1 harvests even with nothing earned.
+# A dry run that reverts (e.g. the pool is outside the oracle band) is a skip, not a failure. A sent
+# transaction that reverts or never confirms fails the run after every vault has been processed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -28,13 +30,14 @@ if [ -n "${KEEPER_PRIVATE_KEY:-}" ]; then
     "$("$CAST" from-wei "$("$CAST" call "$MEZO" "balanceOf(address)(uint256)" "$KEEPER" -r "$RPC" | first)") MEZO"
 else
   echo "KEEPER_PRIVATE_KEY not set: read-only run"
+  [ -n "${GITHUB_ACTIONS:-}" ] && echo "::warning::KEEPER_PRIVATE_KEY is not set; the keeper only reported state"
 fi
 
 # Mezo's RPC can return a null receipt for a while after inclusion; poll it ourselves.
 wait_receipt() {
   local hash="$1" body
   for _ in $(seq 1 60); do
-    body="$(curl -s -X POST "$RPC" -H 'content-type: application/json' \
+    body="$(curl -s --max-time 15 -X POST "$RPC" -H 'content-type: application/json' \
       -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getTransactionReceipt\",\"params\":[\"$hash\"]}")"
     if echo "$body" | grep -q '"status":"0x1"'; then echo "  confirmed $hash"; return 0; fi
     if echo "$body" | grep -q '"status":"0x0"'; then echo "  reverted $hash"; return 1; fi
@@ -45,16 +48,26 @@ wait_receipt() {
 }
 
 ERR="$(mktemp)"
+FAILS=0
+fail() {
+  FAILS=$((FAILS + 1))
+  [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error::$1"
+  return 0
+}
 # send <to> <sig> [args...]: dry run first, then send and wait.
 send() {
   local to="$1" sig="$2"
   shift 2
   if ! "$CAST" call "$to" "$sig" "$@" --from "$KEEPER" -r "$RPC" >/dev/null 2>"$ERR"; then
     echo "  $sig dry run reverted, skipping: $(grep -oE '[A-Za-z]+\(\)|execution reverted.*' "$ERR" | head -1)"
+    [ -n "${GITHUB_ACTIONS:-}" ] && echo "::warning::$to $sig dry run reverted"
     return 0
   fi
   local hash
-  hash="$("$CAST" send "$to" "$sig" "$@" --async --gas-limit 3000000 --private-key "$KEEPER_PRIVATE_KEY" -r "$RPC")"
+  if ! hash="$("$CAST" send "$to" "$sig" "$@" --async --gas-limit 3000000 --private-key "$KEEPER_PRIVATE_KEY" -r "$RPC")"     || ! [[ "$hash" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+    echo "  $sig could not be sent: $hash"
+    return 1
+  fi
   echo "  sent $sig $hash"
   wait_receipt "$hash"
 }
@@ -75,8 +88,8 @@ topup() {
   fi
   amount="$("$CAST" to-wei "$amount")"
   echo "top-up $gauge with $("$CAST" from-wei "$amount") MEZO:"
-  send "$MEZO" "approve(address,uint256)" "$gauge" "$amount"
-  send "$gauge" "notifyRewardAmount(uint256)" "$amount"
+  send "$MEZO" "approve(address,uint256)" "$gauge" "$amount" || { fail "approve for $gauge failed"; return 0; }
+  send "$gauge" "notifyRewardAmount(uint256)" "$amount" || fail "top-up of $gauge failed"
 }
 
 for VAULT in $VAULTS; do
@@ -91,15 +104,20 @@ for VAULT in $VAULTS; do
 
   if [ "$needs" = "true" ]; then
     echo "rebalance:"
-    send "$VAULT" "rebalance()"
+    send "$VAULT" "rebalance()" || fail "rebalance of $VAULT failed"
   fi
+  [[ "$earned" =~ ^[0-9]+$ ]] || { fail "could not read earned() for $VAULT"; continue; }
   if [ "$("$CAST" from-wei "$earned" | cut -d. -f1)" -ge "$HARVEST_MIN" ] || [ -n "${FORCE_HARVEST:-}" ]; then
     echo "harvest:"
-    send "$VAULT" "harvest()"
+    send "$VAULT" "harvest()" || fail "harvest of $VAULT failed"
   fi
   # Only a RewardGauge has duration() and open funding; the official gauge is funded by Mezo's Voter.
   if "$CAST" call "$GAUGE" "duration()(uint256)" -r "$RPC" >/dev/null 2>&1; then
     topup "$GAUGE"
   fi
 done
+if [ "$FAILS" -gt 0 ]; then
+  echo "done with $FAILS failure(s)"
+  exit 1
+fi
 echo "done"
