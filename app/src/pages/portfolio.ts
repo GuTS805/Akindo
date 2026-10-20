@@ -2,9 +2,11 @@ import { VAULT, mezoTestnet } from "../config";
 import { vaultAbi } from "../vaultAbi";
 import {
   WAD,
+  claimableNow,
   readEvents,
   readUser,
   readVault,
+  rewardsPerSecond,
   shareValueBtc,
   testnet,
   type UserState,
@@ -22,6 +24,25 @@ let history: VaultEvent[] = [];
 
 function slice(x: bigint): bigint {
   return vault && vault.supply > 0n && user ? (x * user.shares) / vault.supply : 0n;
+}
+
+function claimedTotal(): number {
+  return history
+    .filter((e) => e.name === "RewardClaimed")
+    .reduce((sum, e) => sum + Number(e.args.amount as bigint) / 1e18, 0);
+}
+
+function tickRewards() {
+  if (!vault || !user) return;
+  $("p-rewards").textContent = `${claimableNow(vault, user).toFixed(6)} ${vault.rewardSymbol}`;
+  const perDay = rewardsPerSecond(vault, user.shares) * 86_400;
+  const claimed = claimedTotal();
+  $("p-rewards-sub").textContent =
+    perDay > 0
+      ? `earning ${perDay.toFixed(perDay < 1 ? 4 : 2)} ${vault.rewardSymbol} a day${claimed > 0 ? ` · ${claimed.toFixed(4)} claimed` : ""}`
+      : claimed > 0
+        ? `${claimed.toFixed(4)} claimed so far`
+        : "the gauge is not streaming rewards";
 }
 
 function render() {
@@ -49,13 +70,17 @@ function render() {
     const pnl = value + outBtc - inBtc;
     $("p-pnl").textContent = `${pnl >= 0n ? "+" : ""}${btc(pnl, 6)} BTC`;
     $("p-pnl").className = `value ${pnl >= 0n ? "good" : "warn"}`;
-    $("p-pnl-sub").textContent = `${pct(ratio(pnl, inBtc), 2)} on ${btc(inBtc, 4)} BTC deposited`;
+    // Rewards are paid in the reward token, not BTC, so they are shown next to the BTC result.
+    const earned = claimedTotal() + claimableNow(vault, user);
+    $("p-pnl-sub").textContent = `${pct(ratio(pnl, inBtc), 2)} in BTC on ${btc(inBtc, 4)} deposited${
+      earned > 0 ? `, plus ${earned.toFixed(4)} ${vault.rewardSymbol} earned` : ""
+    }`;
   } else {
     $("p-pnl").textContent = "–";
     $("p-pnl-sub").textContent = "no deposits yet";
   }
 
-  $("p-rewards").textContent = `${btc(user.claimable, 6)} ${vault.rewardSymbol}`;
+  tickRewards();
   $("p-wallet-btc").textContent = `${btc(user.btc, 6)} BTC`;
   $("p-wallet-musd").textContent = `${musd(user.musd, 2)} MUSD`;
   $<HTMLButtonElement>("p-claim").disabled = wallet.busy || user.claimable === 0n;
@@ -114,6 +139,7 @@ async function init() {
   setInterval(() => {
     if (document.visibilityState === "visible" && !wallet.busy) refresh().catch(() => {});
   }, 30_000);
+  setInterval(tickRewards, 1_000);
 }
 
 init();

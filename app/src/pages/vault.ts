@@ -3,6 +3,7 @@ import { VAULT, mezoTestnet } from "../config";
 import { vaultAbi } from "../vaultAbi";
 import {
   WAD,
+  claimableNow,
   collateralRatio,
   depositorApr,
   explain,
@@ -12,6 +13,7 @@ import {
   readMarket,
   readUser,
   readVault,
+  rewardsPerSecond,
   shareValueBtc,
   testnet,
   type UserState,
@@ -93,11 +95,20 @@ function renderUser() {
     const value = shareValueBtc(vault, user.shares);
     $("my-shares").textContent = `${btc(user.shares, 6)} mbLP`;
     $("my-value").textContent = `${btc(value, 6)} BTC · ${sats(value)}`;
-    $("my-rewards").textContent = `${btc(user.claimable, 6)} ${vault.rewardSymbol}`;
+    tickRewards();
     $("btc-balance").textContent = `· wallet ${btc(user.btc, 6)} BTC`;
     $("share-balance").textContent = `· ${btc(user.shares, 6)} mbLP`;
   }
   renderButtons();
+}
+
+/** Claimable rewards keep counting up between chain reads while the gauge streams. */
+function tickRewards() {
+  if (!user || !vault) return;
+  $("my-rewards").textContent = `${claimableNow(vault, user).toFixed(6)} ${vault.rewardSymbol}`;
+  const perDay = rewardsPerSecond(vault, user.shares) * 86_400;
+  $("rate-row").hidden = $("my-rate").hidden = perDay === 0;
+  $("my-rate").textContent = `${num(perDay, perDay < 1 ? 4 : 2)} ${vault.rewardSymbol} a day`;
 }
 
 function renderButtons() {
@@ -378,6 +389,7 @@ async function init() {
   setInterval(() => {
     if (document.visibilityState === "visible" && !wallet.busy) refresh();
   }, 15_000);
+  setInterval(tickRewards, 1_000);
   setInterval(() => {
     if (document.visibilityState === "visible") {
       renderActivity();

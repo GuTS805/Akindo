@@ -81,7 +81,7 @@ export type VaultState = {
   minNetDebt: bigint;
   rewardReserve: bigint;
   /** What the vault's gauge is streaming right now (rate per second, until `finish`). */
-  stream: { rate: bigint; finish: number; pending: bigint };
+  stream: { rate: bigint; finish: number; pending: bigint; staked: bigint; gaugeTotal: bigint; readAt: number };
 };
 
 export type UserState = { btc: bigint; shares: bigint; claimable: bigint; musd: bigint };
@@ -108,11 +108,13 @@ export async function readVault(): Promise<VaultState> {
   // The testnet gauge pays in BTC (the precompile); mainnet gauges pay MEZO.
   const rewardSymbol = rewardToken.toLowerCase() === "0x7b7c000000000000000000000000000000000000" ? "BTC" : "MEZO";
   const gauge = { address: ACTIVE_VAULT.gauge, abi: gaugeStreamAbi } as const;
-  const [minNetDebt, rate, finish, pending] = await Promise.all([
+  const [minNetDebt, rate, finish, pending, staked, gaugeTotal] = await Promise.all([
     testnet.readContract({ address: borrowerOps, abi: borrowerOpsAbi, functionName: "minNetDebt" }),
     testnet.readContract({ ...gauge, functionName: "rewardRate" }).catch(() => 0n),
     testnet.readContract({ ...gauge, functionName: "periodFinish" }).catch(() => 0n),
     testnet.readContract({ ...gauge, functionName: "earned", args: [VAULT] }).catch(() => 0n),
+    testnet.readContract({ ...gauge, functionName: "balanceOf", args: [VAULT] }).catch(() => 0n),
+    testnet.readContract({ ...gauge, functionName: "totalSupply" }).catch(() => 0n),
   ]);
   const live = Number(finish) * 1000 > Date.now();
   return {
@@ -128,7 +130,7 @@ export async function readVault(): Promise<VaultState> {
     rewardSymbol,
     minNetDebt,
     rewardReserve,
-    stream: { rate: live ? rate : 0n, finish: Number(finish), pending },
+    stream: { rate: live ? rate : 0n, finish: Number(finish), pending, staked, gaugeTotal, readAt: Date.now() },
   };
 }
 
@@ -140,6 +142,22 @@ export async function readUser(a: Address): Promise<UserState> {
     testnet.readContract({ address: MUSD, abi: erc20Abi, functionName: "balanceOf", args: [a] }),
   ]);
   return { btc: bal, shares, claimable, musd };
+}
+
+/** Reward tokens per second (as a float) that `shares` earn right now, after the vault fee. */
+export function rewardsPerSecond(v: VaultState, shares: bigint): number {
+  const { rate, staked, gaugeTotal } = v.stream;
+  if (rate === 0n || gaugeTotal === 0n || v.supply === 0n) return 0;
+  const toVault = (rate * staked) / gaugeTotal;
+  const afterFee = (toVault * (10_000n - v.feeBps)) / 10_000n;
+  return Number((afterFee * shares) / v.supply) / 1e18;
+}
+
+/** Claimable rewards extrapolated from the last read, so the number can tick between reads. */
+export function claimableNow(v: VaultState, u: UserState): number {
+  const perSec = rewardsPerSecond(v, u.shares);
+  const secs = Math.max(0, Math.min(Date.now() / 1000, v.stream.finish) - v.stream.readAt / 1000);
+  return Number(u.claimable) / 1e18 + perSec * secs;
 }
 
 export function navBtc(v: VaultState): bigint {

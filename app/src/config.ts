@@ -112,6 +112,8 @@ export const gaugeStreamAbi = parseAbi([
   "function rewardRate() view returns (uint256)",
   "function periodFinish() view returns (uint256)",
   "function earned(address) view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function totalSupply() view returns (uint256)",
 ]);
 
 export const poolAbi = parseAbi([
