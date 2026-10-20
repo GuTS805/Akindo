@@ -2,7 +2,8 @@
 # Keeper for the BtcLpVault deployments on Mezo testnet. Anyone can run it; the vaults have no
 # privileged keeper. For every vault in deployments/testnet.json it:
 #   - calls rebalance() when needsRebalance() is true and a dry run succeeds
-#   - calls harvest() when the gauge holds rewards for the vault
+#   - calls harvest() when the gauge holds at least HARVEST_MIN reward tokens for the vault
+#     (default 5; deposits, withdrawals and claims harvest on their own anyway)
 #   - tops up a RewardGauge with the keeper's testnet MEZO when its stream has under
 #     TOPUP_BELOW seconds left (default 3 days), at most TOPUP_MAX MEZO (default 100)
 # Without KEEPER_PRIVATE_KEY it only reports state. FORCE_HARVEST=1 harvests even with nothing earned.
@@ -15,6 +16,7 @@ command -v "$CAST" >/dev/null || CAST="$HOME/.foundry/bin/cast"
 MEZO=0x7b7C000000000000000000000000000000000001
 TOPUP_BELOW="${TOPUP_BELOW:-259200}"
 TOPUP_MAX="${TOPUP_MAX:-100}"
+HARVEST_MIN="${HARVEST_MIN:-5}"
 VAULTS="${VAULTS:-$(grep -oE '"BtcLpVault": *"0x[0-9a-fA-F]{40}"' deployments/testnet.json | grep -oE '0x[0-9a-fA-F]{40}')}"
 
 first() { awk '{print $1}'; }
@@ -91,7 +93,7 @@ for VAULT in $VAULTS; do
     echo "rebalance:"
     send "$VAULT" "rebalance()"
   fi
-  if [ "$earned" != "0" ] || [ -n "${FORCE_HARVEST:-}" ]; then
+  if [ "$("$CAST" from-wei "$earned" | cut -d. -f1)" -ge "$HARVEST_MIN" ] || [ -n "${FORCE_HARVEST:-}" ]; then
     echo "harvest:"
     send "$VAULT" "harvest()"
   fi

@@ -1,8 +1,7 @@
 name: Keeper
 
 # Rebalances and harvests both testnet vaults and keeps the MEZO reward stream topped up. All calls
-# are permissionless; this is just one
-# keeper anyone could run. Needs a funded testnet key in the KEEPER_PRIVATE_KEY secret,
+# are permissionless; this is just one keeper anyone could run. Needs a funded testnet key in the KEEPER_PRIVATE_KEY secret,
 # otherwise it only logs the vault's state.
 on:
   schedule:
