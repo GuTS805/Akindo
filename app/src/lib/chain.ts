@@ -88,6 +88,8 @@ export type VaultState = {
   rewardSymbol: string;
   minNetDebt: bigint;
   rewardReserve: bigint;
+  /** Max vault value in BTC after a deposit (v2); 0 = no cap. */
+  depositCap: bigint;
   /** What the vault's gauge is streaming right now (rate per second, until `finish`). */
   stream: { rate: bigint; finish: number; pending: bigint; staked: bigint; gaugeTotal: bigint; readAt: number };
 };
@@ -117,6 +119,7 @@ export async function readVault(): Promise<VaultState> {
       read<Address>("borrowerOperations"),
       read<bigint>("rewardReserve"),
     ]);
+  const depositCap = ACTIVE_VAULT.hasCap ? await read<bigint>("depositCap") : 0n;
   // The testnet gauge pays in BTC (the precompile); mainnet gauges pay MEZO.
   const rewardSymbol = rewardToken.toLowerCase() === "0x7b7c000000000000000000000000000000000000" ? "BTC" : "MEZO";
   const gauge = { address: ACTIVE_VAULT.gauge, abi: gaugeStreamAbi } as const;
@@ -142,6 +145,7 @@ export async function readVault(): Promise<VaultState> {
     rewardSymbol,
     minNetDebt,
     rewardReserve,
+    depositCap,
     stream: { rate: live ? rate : 0n, finish: Number(finish), pending, staked, gaugeTotal, readAt: Date.now() },
   };
 }
@@ -408,6 +412,7 @@ const ERRORS: Record<string, string> = {
   NothingToRebalance: "The vault is already balanced.",
   BelowMinCR: "This would put the trove under its minimum collateral ratio.",
   InsolventVault: "Vault value is zero.",
+  DepositCapReached: "This deposit would take the vault past its deposit cap.",
 };
 
 function revertName(e: unknown): string | undefined {

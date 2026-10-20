@@ -116,7 +116,12 @@ function renderButtons() {
   const ready = !!account && !wallet.busy;
   const amount = parseAmount();
   const depositOk =
-    ready && !!vault?.snap && amount !== undefined && amount >= (vault?.minDeposit ?? 0n) && amount <= (user?.btc ?? 0n);
+    ready &&
+    !!vault?.snap &&
+    amount !== undefined &&
+    amount >= (vault?.minDeposit ?? 0n) &&
+    amount <= (user?.btc ?? 0n) &&
+    amount <= (capRoom() ?? amount);
   $<HTMLButtonElement>("deposit-btn").disabled = account ? !depositOk : wallet.busy;
   $("deposit-btn").textContent = account ? "Deposit" : "Connect wallet";
   $<HTMLButtonElement>("withdraw-btn").disabled = account
@@ -147,6 +152,13 @@ function parseAmount(): bigint | undefined {
   }
 }
 
+/** Room left under a v2 vault's deposit cap, in BTC (undefined when the vault has no cap). */
+function capRoom(): bigint | undefined {
+  if (!vault?.snap || vault.depositCap === 0n) return undefined;
+  const nav = navBtc(vault);
+  return vault.depositCap > nav ? vault.depositCap - nav : 0n;
+}
+
 function renderDepositPreview() {
   const amount = parseAmount();
   $("deposit-sats").textContent = amount ? sats(amount) : "";
@@ -157,6 +169,8 @@ function renderDepositPreview() {
     el.innerHTML = `<span class="warn">Minimum deposit is ${btc(vault.minDeposit, 3)} BTC.</span>`;
   } else if (user && amount > user.btc) {
     el.innerHTML = `<span class="warn">More than your wallet balance.</span>`;
+  } else if (capRoom() !== undefined && amount > capRoom()!) {
+    el.innerHTML = `<span class="warn">Over the vault's ${btc(vault.depositCap, 0)} BTC deposit cap: at most ${btc(capRoom()!, 4)} BTC fits.</span>`;
   } else {
     const nav = navBtc(vault);
     const shares = vault.supply === 0n || nav === 0n ? amount : (amount * vault.supply) / nav;
@@ -165,7 +179,10 @@ function renderDepositPreview() {
       `You get ≈ <strong>${btc(shares, 6)} mbLP</strong>.<br/>` +
       (inBand
         ? "Your BTC goes into the position in the same transaction."
-        : "The pool is outside the oracle band, so your BTC waits idle until the next rebalance.");
+        : "The pool is outside the oracle band, so your BTC waits idle until the next rebalance.") +
+      (vault.depositCap > 0n
+        ? `<br/><span class="muted">Deposit cap: ${btc(navBtc(vault), 3)} of ${btc(vault.depositCap, 0)} BTC used.</span>`
+        : "");
   }
   renderButtons();
 }

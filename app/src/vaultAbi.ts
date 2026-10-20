@@ -92,6 +92,11 @@ export const vaultAbi = [
             "name": "minDeposit",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "depositCap",
+            "type": "uint256",
+            "internalType": "uint256"
           }
         ]
       }
@@ -392,6 +397,13 @@ export const vaultAbi = [
   },
   {
     "type": "function",
+    "name": "deployIdle",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "deposit",
     "inputs": [
       {
@@ -408,6 +420,19 @@ export const vaultAbi = [
       }
     ],
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "depositCap",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1147,6 +1172,22 @@ export const vaultAbi = [
   },
   {
     "type": "error",
+    "name": "DepositCapReached",
+    "inputs": [
+      {
+        "name": "navBtc",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "cap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "DepositTooSmall",
     "inputs": []
   },
@@ -1265,6 +1306,11 @@ export const vaultAbi = [
   {
     "type": "error",
     "name": "NothingToRebalance",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlySelf",
     "inputs": []
   },
   {

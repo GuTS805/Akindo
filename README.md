@@ -132,12 +132,13 @@ and destinations are fixed at deployment.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
 
-The testnet runs two deployments of the same vault contract, selectable at the top of the Vault,
-Portfolio and Analytics pages:
+The testnet runs three deployments, selectable at the top of the Vault, Portfolio and Analytics
+pages:
 
 | Vault | Gauge | Why |
 | --- | --- | --- |
-| **MEZO rewards** (default) — [`0xc411…Ea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) | [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b), streaming 250 testnet MEZO over 7 days | Mezo's official testnet gauge has no emissions and only the Voter can fund it. This gauge has the same interface and anyone can fund it, so harvest and claim pay out for real. |
+| **v2** (default) — [`0x652e…9102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102) | [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) | The current contract. Fixes from the [review pass](contracts/SECURITY.md#review-findings-october-2026): a deposit pays its own MUSD borrowing fee, a 2 BTC deposit cap, and a failed deployment leaves the deposit idle instead of reverting it. Its fee recipient is the [`IncentiveRouter`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2). |
+| **v1** — [`0xc411…Ea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) | Same [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b), streaming testnet MEZO | The first release, where the live deposit → claim → withdraw in the evidence ran. Mezo's official testnet gauge has never received emissions and only the Voter can fund it; this gauge has the same interface and anyone can fund it, so harvest and claim pay out for real. |
 | **Official gauge** — [`0x1879…B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4) | Mezo's testnet BTC/MUSD gauge | The setup the vault would use on mainnet. |
 
 <p align="center">

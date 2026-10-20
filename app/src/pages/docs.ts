@@ -4,7 +4,9 @@ import { mountShell } from "../lib/layout";
 import { initWallet } from "../lib/wallet";
 
 const CONTRACTS: [string, string, string][] = [
-  ["mbLP vault (MEZO rewards)", VAULTS.rewards.address, "Stakes in the reward gauge below; harvest and claim pay testnet MEZO"],
+  ["mbLP vault v2 (default)", VAULTS.v2.address, "Shares from the NAV change, 2 BTC deposit cap, isolated deployment; fees go to the incentive router"],
+  ["IncentiveRouter", "0x924b8a4585B659D78041569fE0074719116126F2", "v2's fee recipient: posts half of each fee as a BTC/MUSD gauge incentive, the rest to the treasury (falls back to the treasury on testnet, where MEZO is not whitelisted)"],
+  ["mbLP vault v1", VAULTS.rewards.address, "First release, staked in the same reward gauge; harvest and claim pay testnet MEZO"],
   ["RewardGauge", VAULTS.rewards.gauge, "Streams testnet MEZO to staked LP; anyone can fund it"],
   ["mbLP vault (official gauge)", VAULTS.official.address, "Same contract, staked in Mezo's official testnet gauge (no emissions)"],
   ["BTC", TESTNET.btc, "Native BTC precompile, ERC-20 view of the balance"],

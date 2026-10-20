@@ -27,29 +27,42 @@ export const mezoMainnet = defineChain({
  * streams testnet MEZO, which is where harvest and claim actually pay out.
  */
 export const VAULTS = {
+  v2: {
+    id: "v2",
+    label: "v2",
+    address: "0x652e31Ba2658CC27ff0E36431cA008De7D439102",
+    deployBlock: 16_262_383n,
+    gauge: "0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b",
+    rewardSymbol: "MEZO",
+    hasCap: true,
+    gaugeNote:
+      "v2: a deposit pays its own MUSD borrowing fee, 2 BTC cap, fees go to the incentive router. Streams testnet MEZO.",
+  },
   rewards: {
     id: "rewards",
-    label: "MEZO rewards",
+    label: "v1",
     address: "0xc41192A186C0ee2F593D611b0D0C00501B5Eea03",
     deployBlock: 16_252_391n,
     gauge: "0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b",
     rewardSymbol: "MEZO",
-    gaugeNote: "Stakes in a reward gauge that streams testnet MEZO, so rewards accrue and can be claimed.",
+    hasCap: false,
+    gaugeNote: "v1: stakes in a reward gauge that streams testnet MEZO, so rewards accrue and can be claimed.",
   },
   official: {
     id: "official",
-    label: "Official gauge",
+    label: "Official",
     address: "0x187958091532733eF2f8703F8029Cd72aA85B2d4",
     deployBlock: 16_249_561n,
     gauge: "0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3",
     rewardSymbol: "BTC", // Mezo's testnet gauges pay in the BTC precompile
+    hasCap: false,
     gaugeNote: "Stakes in Mezo's official testnet BTC/MUSD gauge, which has no emissions on testnet.",
   },
 } as const;
 export type VaultId = keyof typeof VAULTS;
 
 const VAULT_KEY = "mblp.vault";
-const DEFAULT_VAULT: VaultId = "rewards";
+const DEFAULT_VAULT: VaultId = "v2";
 
 /** Selected with ?vault=<id> (remembered) or a previous choice; pages reload to switch. */
 function pickVault(): VaultId {

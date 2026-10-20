@@ -129,13 +129,16 @@
               Mezo mainnet fork, one day of fees from a 0.2 BTC deposit posted 184 MEZO on the live gauge's incentive
               contract.
             </p>
-            <h3>Two testnet vaults</h3>
+            <h3>Three testnet vaults</h3>
             <p>
-              Mezo's official testnet BTC/MUSD gauge has no emissions, and only Mezo's Voter can fund it, so a vault
-              staked there never has anything to harvest. The same vault contract is therefore deployed twice. The
-              <strong>MEZO rewards</strong> vault stakes in a small <code>RewardGauge</code> with the same interface,
+              Mezo's official testnet BTC/MUSD gauge has never received emissions from Mezo's Voter, and only the
+              Voter can fund it, so a vault staked there never has anything to harvest. The <strong>v2</strong> and
+              <strong>v1</strong> vaults therefore stake in a small <code>RewardGauge</code> with the same interface,
               which anyone can fund with testnet MEZO; there, rewards accrue every second and harvest and claim pay
-              out for real. The <strong>Official gauge</strong> vault stakes in Mezo's gauge, as the vault would on
+              out for real. <strong>v2</strong> (the default) fixes what a review of v1 found: a deposit now pays its
+              own MUSD borrowing fee instead of spreading it over holders, a 2 BTC deposit cap bounds the unaudited
+              vault, a failed deployment step leaves a deposit idle instead of reverting it, and its fees go to the
+              incentive router. The <strong>Official</strong> vault stakes in Mezo's gauge, as the vault would on
               mainnet. Switch between them at the top of the Vault, Portfolio and Analytics pages.
             </p>
           </section>
