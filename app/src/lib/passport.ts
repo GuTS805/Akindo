@@ -55,6 +55,7 @@ type SmartAccountClient = {
 };
 
 let config: ReturnType<typeof createConfig> | undefined;
+let ready: Promise<unknown> | undefined;
 const connectors = new Map<BitcoinWalletId, Connector>();
 
 function setup() {
@@ -69,14 +70,26 @@ function setup() {
     transports: { [mezoTestnet.id]: http(mezoTestnet.rpcUrls.default.http[0]) },
   });
   config.connectors.forEach((c, i) => connectors.set(created[i].id, c));
+  // Each connector builds its smart-account helper in an async setup(); connecting before it
+  // finishes fails (the cause of a silent failed reconnect on page load). Wait for all of them.
+  ready = Promise.all(config.connectors.map((c) => c.setup?.()));
   return config;
 }
 
-/** Connect a Bitcoin wallet and return its Mezo smart-account address plus an EIP-1193 provider. */
-export async function connectBitcoinWallet(id: BitcoinWalletId): Promise<{ account: Address; provider: EIP1193Provider }> {
+/**
+ * Connect a Bitcoin wallet and return its Mezo smart-account address plus an EIP-1193 provider.
+ * `silent` (page-load reconnect) only proceeds if the wallet already authorised this site, so it
+ * never opens a wallet prompt on its own.
+ */
+export async function connectBitcoinWallet(
+  id: BitcoinWalletId,
+  silent = false,
+): Promise<{ account: Address; provider: EIP1193Provider }> {
   const cfg = setup();
+  await ready;
   const connector = connectors.get(id);
   if (!connector) throw new Error("Unknown Bitcoin wallet.");
+  if (silent && !(await connector.isAuthorized())) throw new Error("Not authorised yet.");
   const result = await connect(cfg, { connector, chainId: mezoTestnet.id });
   const account = result.accounts[0];
   const client = (await getConnectorClient(cfg, { connector, chainId: mezoTestnet.id })) as unknown as SmartAccountClient;

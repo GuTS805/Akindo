@@ -142,9 +142,9 @@ function pickWallet(): Promise<Choice> {
   });
 }
 
-async function useBitcoinWallet(id: BitcoinWalletId) {
+async function useBitcoinWallet(id: BitcoinWalletId, silent = false) {
   const { connectBitcoinWallet } = await import("./passport");
-  const { account, provider } = await connectBitcoinWallet(id);
+  const { account, provider } = await connectBitcoinWallet(id, silent);
   wallet.provider = provider;
   wallet.account = account;
   wallet.bitcoin = BITCOIN_WALLET_NAMES[id];
@@ -274,7 +274,11 @@ export async function initWallet() {
   await new Promise((r) => setTimeout(r, 150)); // let EIP-6963 wallets announce
   const btc = rememberedBitcoin();
   if (btc && installedBitcoinWallets().includes(btc)) {
-    await within(8_000, useBitcoinWallet(btc)).catch(() => undefined);
+    // Loading Passport and its smart-account helper takes a few seconds on a cold page.
+    const btn = $<HTMLButtonElement>("connect");
+    btn.textContent = "Reconnecting…";
+    await within(20_000, useBitcoinWallet(btc, true)).catch((e) => console.warn("Bitcoin wallet reconnect", e));
+    renderConnectButton();
     if (wallet.account) {
       emit();
       return;
