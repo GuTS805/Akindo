@@ -40,18 +40,22 @@ claimed twice
 ([`0x1810944b…b971`](https://explorer.test.mezo.org/tx/0x1810944b7eb6e5c7ae2bb2b8776dd885c056c6f6735f83c74c43fe730f6fb971),
 [`0x56b0b705…3794`](https://explorer.test.mezo.org/tx/0x56b0b705b83668eb10d4675c14b889cc3f4ba485dbfc9cd29e01943b5a593794)).
 `0x0869…7A5c` deposited 0.001 BTC with MetaMask
-([`0x052b6ba1…f520`](https://explorer.test.mezo.org/tx/0x052b6ba1d300e26d15e0be9eac000c3adfae8460222fd3519ccb496d709ef520)).
+([`0x052b6ba1…f520`](https://explorer.test.mezo.org/tx/0x052b6ba1d300e26d15e0be9eac000c3adfae8460222fd3519ccb496d709ef520))
+and claimed 0.00368 MEZO
+([`0x4897696b…011e`](https://explorer.test.mezo.org/tx/0x4897696b9a48863374d79ff7350c6d008487fc8b0081896b8303a5764d95011e)).
 
 ### A Bitcoin wallet through Mezo Passport
 
-A Unisat wallet connected through Mezo Passport and deposited from its Mezo smart account,
+A Unisat wallet connected through Mezo Passport and ran the full cycle from its Mezo smart account,
 [`0x58de…2Ded`](https://explorer.test.mezo.org/address/0x58de3E4e5cF5812866aaEE50cEF13672341a2Ded):
-Unisat signed, Mezo's relayer submitted, and the Safe emitted `ExecutionSuccess` both times.
+Unisat signed each step, Mezo's relayer submitted it, and the Safe emitted `ExecutionSuccess` every time.
 
 | Step | Tx |
 | --- | --- |
 | Deposit 0.001 BTC (waits as idle BTC, 351,520 gas) | [`0xddfd9b6a…4eca`](https://explorer.test.mezo.org/tx/0xddfd9b6a4ef0f01a457f6071ca45be68983bccd469412cac9e86fdf1a2564eca) |
 | Deposit 0.001 BTC, which also ran the deployment step (1,579,263 gas) | [`0x30219b76…c89f`](https://explorer.test.mezo.org/tx/0x30219b76d191c14d6b3198b894fdc39afda9aacd0bfdd8c536e413d5c4a2c89f) |
+| Claim 0.001316 MEZO to the smart account (175,573 gas) | [`0xa92483bf…70a9`](https://explorer.test.mezo.org/tx/0xa92483bfc90985c2398775ba9aca1535acdcd2820a0cfcc5273af3a754a770a9) |
+| Withdraw 50%: burn 0.00099996 mbLP, receive 0.00099974 BTC (1,492,118 gas) | [`0xecb58415…55d9`](https://explorer.test.mezo.org/tx/0xecb58415d91e232da3b67f0145762679a324e1798f65b7aeabdd4191cc6255d9) |
 
 Getting there turned up two problems outside the vault. Passport's built-in testnet relayer host,
 `test.mezo.org`, no longer resolves, so the app redirects Passport's relay calls to

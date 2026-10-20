@@ -12,7 +12,7 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 - Mainnet configuration in place and exercised by a fork test against the real MUSD, pool, gauge
   and gauge incentive contracts
 - Six-page app with EVM wallets and Bitcoin wallets through Mezo Passport; a real Unisat wallet
-  has deposited through it
+  has run deposit, claim and withdraw through it
 
 ## Wave 2 (2–15 Nov 2026)
 
@@ -22,9 +22,7 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 2. **Incentive router in the mainnet deployment.** The mainnet vault takes the `IncentiveRouter`
    as its fee recipient. On testnet the gauge incentive contract does not whitelist MEZO, so the
    flywheel is proven on the mainnet fork until it can run live.
-3. **Full Passport cycle.** Deposits from a real Unisat wallet through Mezo Passport are live
-   ([evidence](evidence.md)); record claim and withdraw from it too.
-4. **Address the Wave 1 feedback** from the Mezo team.
+3. **Address the Wave 1 feedback** from the Mezo team.
 
 ## Path to mainnet and a Mezo Market listing
 
