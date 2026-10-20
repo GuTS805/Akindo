@@ -15,7 +15,7 @@ import {
 } from "../lib/chain";
 import { renderEvents } from "../lib/events";
 import { $, btc, musd, pct, ratio, sats } from "../lib/format";
-import { mountShell } from "../lib/layout";
+import { clearNotice, mountShell, showNotice } from "../lib/layout";
 import { connect, initWallet, onWalletChange, sendTx, wallet, walletClient, watchAsset } from "../lib/wallet";
 
 let vault: VaultState | undefined;
@@ -93,16 +93,45 @@ function render() {
     $("s-lpmusd").textContent = `${musd(slice(s.lpMusd), 2)} MUSD`;
     $("s-idle").textContent = `${btc(slice(s.idleBtc), 6)} BTC / ${musd(slice(s.idleMusd), 2)} MUSD`;
   }
-  renderEvents($("p-history"), history, "No deposits or withdrawals from this address yet.");
+  if (historyFailed) {
+    $("p-history").innerHTML = `<li class="muted">History unavailable from the RPC right now, retrying.</li>`;
+  } else {
+    renderEvents($("p-history"), history, "No deposits or withdrawals from this address yet.");
+  }
 }
 
+let refreshSeq = 0;
+let historyFailed = false;
+let readFailed = false;
+let shownAccount: string | undefined;
+
 async function refresh() {
-  if (!wallet.account) {
+  const seq = ++refreshSeq;
+  const account = wallet.account;
+  if (account !== shownAccount) {
+    // Never show one address's position under another.
+    user = undefined;
+    history = [];
+    shownAccount = account;
+  }
+  if (!account) {
     render();
     return;
   }
-  const account = wallet.account;
-  [vault, user, history] = await Promise.all([readVault(), readUser(account), readEvents(account)]);
+  const [v, u, h] = await Promise.allSettled([readVault(), readUser(account), readEvents(account)]);
+  if (seq !== refreshSeq || wallet.account !== account) return;
+  if (v.status === "fulfilled") vault = v.value;
+  if (u.status === "fulfilled") user = u.value;
+  if (h.status === "fulfilled") history = h.value;
+  historyFailed = h.status === "rejected";
+  const failed = [v, u].find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+  if (failed) {
+    console.error("portfolio refresh", failed.reason);
+    if (!readFailed) showNotice("Could not read your position from Mezo testnet. Retrying.");
+  } else if (readFailed) {
+    clearNotice();
+  }
+  readFailed = !!failed;
   render();
 }
 
@@ -135,9 +164,9 @@ async function init() {
   onWalletChange(() => {
     refresh().catch(() => {});
   });
-  await initWallet();
+  initWallet().catch((e) => console.error("initWallet", e));
   setInterval(() => {
-    if (document.visibilityState === "visible" && !wallet.busy) refresh().catch(() => {});
+    if (document.visibilityState === "visible" && !wallet.busy) refresh().catch((e) => console.error(e));
   }, 30_000);
   setInterval(tickRewards, 1_000);
 }

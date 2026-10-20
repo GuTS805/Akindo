@@ -1689,3 +1689,14 @@ dialog[open] .wallet-list > :nth-child(n + 6) { animation-delay: 200ms; }
     transition-delay: 0s !important;
   }
 }
+
+.wallet-empty {
+  padding: 10px 12px;
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.wallet-option:disabled small {
+  color: var(--muted);
+}

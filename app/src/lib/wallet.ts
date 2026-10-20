@@ -1,7 +1,7 @@
 import { createWalletClient, custom, type Address, type EIP1193Provider, type Hash } from "viem";
 import { VAULT, mezoTestnet } from "../config";
 import { explain, testnet } from "./chain";
-import { $, EXPLORER, short, txLink } from "./format";
+import { $, EXPLORER, esc, short, txLink } from "./format";
 import { clearNotice, showNotice } from "./layout";
 
 const injected = (window as { ethereum?: EIP1193Provider }).ethereum;
@@ -66,7 +66,7 @@ function remembered(): Announced | undefined {
   }
 }
 
-function option(label: string, icon: string | undefined, onClick: () => void, note?: string) {
+function option(label: string, icon: string | undefined, onClick: () => void, note?: string, disabled = false) {
   const li = document.createElement("li");
   const btn = document.createElement("button");
   btn.className = "btn wide wallet-option";
@@ -83,6 +83,7 @@ function option(label: string, icon: string | undefined, onClick: () => void, no
     small.textContent = note;
     btn.append(small);
   }
+  btn.disabled = disabled;
   btn.addEventListener("click", onClick);
   li.append(btn);
   return li;
@@ -125,8 +126,16 @@ function pickWallet(): Promise<Choice> {
           undefined,
           () => choose({ kind: "btc", id }),
           installed ? "signs for a Mezo smart account" : "not detected in this browser",
+          !installed,
         ),
       );
+    }
+    if (announced.size === 0 && btc.length === 0) {
+      const li = document.createElement("li");
+      li.className = "wallet-empty";
+      li.textContent =
+        "No wallet found in this browser. On a phone, open this page inside your wallet app's browser (MetaMask, OKX or Unisat).";
+      ul.prepend(li);
     }
     dialog.addEventListener("close", () => reject(new Error("No wallet chosen.")), { once: true });
     dialog.showModal();
@@ -173,7 +182,7 @@ function attachListeners(p: EIP1193Provider) {
     emit();
   });
   p.on?.("chainChanged", () => {
-    if (p === wallet.provider) updateNetworkBadge();
+    if (p === wallet.provider) updateNetworkBadge().catch(() => {});
   });
 }
 
@@ -251,13 +260,18 @@ export async function connect() {
   emit();
 }
 
+/** Rejects if `p` has not settled in `ms`; a locked wallet can leave a request pending forever. */
+function within<T>(ms: number, p: Promise<T>): Promise<T> {
+  return Promise.race([p, new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
+}
+
 /** Reconnect silently to the last wallet used, if it already authorised this site. */
 export async function initWallet() {
   $("connect").addEventListener("click", () => (wallet.account ? undefined : connect()));
   await new Promise((r) => setTimeout(r, 150)); // let EIP-6963 wallets announce
   const btc = rememberedBitcoin();
   if (btc && installedBitcoinWallets().includes(btc)) {
-    await useBitcoinWallet(btc).catch(() => undefined);
+    await within(8_000, useBitcoinWallet(btc)).catch(() => undefined);
     if (wallet.account) {
       emit();
       return;
@@ -266,7 +280,7 @@ export async function initWallet() {
   wallet.provider = remembered()?.provider ?? wallet.provider;
   if (wallet.provider) {
     attachListeners(wallet.provider);
-    const accs = (await wallet.provider.request({ method: "eth_accounts" }).catch(() => [])) as Address[];
+    const accs = (await within(5_000, wallet.provider.request({ method: "eth_accounts" })).catch(() => [])) as Address[];
     wallet.account = accs[0];
   }
   emit();
@@ -313,16 +327,17 @@ export async function sendTx(
   wallet.busy = true;
   emit();
   status(`${label}: confirm in your wallet…`);
+  let hash: Hash | undefined;
   try {
     await ensureChain();
-    const hash = await write();
+    hash = await write();
     status(`${label}: sent ${txLink(hash)}, waiting for the block…`);
     const receipt = await testnet.waitForTransactionReceipt({ hash, pollingInterval: 2_000, timeout: 180_000 });
     const ok = receipt.status === "success";
     status(ok ? `${label} confirmed ${txLink(hash)}` : `${label} reverted ${txLink(hash)}`, !ok);
     return ok;
   } catch (e) {
-    status(explain(e), true);
+    status(esc(explain(e)) + (hash ? ` ${txLink(hash)}` : ""), true);
     return false;
   } finally {
     wallet.busy = false;

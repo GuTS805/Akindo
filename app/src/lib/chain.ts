@@ -92,7 +92,11 @@ const read = <T>(functionName: string, args?: readonly unknown[], blockNumber?: 
 export async function readVault(): Promise<VaultState> {
   const [snap, supply, needsRebalance, minCR, targetCR, maxCR, maxDeviationBps, feeBps, minDeposit, rewardToken, borrowerOps, rewardReserve] =
     await Promise.all([
-      read<Snapshot>("snapshot").catch(() => undefined),
+      // Only the vault's own "oracle unavailable" revert means a stale price; RPC errors propagate.
+      read<Snapshot>("snapshot").catch((e) => {
+        if (revertName(e) === "OracleUnavailable") return undefined;
+        throw e;
+      }),
       read<bigint>("totalSupply"),
       read<boolean>("needsRebalance"),
       read<bigint>("minCR"),
@@ -188,17 +192,23 @@ export type VaultEvent = {
 
 const EVENT_NAMES = ["Deposit", "Withdraw", "Rebalance", "Harvest", "RewardClaimed", "Unwound"] as const;
 
-/** All vault events since deployment, newest first, with block times. */
+/** Mezo's testnet RPC serves at most 10,000 blocks of logs per request. */
+const LOG_RANGE = 10_000n;
+const LOG_CONCURRENCY = 4;
+
+/** All vault events since deployment, newest first, with block times. Throws if any range fails. */
 export async function readEvents(user?: Address): Promise<VaultEvent[]> {
-  const logs = (
-    await Promise.all(
-      EVENT_NAMES.map((eventName) =>
-        testnet
-          .getContractEvents({ address: VAULT, abi: vaultAbi, eventName, fromBlock: VAULT_DEPLOY_BLOCK })
-          .catch(() => []),
-      ),
-    )
-  ).flat();
+  const latest = await testnet.getBlockNumber();
+  const ranges: [bigint, bigint][] = [];
+  for (let from = VAULT_DEPLOY_BLOCK; from <= latest; from += LOG_RANGE) {
+    const to = from + LOG_RANGE - 1n;
+    ranges.push([from, to < latest ? to : latest]);
+  }
+  const chunks: Awaited<ReturnType<typeof vaultLogs>>[] = [];
+  for (let i = 0; i < ranges.length; i += LOG_CONCURRENCY) {
+    chunks.push(...(await Promise.all(ranges.slice(i, i + LOG_CONCURRENCY).map(([f, t]) => vaultLogs(f, t)))));
+  }
+  const logs = chunks.flat().filter((l) => (EVENT_NAMES as readonly string[]).includes(l.eventName));
   const mine = user
     ? logs.filter((l) => String((l.args as Record<string, unknown>).user ?? "").toLowerCase() === user.toLowerCase())
     : logs;
@@ -206,7 +216,7 @@ export async function readEvents(user?: Address): Promise<VaultEvent[]> {
   const times = new Map(
     await Promise.all(
       blocks.map(
-        async (n) => [n, await testnet.getBlock({ blockNumber: n }).then((b) => b.timestamp).catch(() => 0n)] as const,
+        async (n) => [n, (await testnet.getBlock({ blockNumber: n })).timestamp] as const,
       ),
     ),
   );
@@ -221,7 +231,13 @@ export async function readEvents(user?: Address): Promise<VaultEvent[]> {
     .sort((a, b) => Number(b.block - a.block) || 0);
 }
 
-export type PricePoint = { time: number; pps: number; navBtc: number };
+/** Every vault event in one block range, retried once (the public RPC drops the odd request). */
+function vaultLogs(fromBlock: bigint, toBlock: bigint) {
+  const get = () => testnet.getContractEvents({ address: VAULT, abi: vaultAbi, fromBlock, toBlock });
+  return get().catch(get);
+}
+
+export type PricePoint ={ time: number; pps: number; navBtc: number };
 
 /** Share price sampled at evenly spaced blocks since the first deposit (needs historical state). */
 export async function readShareHistory(firstBlock: bigint, samples = 24): Promise<PricePoint[]> {
@@ -386,7 +402,15 @@ const ERRORS: Record<string, string> = {
   InsolventVault: "Vault value is zero.",
 };
 
+function revertName(e: unknown): string | undefined {
+  if (!(e instanceof BaseError)) return undefined;
+  const revert = e.walk((x) => x instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;
+  return revert?.data?.errorName;
+}
+
 export function explain(e: unknown): string {
+  if (e instanceof BaseError && e.name === "WaitForTransactionReceiptTimeoutError")
+    return "Still waiting for the block after 3 minutes. The transaction may yet confirm: check the explorer before sending it again.";
   if (e instanceof BaseError) {
     if (e.walk((x) => x instanceof UserRejectedRequestError)) return "Cancelled in your wallet.";
     const revert = e.walk((x) => x instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;

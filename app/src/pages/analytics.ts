@@ -193,10 +193,17 @@ async function init() {
   } catch {
     /* shown as dashes */
   }
-  events = await readEvents();
-  renderHistory();
-  renderRewards();
   renderMarket();
+  try {
+    events = await readEvents();
+    renderHistory();
+    renderRewards();
+  } catch (e) {
+    console.error("events", e);
+    $("a-history").innerHTML = `<li class="muted">History unavailable from the RPC right now. Reload to retry.</li>`;
+    $("chart-rewards").innerHTML = `<p class="muted">Reward history unavailable from the RPC right now.</p>`;
+    $("k-last").textContent = "–";
+  }
   renderCharts().catch(() => {
     $("chart-pps").innerHTML = $("chart-nav").innerHTML = `<p class="muted">History unavailable from the RPC right now.</p>`;
   });

@@ -42,6 +42,11 @@ export function ago(ts: bigint): string {
   return `${Math.floor(s / 86_400)}d ago`;
 }
 
+/** Text that goes into innerHTML (error messages can carry revert strings from the chain). */
+export function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 export function txLink(hash: string): string {
   return `<a href="${EXPLORER}/tx/${hash}" target="_blank" rel="noopener">${short(hash)}</a>`;
 }

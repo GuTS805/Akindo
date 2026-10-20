@@ -99,10 +99,17 @@ export function mountShell(active: PageId) {
 
   $("notice-close").addEventListener("click", clearNotice);
   $("wallet-cancel").addEventListener("click", () => $<HTMLDialogElement>("wallet-picker").close());
-  $("menu-btn").addEventListener("click", () => {
-    const open = $("site-nav").classList.toggle("open");
+  const setMenu = (open: boolean) => {
+    $("site-nav").classList.toggle("open", open);
     $("menu-btn").setAttribute("aria-expanded", String(open));
+  };
+  $("menu-btn").addEventListener("click", () => setMenu(!$("site-nav").classList.contains("open")));
+  // The phone menu closes on Escape, on a tap outside the header and when a link is followed.
+  addEventListener("keydown", (e) => e.key === "Escape" && setMenu(false));
+  addEventListener("click", (e) => {
+    if (!(e.target as Element).closest?.(".topbar")) setMenu(false);
   });
+  $("site-nav").addEventListener("click", (e) => (e.target as Element).closest("a") && setMenu(false));
 
   // The wallet picker closes with an animation; a click on its backdrop closes it too.
   const picker = $<HTMLDialogElement>("wallet-picker");

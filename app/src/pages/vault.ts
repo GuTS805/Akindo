@@ -20,8 +20,8 @@ import {
   type VaultState,
 } from "../lib/chain";
 import { renderEvents } from "../lib/events";
-import { $, btc, musd, num, pct, ratio, sats } from "../lib/format";
-import { mountShell, showNotice } from "../lib/layout";
+import { $, btc, esc, musd, num, pct, ratio, sats } from "../lib/format";
+import { clearNotice, mountShell, showNotice } from "../lib/layout";
 import { connect, initWallet, onWalletChange, sendTx, wallet, walletClient, watchAsset } from "../lib/wallet";
 
 const GAS_RESERVE = parseEther("0.002");
@@ -186,6 +186,7 @@ async function renderWithdrawPreview() {
   );
   const account = wallet.account;
   if (!account || !user || !vault || withdrawPct === 0 || user.shares === 0n) {
+    previewSeq++; // drop any simulation still in flight
     el.textContent = account && user?.shares === 0n ? "You have no shares yet." : "";
     renderButtons();
     return;
@@ -213,7 +214,7 @@ async function renderWithdrawPreview() {
         : "");
   } catch (e) {
     if (seq !== previewSeq) return;
-    el.innerHTML = `<span class="warn">${explain(e)}</span>`;
+    el.innerHTML = `<span class="warn">${esc(explain(e))}</span>`;
   }
   renderButtons();
 }
@@ -229,7 +230,7 @@ async function deposit() {
   if (!account) return connect();
   const amount = parseAmount();
   if (!amount) return;
-  await sendTx(
+  const ok = await sendTx(
     `Deposit ${btc(amount, 6)} BTC`,
     async () => {
       const { result: shares } = await testnet.simulateContract({
@@ -252,7 +253,7 @@ async function deposit() {
     },
     setTx,
   );
-  $<HTMLInputElement>("deposit-amount").value = "";
+  if (ok) $<HTMLInputElement>("deposit-amount").value = "";
   await refresh();
 }
 
@@ -261,7 +262,7 @@ async function withdraw() {
   if (!account) return connect();
   if (!user || withdrawPct === 0) return;
   const shares = (user.shares * BigInt(withdrawPct)) / 100n;
-  await sendTx(
+  const ok = await sendTx(
     `Withdraw ${withdrawPct}%`,
     async () => {
       const { result } = await testnet.simulateContract({
@@ -282,9 +283,8 @@ async function withdraw() {
     },
     setTx,
   );
-  withdrawPct = 0;
+  if (ok) withdrawPct = 0;
   await refresh();
-  renderWithdrawPreview();
 }
 
 async function simpleCall(label: string, functionName: "claimRewards" | "rebalance" | "harvest") {
@@ -304,8 +304,13 @@ async function simpleCall(label: string, functionName: "claimRewards" | "rebalan
 // ---------------------------------------------------------------- live panels
 
 async function renderActivity() {
-  const events = await readEvents();
-  renderEvents($("activity"), events.slice(0, 8));
+  try {
+    const events = await readEvents();
+    renderEvents($("activity"), events.slice(0, 8));
+  } catch (e) {
+    console.error("activity", e);
+    $("activity").innerHTML = `<li class="muted">Activity unavailable from the RPC right now, retrying.</li>`;
+  }
 }
 
 async function renderMainnetYield() {
@@ -322,24 +327,47 @@ async function renderMainnetYield() {
 
 // ---------------------------------------------------------------- refresh loop
 
+let refreshSeq = 0;
+let readFailed = false;
+let shownAccount: string | undefined;
+
 async function refresh() {
-  try {
-    vault = await readVault();
-    renderVault(vault);
-  } catch (e) {
-    showNotice(`Could not read the vault: ${explain(e)}`);
+  const seq = ++refreshSeq;
+  const account = wallet.account;
+  // A different account must never see the previous one's balances, even for a moment.
+  if (account !== shownAccount) {
+    user = undefined;
+    withdrawPct = 0;
+    shownAccount = account;
   }
-  if (wallet.account) {
+  try {
+    const v = await readVault();
+    if (seq !== refreshSeq) return;
+    vault = v;
+    renderVault(v);
+    if (readFailed) clearNotice();
+    readFailed = false;
+  } catch (e) {
+    if (seq !== refreshSeq) return;
+    console.error("readVault", e);
+    // Once per failure streak, so a dismissed notice is not re-opened every poll.
+    if (!readFailed) showNotice(`Could not read the vault: ${explain(e)}. Retrying.`);
+    readFailed = true;
+  }
+  if (account) {
     try {
-      user = await readUser(wallet.account);
-    } catch {
-      /* keep last */
+      const u = await readUser(account);
+      if (seq !== refreshSeq || wallet.account !== account) return;
+      user = u;
+    } catch (e) {
+      console.error("readUser", e);
     }
   } else {
     user = undefined;
   }
   renderUser();
   renderDepositPreview();
+  if (withdrawPct > 0) renderWithdrawPreview();
 }
 
 function bind() {
@@ -383,9 +411,11 @@ async function init() {
     renderButtons();
     refresh();
   });
-  await initWallet();
+  // Public data first: a wallet that never answers must not hold the page.
+  refresh();
   renderActivity();
   renderMainnetYield();
+  initWallet().catch((e) => console.error("initWallet", e));
   setInterval(() => {
     if (document.visibilityState === "visible" && !wallet.busy) refresh();
   }, 15_000);
