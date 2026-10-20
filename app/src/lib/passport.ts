@@ -19,6 +19,17 @@ export const BITCOIN_WALLETS = [
 ] as const;
 export type BitcoinWalletId = (typeof BITCOIN_WALLETS)[number]["id"];
 
+/**
+ * Passport's testnet relayer default, test.mezo.org, no longer resolves (Cloudflare error 1000 as
+ * of October 2026); Mezo's testnet relayer now answers at testnet.mezo.org, with CORS open to
+ * this app. Passport has no option to change the endpoint, so the one URL is redirected here.
+ */
+const DEAD_TESTNET_RELAY = "https://test.mezo.org/api/v2/relay/transactions";
+const TESTNET_RELAY = "https://testnet.mezo.org/api/v2/relay/transactions";
+const nativeFetch = window.fetch.bind(window);
+window.fetch = (input, init) =>
+  nativeFetch(typeof input === "string" && input === DEAD_TESTNET_RELAY ? TESTNET_RELAY : input, init);
+
 type SmartAccountClient = {
   sendTransaction(tx: { to?: Address; value?: bigint; data?: Hex }): Promise<Hex>;
 };
