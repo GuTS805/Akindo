@@ -68,11 +68,13 @@ function render() {
   }
   if (inBtc > 0n) {
     const pnl = value + outBtc - inBtc;
-    $("p-pnl").textContent = `${pnl >= 0n ? "+" : ""}${btc(pnl, 6)} BTC`;
-    $("p-pnl").className = `value ${pnl >= 0n ? "good" : "warn"}`;
+    // Under half a micro-BTC rounds to zero at 6 decimals: show it as flat, not as "-0.000000".
+    const flat = (pnl < 0n ? -pnl : pnl) < 500_000_000_000n;
+    $("p-pnl").textContent = flat ? `0.000000 BTC` : `${pnl > 0n ? "+" : ""}${btc(pnl, 6)} BTC`;
+    $("p-pnl").className = `value ${flat ? "" : pnl > 0n ? "good" : "warn"}`;
     // Rewards are paid in the reward token, not BTC, so they are shown next to the BTC result.
     const earned = claimedTotal() + claimableNow(vault, user);
-    $("p-pnl-sub").textContent = `${pct(ratio(pnl, inBtc), 2)} in BTC on ${btc(inBtc, 4)} deposited${
+    $("p-pnl-sub").textContent = `${flat ? `${pnl > 0n ? "+" : ""}${sats(pnl)}` : pct(ratio(pnl, inBtc), 2)} in BTC on ${btc(inBtc, 4)} deposited${
       earned > 0 ? `, plus ${earned.toFixed(4)} ${vault.rewardSymbol} earned` : ""
     }`;
   } else {
