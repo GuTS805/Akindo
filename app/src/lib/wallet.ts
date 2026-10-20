@@ -147,8 +147,20 @@ function eth(): EIP1193Provider {
   return wallet.provider;
 }
 
+/**
+ * Wallet client whose writes carry a gas limit with headroom. Mezo's estimates for vault calls
+ * can land just short (trove hint searches vary from block to block), and an exit that runs out
+ * of gas reverts after the user paid for it: one live withdrawal used 1,291,830 of 1,298,688.
+ */
 export function walletClient() {
-  return createWalletClient({ chain: mezoTestnet, transport: custom(eth()), account: wallet.account! });
+  const client = createWalletClient({ chain: mezoTestnet, transport: custom(eth()), account: wallet.account! });
+  const write = client.writeContract.bind(client);
+  const writeContract = (async (args: Parameters<typeof write>[0]) => {
+    const estimate = await testnet.estimateContractGas({ ...(args as object), account: wallet.account! } as never);
+    const gas = estimate + (estimate / 2n > 300_000n ? estimate / 2n : 300_000n);
+    return write({ ...args, gas } as never);
+  }) as typeof write;
+  return { ...client, writeContract };
 }
 
 const listening = new WeakSet<EIP1193Provider>();
