@@ -5,7 +5,7 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 
 ## Where it stands (end of Wave 1)
 
-- Vault, reward gauge and incentive router written, tested (73 tests, an invariant suite, testnet
+- Vault, reward gauge and incentive router written, tested (78 tests, an invariant suite, testnet
   and mainnet fork tests, 97% line coverage) and reviewed with Slither
 - Two vaults live on Mezo testnet with real deposits, claims and withdrawals
   ([evidence](evidence.md)); a keeper runs rebalance, harvest and reward top-ups

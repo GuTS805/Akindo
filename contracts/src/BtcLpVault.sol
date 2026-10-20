@@ -47,6 +47,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         uint256 maxDeviationBps; // max pool-vs-oracle price gap for pool actions
         uint256 feeBps; // share of rewards sent to feeRecipient
         uint256 minDeposit;
+        uint256 depositCap; // max vault value in BTC after a deposit; 0 = no cap
     }
 
     struct Snapshot {
@@ -100,6 +101,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     uint256 public immutable maxDeviationBps;
     uint256 public immutable feeBps;
     uint256 public immutable minDeposit;
+    uint256 public immutable depositCap;
 
     /// @notice Rewards owed to holders but not yet claimed (kept apart from idle assets).
     uint256 public rewardReserve;
@@ -124,6 +126,8 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     error BelowMinCR(uint256 cr);
     error OracleUnavailable();
     error InsolventVault();
+    error DepositCapReached(uint256 navBtc, uint256 cap);
+    error OnlySelf();
 
     constructor(Config memory c) ERC20("Mezo BTC LP Vault", "mbLP") {
         if (
@@ -157,6 +161,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         maxDeviationBps = c.maxDeviationBps;
         feeBps = c.feeBps;
         minDeposit = c.minDeposit;
+        depositCap = c.depositCap;
 
         IERC20(c.btc).forceApprove(c.router, type(uint256).max);
         IERC20(c.musd).forceApprove(c.router, type(uint256).max);
@@ -170,6 +175,10 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     // ---------------------------------------------------------------- user actions
 
     /// @notice Deposit BTC and receive vault shares. Deploys idle BTC when the pool is near the oracle.
+    /// @dev    Shares are minted from the change in NAV across the whole deposit, so the deposit
+    ///         carries its own deployment cost (MUSD's borrowing fee on the new debt) instead of
+    ///         spreading it over existing holders. Deployment runs in an isolated self-call: if it
+    ///         reverts for any reason the deposit still succeeds and the BTC waits idle.
     function deposit(uint256 minShares) external payable nonReentrant returns (uint256 shares) {
         if (msg.value < minDeposit) revert DepositTooSmall();
         _harvest();
@@ -179,28 +188,42 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         if (price == 0) revert OracleUnavailable();
 
         uint256 supply = totalSupply();
+        uint256 navBefore = Math.mulDiv(_snapshot(price, msg.value).navMusd, 1e18, price);
+        if (depositCap != 0 && navBefore + msg.value > depositCap) {
+            revert DepositCapReached(navBefore + msg.value, depositCap);
+        }
+        if (supply != 0 && navBefore == 0) revert InsolventVault();
+
+        // Best effort: if the pool is off the oracle, the vault is still below the trove
+        // minimum or deployment reverts, the BTC waits idle until a later rebalance.
+        Snapshot memory s = _snapshot(price, 0);
+        if (_withinBand(s.poolPrice, price) && _needsRebalance(s)) {
+            try this.deployIdle() {} catch {}
+        }
+
         if (supply == 0) {
             if (msg.value <= DEAD_SHARES) revert DepositTooSmall();
             _mint(DEAD, DEAD_SHARES);
             shares = msg.value - DEAD_SHARES;
         } else {
-            Snapshot memory s = _snapshot(price, msg.value);
-            uint256 navBtc = Math.mulDiv(s.navMusd, 1e18, price);
-            if (navBtc == 0) revert InsolventVault();
-            shares = Math.mulDiv(msg.value, supply, navBtc);
+            uint256 navAfter = Math.mulDiv(_snapshot(price, 0).navMusd, 1e18, price);
+            uint256 added = navAfter > navBefore ? navAfter - navBefore : 0;
+            shares = Math.mulDiv(Math.min(added, msg.value), supply, navBefore);
         }
         if (shares == 0) revert ZeroShares();
         if (shares < minShares) revert Slippage();
 
         _mint(msg.sender, shares);
         emit Deposit(msg.sender, msg.value, shares);
+    }
 
-        // Best effort: if the pool is off the oracle or the vault is still below the
-        // trove minimum, the BTC waits idle until a later rebalance.
-        Snapshot memory after_ = _snapshot(price, 0);
-        if (_withinBand(after_.poolPrice, price) && _needsRebalance(after_)) {
-            _rebalance(after_, false);
-        }
+    /// @notice Deployment step of `deposit`, callable only by the vault itself so that a revert
+    ///         inside it can be caught without undoing the deposit.
+    function deployIdle() external {
+        // Only reachable from inside `deposit`: the caller is the vault and its lock is held.
+        if (msg.sender != address(this) || !_reentrancyGuardEntered()) revert OnlySelf();
+        uint256 price = _fetchPrice();
+        _rebalance(_snapshot(price, 0), false);
     }
 
     /// @notice Burn shares for a pro-rata slice of every position. Pays BTC, plus any MUSD left

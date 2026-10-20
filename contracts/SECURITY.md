@@ -29,6 +29,7 @@ reproduce it.
 | `BtcLpVault.t.sol` (27) | Unit and fuzz tests of pricing, deposits, exits, rebalancing, slippage, donations, rewards |
 | `Recovery.t.sol` (5) | Liquidation fallback and reopening, redemption surplus, transfer reward leaks, donation attacks |
 | `RewardGauge.t.sol` (9) | Reward streaming and the vault's harvest → claim path |
+| `DepositV2.t.sol` (5) | v2 deposits: a newcomer pays its own deployment cost, the deposit cap, a reverted deployment leaves the deposit idle, `deployIdle` is vault-only |
 | `IncentiveRouter.t.sol` (7) | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
 | `Manipulation.t.sol` (7) | Deposit, push the pool off the oracle, withdraw, push it back, with the attacker's own capital: never profitable (512-run fuzz over 1–2,000 BTC and 2–80% skews), exits revert when the pool is pushed down |
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
@@ -36,7 +37,7 @@ reproduce it.
 | `Fork.t.sol` | Full cycle against the deployed testnet MUSD and Mezo Pools |
 | `MainnetFork.t.sol` | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
 
-73 unit and fuzz tests, plus the invariant suite and two fork tests.
+78 unit and fuzz tests, plus the invariant suite and two fork tests.
 
 Coverage of `src/` (`forge coverage`): 97% of lines, 94% of statements, 100% of functions,
 76% of branches.
@@ -68,9 +69,10 @@ finding was checked against a test before deciding.
 | Finding | Verdict |
 | --- | --- |
 | Exits remove LP at the spot price without a band check, so an attacker could deposit, skew the pool, withdraw and skew it back | **Not profitable.** The pool fee is 0.3% on mainnet (factory `getFee`), the same as the mock. Pushing the pool and back costs more than the skewed exit gains: a 1,000 BTC attack at +50% loses 0.26 BTC, and the fuzz test never finds a profit. With the pool pushed down the exit's MUSD top-up fails its price check and reverts. |
-| A deposit's MUSD borrowing fee (0.1% of the new debt) is carried by all holders, not only the depositor | **Real, small.** About 0.025% of the deposit, shared pro rata. A round trip still costs the depositor far more than it shifts, so it is not an attack. Fix planned for the Wave 2 vault: mint shares from the NAV change instead of the deposit amount. |
+| A deposit's MUSD borrowing fee (0.1% of the new debt) is carried by all holders, not only the depositor | **Fixed in v2.** Real but small (about 0.025% of the deposit, shared pro rata), never an attack. The v2 vault mints shares from the NAV change across the whole deposit, so the depositor pays it: another holder's 100 BTC round trip now moves Bob's 10 BTC by 2 sats instead of 0.0023 BTC (`test_newDeposit_doesNotDiluteHolders`, `test_control_noSkew`). |
 | The exit's MUSD top-up swap allows up to `maxDeviationBps` of slippage | Bounded by the shortfall on a last-exit or unwind path; the pool must already be inside the band. Accepted, documented. |
-| A best-effort rebalance inside `deposit` can still revert the deposit | Denial of service only, never loss; the deposit can be retried. Wave 2 will isolate it. |
+| A best-effort rebalance inside `deposit` can still revert the deposit | **Fixed in v2.** Deployment runs in a self-call (`deployIdle`, callable only by the vault while its lock is held) inside `try`; if it reverts, the deposit still succeeds and the BTC waits idle (`test_deploymentRevert_depositStillSucceeds`). |
+| No deposit cap for an unaudited vault | **Added in v2:** an immutable `depositCap` on vault value (2 BTC on testnet). |
 | `IncentiveRouter.push` reverted entirely if the incentive contract refused the token | **Fixed.** A refused incentive now sends the whole balance to the treasury (`test_push_refusedIncentives_goToTreasury`). |
 | `notifyRewardAmount` on `RewardGauge` is permissionless, so dust can stretch the stream | Accepted: it slows a stream but cannot take or lock rewards. |
 

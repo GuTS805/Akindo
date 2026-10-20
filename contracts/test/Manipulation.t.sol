@@ -82,8 +82,10 @@ contract ManipulationTest is BaseTest {
     }
 
     function test_control_noSkew() public {
-        (int256 profit,) = _run("no skew, 100 BTC", 100e18, PRICE);
+        (int256 profit, int256 bobLoss) = _run("no skew, 100 BTC", 100e18, PRICE);
         assertLe(profit, 0);
+        // Bob pays only his own round trip (about 0.025%): someone else's borrowing fee is theirs.
+        assertLt(bobLoss, int256(BOB) * 26 / 100_000, "a newcomer's deposit cost bob");
     }
 
     function test_skewUp20() public {

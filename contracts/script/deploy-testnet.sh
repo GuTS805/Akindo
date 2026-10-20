@@ -11,7 +11,10 @@
 # GAUGE overrides the official BTC/MUSD gauge (see deploy-rewards-testnet.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Values passed by the caller win over contracts/.env (which may set FEE_RECIPIENT).
+CALLER_FEE_RECIPIENT="${FEE_RECIPIENT:-}"
 set -a; . ./.env; set +a
+[ -n "$CALLER_FEE_RECIPIENT" ] && FEE_RECIPIENT="$CALLER_FEE_RECIPIENT"
 
 FORGE="${FORGE:-forge}"
 command -v "$FORGE" >/dev/null || FORGE="$HOME/.foundry/bin/forge"
@@ -21,6 +24,7 @@ RPC="${RPC:-https://rpc.test.mezo.org}"
 DEPLOYER=$("$CAST" wallet address --private-key "$PRIVATE_KEY")
 FEE_RECIPIENT="${FEE_RECIPIENT:-$DEPLOYER}"
 GAUGE="${GAUGE:-0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3}"
+DEPOSIT_CAP="${DEPOSIT_CAP:-0}" # max vault value in BTC wei after a deposit; 0 = no cap
 
 # Must match script/Addresses.sol (MezoTestnet.config)
 CONFIG="(\
@@ -35,7 +39,7 @@ CONFIG="(\
 0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9,\
 $GAUGE,\
 $FEE_RECIPIENT,\
-3000000000000000000,2500000000000000000,3500000000000000000,600,1000,1000000000000000)"
+3000000000000000000,2500000000000000000,3500000000000000000,600,1000,1000000000000000,$DEPOSIT_CAP)"
 
 echo "deployer $DEPLOYER"
 "$FORGE" create src/BtcLpVault.sol:BtcLpVault \

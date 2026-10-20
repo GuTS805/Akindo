@@ -38,7 +38,8 @@ library MezoTestnet {
             // The testnet pool sits ~3.9% below the oracle; mainnet would use ~200.
             maxDeviationBps: 600,
             feeBps: 1_000,
-            minDeposit: 0.001e18
+            minDeposit: 0.001e18,
+            depositCap: 0
         });
     }
 }
@@ -81,7 +82,8 @@ library MezoMainnet {
             maxCR: 3.5e18,
             maxDeviationBps: 200,
             feeBps: 1_000,
-            minDeposit: 0.001e18
+            minDeposit: 0.001e18,
+            depositCap: 0
         });
     }
 }

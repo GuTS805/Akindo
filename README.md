@@ -3,7 +3,7 @@
 [![CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml)
 ![Network](https://img.shields.io/badge/network-Mezo%20testnet-e36b32)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.28-363636)
-![Tests](https://img.shields.io/badge/tests-73%20%2B%20invariant%20%2B%202%20forks-1f8a4c)
+![Tests](https://img.shields.io/badge/tests-78%20%2B%20invariant%20%2B%202%20forks-1f8a4c)
 ![Admin keys](https://img.shields.io/badge/admin%20keys-none-0e1c3b)
 
 **Deposit BTC, hold one token, earn as BTC/MUSD liquidity on Mezo.** In a single transaction the
@@ -175,6 +175,7 @@ withdraw on the rewards vault.
 | Unit and fuzz | 27 | Share pricing, deposit and exit paths, rebalancing in every direction, slippage, donations, reward accounting |
 | Recovery | 5 | Liquidation fallback and trove reopening, redemption surplus, reward leaks on share transfers, donation attacks |
 | Reward gauge | 9 | Streaming, top-ups, stake splits, vault harvest → claim end to end |
+| v2 deposits | 5 | A newcomer pays its own MUSD borrowing fee (holders are not diluted), the deposit cap, a failed deployment leaves the deposit idle instead of reverting it |
 | Incentive router | 7 | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
 | Manipulation | 7 | Deposit → push the pool off the oracle → withdraw → push it back, with the attacker's own capital. Never profitable (512-run fuzz, 1–2,000 BTC, 2–80% skews, at mainnet's real 0.3% pool fee) |
 | Edge cases | 18 | Every config guard, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, and the last exit after a 15% fall (waits for arbitrage rather than sell below the band, then pays in full) |

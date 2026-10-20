@@ -78,7 +78,8 @@ abstract contract BaseTest is Test {
             maxCR: 3.5e18,
             maxDeviationBps: 200,
             feeBps: 1_000,
-            minDeposit: 0.001e18
+            minDeposit: 0.001e18,
+            depositCap: 0
         });
     }
 

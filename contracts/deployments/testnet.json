@@ -17,6 +17,18 @@
     "fundTx": "0x237e1ad9c3981606b7f5fcd0ca234422c3fece0f41ba60b598076550059d8d53",
     "funded": "250 testnet MEZO over 7 days"
   },
+  "v2": {
+    "note": "v2 vault (app default): shares minted from the NAV change, 2 BTC deposit cap, isolated deployment step; fee recipient is the IncentiveRouter; staked in the same RewardGauge as the rewards vault",
+    "BtcLpVault": "0x652e31Ba2658CC27ff0E36431cA008De7D439102",
+    "deployTx": "0x24e9ec1599a462f6c614e71082279303267b8093ff4b4e7bf9eb363e84ff6409",
+    "deployBlock": 16262383,
+    "explorer": "https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102",
+    "seedDepositTx": "0x00500517070cd3d072e34d88a2621850bc15ff062961767b3c459bdcdf7faa75",
+    "IncentiveRouter": "0x924b8a4585B659D78041569fE0074719116126F2",
+    "routerDeployTx": "0x275be76796e08a2e42e3b73f74ebdc25b058f2631de685f6cd65858184e56f41",
+    "routerConfig": "MEZO, incentives 0xD57eEA1BD19c483cEa19cc498575D21F512d4735 (Voter.gaugeToBribe of the official BTC/MUSD gauge), treasury = deployer, 50%",
+    "misconfiguredUnused": "0x50B71558B7f057f6d200FBB39649023713060368 (deployed with the deployer as fee recipient because contracts/.env overrode the script's value; never seeded, ignored)"
+  },
   "keeper": {
     "address": "0x3e68A7eA5A9140dE973778402C7a14d24F75228F",
     "note": "Throwaway testnet key used by .github/workflows/keeper.yml; anyone can run the same calls"
