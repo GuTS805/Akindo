@@ -1,8 +1,9 @@
+import { ACTIVE_VAULT } from "../config";
 import { WAD, type VaultEvent } from "./chain";
 import { ago, btc, musd, pct, ratio, short, txLink } from "./format";
 
 /** One line of plain language per vault event. */
-export function describe(e: VaultEvent, rewardSymbol = "rewards"): string {
+export function describe(e: VaultEvent, rewardSymbol: string = ACTIVE_VAULT.rewardSymbol): string {
   const a = e.args;
   switch (e.name) {
     case "Deposit":

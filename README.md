@@ -232,3 +232,7 @@ npm run dev
 | [`.github/workflows/`](.github/workflows/) | CI, GitHub Pages deploy and a keeper scheduled every 30 minutes (GitHub runs it every few hours in practice) that calls `rebalance` / `harvest` |
 
 Deployment details, addresses and the full parameter set are in [`contracts/README.md`](contracts/README.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE).

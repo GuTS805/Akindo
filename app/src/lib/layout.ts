@@ -170,6 +170,8 @@ function initReveal() {
       }),
     { rootMargin: "0px 0px -6% 0px" },
   );
+  // Printing (or saving as PDF) shows everything, scrolled into view or not.
+  addEventListener("beforeprint", () => items.forEach((el) => el.classList.add("in")));
   items.forEach((el) => {
     const siblings = el.parentElement ? Array.from(el.parentElement.children) : [];
     el.style.setProperty("--d", `${Math.min(siblings.indexOf(el), 6) * 70}ms`);
