@@ -204,7 +204,7 @@ withdraw on the rewards vault.
 Full plan, including the path to a Mezo Market listing and the economics: [`docs/roadmap.md`](docs/roadmap.md).
 
 - **Wave 2:** a range-managed strategy for the concentrated BTC/MUSD pool (the larger gauge share), the incentive router as the mainnet vault's fee recipient, and a real-wallet Passport run
-- **Mainnet:** freeze, audit, deploy with rising deposit caps on Mezo's own gauge; the configuration is in [`MezoMainnet`](contracts/script/Addresses.sol) and already exercised by the mainnet fork test
+- **Mainnet:** freeze, add a deposit cap, audit, then deploy on Mezo's own gauge. It stays off mainnet until then on purpose: with no owner there is no pause, which is only safe for audited code. No team seed is needed: deposits wait as withdrawable idle BTC until together they can carry MUSD's minimum debt, then anyone's `rebalance()` opens the trove. The configuration is in [`MezoMainnet`](contracts/script/Addresses.sol) and exercised by the mainnet fork test
 
 ## Development
 

@@ -34,11 +34,22 @@ functionality.
 | Requirement | Status | Plan |
 | --- | --- | --- |
 | MUSD integration | Done | The vault's core is a MUSD trove |
-| Mainnet functionality | Configured, fork-tested | Deploy with deposit caps that rise in steps; seed it ourselves |
+| Mainnet functionality | Configured, fork-tested | Deploy after the audit, with a deposit cap added to the Wave 2 vault; no team seed needed (below) |
 | Third-party audit | Not started | Apply for an audit after Wave 2 with the frozen Wave 2 code; Slither triage and test suite ready for auditors |
 
-Launch steps, in order: freeze code, audit, deploy with a low cap, run the keeper, raise the cap as
-the position proves itself.
+Launch steps, in order: freeze code, add a deposit cap, audit, deploy, run the keeper, raise the cap
+as the position proves itself.
+
+**Why not mainnet in Wave 1.** The vault has no owner and no pause, by design. That is the right
+property for a finished, audited vault and the wrong one for unaudited code holding real BTC, so it
+stays on testnet until the audit. Mezo's rules welcome testnet entries; the mainnet configuration is
+exercised on every push by the mainnet fork test instead.
+
+**No team capital needed at launch.** MUSD's 1,800 MUSD minimum debt means a trove needs about
+0.09 BTC behind it, more than a typical first deposit. The vault handles this already: until the
+pooled deposits can carry the minimum debt, they wait as idle BTC that every depositor can withdraw
+in full, and once they can, anyone's `rebalance()` opens the trove. Deploying costs about $1 of gas
+at October's mainnet gas price.
 
 ## Economics, honestly
 
