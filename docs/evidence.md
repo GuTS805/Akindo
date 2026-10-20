@@ -18,6 +18,14 @@ one deposit opened its trove at 296% CR (1,890 MUSD debt) and staked the LP in t
 first v2 deployment, `0x50B7…0368`, was never used: `contracts/.env` overrode its fee recipient,
 which is immutable, so the vault was redeployed with the router and the script fixed.
 
+The router then ran live: a v2 [`harvest`](https://explorer.test.mezo.org/tx/0xccf02ad67979714564b3f51da47bbd13a54beea5b3e58c87c41ae0c29e5d4ec6)
+sent the 10% fee (0.00519 MEZO) to the `IncentiveRouter`, and
+[`push()`](https://explorer.test.mezo.org/tx/0x4c9c8c0bf5c1d1679a7b206db68abdb256dc30a4535882a1111b0bedf12741e9)
+offered half to the BTC/MUSD gauge's incentive contract. Mezo's testnet Voter does not whitelist
+MEZO there, so the contract refused it; the router emitted `IncentivesRefused` and sent the whole
+fee to the treasury, leaving nothing stuck. On mainnet, where MEZO is whitelisted, the same call
+posts the incentive (see the mainnet fork below).
+
 ## The full user cycle, live
 
 A fresh wallet, [`0x6ADe…82D6`](https://explorer.test.mezo.org/address/0x6ADe5c2CAdD3C7234e2B9F043eEc6caC790382D6),
