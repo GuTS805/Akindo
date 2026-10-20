@@ -430,7 +430,8 @@ export function explain(e: unknown): string {
     const name = revert?.data?.errorName;
     if (name && ERRORS[name]) return ERRORS[name];
     if (revert?.reason) return `Reverted: ${revert.reason}`;
-    return e.shortMessage;
+    // Generic wrappers ("An unknown RPC error occurred") hide the wallet's own reason in `details`.
+    return e.details && e.details !== e.shortMessage ? `${e.shortMessage} ${e.details}` : e.shortMessage;
   }
   const code = (e as { code?: number })?.code;
   if (code === 4001) return "Cancelled in your wallet.";

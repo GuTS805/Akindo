@@ -6,7 +6,8 @@ export const EXPLORER = mezoTestnet.blockExplorers.default.url;
 export function btc(wei: bigint, dp = 8): string {
   const neg = wei < 0n;
   const [i, f = ""] = formatUnits(neg ? -wei : wei, 18).split(".");
-  return `${neg ? "-" : ""}${BigInt(i).toLocaleString("en-US")}.${(f + "0".repeat(dp)).slice(0, dp)}`;
+  const whole = `${neg ? "-" : ""}${BigInt(i).toLocaleString("en-US")}`;
+  return dp === 0 ? whole : `${whole}.${(f + "0".repeat(dp)).slice(0, dp)}`;
 }
 
 export function sats(wei: bigint): string {
