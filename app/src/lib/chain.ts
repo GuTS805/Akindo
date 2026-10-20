@@ -29,9 +29,17 @@ import { ratio } from "./format";
 
 export const WAD = 10n ** 18n;
 
+// Mezo's own RPC first. drpc's testnet endpoint is a fallback for reads (state, balances, history
+// samples) if it goes down; its eth_getLogs is unreliable, so event history still needs Mezo's.
 export const testnet = createPublicClient({
   chain: mezoTestnet,
-  transport: http(undefined, { retryCount: 2, timeout: 20_000 }),
+  transport: fallback(
+    [
+      http(undefined, { retryCount: 2, timeout: 20_000 }),
+      http("https://mezo-testnet.drpc.org", { retryCount: 1, timeout: 15_000 }),
+    ],
+    { rank: false },
+  ),
   batch: { multicall: true },
 });
 
