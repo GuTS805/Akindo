@@ -62,11 +62,11 @@
       <section class="grid two trade-section">
         <div class="card">
           <div class="tabs" role="tablist">
-            <button class="tab active" role="tab" data-tab="deposit" aria-selected="true">Deposit</button>
-            <button class="tab" role="tab" data-tab="withdraw" aria-selected="false">Withdraw</button>
+            <button class="tab active" role="tab" data-tab="deposit" aria-selected="true" aria-controls="panel-deposit">Deposit</button>
+            <button class="tab" role="tab" data-tab="withdraw" aria-selected="false" aria-controls="panel-withdraw">Withdraw</button>
           </div>
 
-          <div class="tab-panel" id="panel-deposit">
+          <div class="tab-panel" id="panel-deposit" role="tabpanel">
             <p class="faucet" id="faucet-hint" hidden>
               Your wallet needs testnet BTC to deposit.
               <a href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Get some from the Mezo faucet</a>, then come back.
@@ -80,11 +80,11 @@
               </div>
               <span class="hint" id="deposit-sats"></span>
             </label>
-            <div class="preview" id="deposit-preview"></div>
+            <div class="preview" id="deposit-preview" aria-live="polite"></div>
             <button class="btn primary wide" id="deposit-btn" disabled>Deposit</button>
           </div>
 
-          <div class="tab-panel" id="panel-withdraw" hidden>
+          <div class="tab-panel" id="panel-withdraw" role="tabpanel" hidden>
             <label class="field">
               <span>Share of your position <span class="muted" id="share-balance"></span></span>
               <div class="pct-row">
@@ -94,10 +94,10 @@
                 <button class="btn ghost small pct" data-pct="100">100%</button>
               </div>
             </label>
-            <div class="preview" id="withdraw-preview"></div>
+            <div class="preview" id="withdraw-preview" aria-live="polite"></div>
             <button class="btn primary wide" id="withdraw-btn" disabled>Withdraw</button>
           </div>
-          <div class="txstatus" id="txstatus" hidden></div>
+          <div class="txstatus" id="txstatus" role="status" aria-live="polite" hidden></div>
         </div>
 
         <div class="card">

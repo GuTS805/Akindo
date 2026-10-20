@@ -181,9 +181,11 @@ function unwinds(shares: bigint): boolean {
 let previewSeq = 0;
 async function renderWithdrawPreview() {
   const el = $("withdraw-preview");
-  document.querySelectorAll<HTMLButtonElement>(".pct").forEach((b) =>
-    b.classList.toggle("selected", Number(b.dataset.pct) === withdrawPct),
-  );
+  document.querySelectorAll<HTMLButtonElement>(".pct").forEach((b) => {
+    const on = Number(b.dataset.pct) === withdrawPct;
+    b.classList.toggle("selected", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
   const account = wallet.account;
   if (!account || !user || !vault || withdrawPct === 0 || user.shares === 0n) {
     previewSeq++; // drop any simulation still in flight
