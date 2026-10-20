@@ -9,11 +9,21 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 Vm constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
 /// @dev Mezo's BTC precompile: an ERC-20 whose balances ARE native balances.
+///      Unlike the precompile, a move made with vm.deal survives a revert of the frame that made
+///      it. Each move is counted twice, in storage (undone by a revert) and in a sentinel's
+///      balance (not undone), so a test can tell when a caught revert left moves behind.
 contract MockBTC {
     string public constant name = "Bitcoin";
     string public constant symbol = "BTC";
     uint8 public constant decimals = 18;
+    address internal constant MOVE_SENTINEL = address(uint160(uint256(keccak256("MockBTC.moves"))));
     mapping(address => mapping(address => uint256)) public allowance;
+    uint256 internal moves;
+
+    /// @notice True when a reverted frame moved BTC, leaving native balances out of step.
+    function movesLeaked() external view returns (bool) {
+        return MOVE_SENTINEL.balance != moves;
+    }
 
     function balanceOf(address a) external view returns (uint256) {
         return a.balance;
@@ -41,6 +51,8 @@ contract MockBTC {
         require(from.balance >= amount, "BTC: balance");
         vm.deal(from, from.balance - amount);
         vm.deal(to, to.balance + amount);
+        moves++;
+        vm.deal(MOVE_SENTINEL, MOVE_SENTINEL.balance + 1);
     }
 }
 

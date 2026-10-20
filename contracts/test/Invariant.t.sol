@@ -16,8 +16,8 @@ import {
 } from "./mocks/Mocks.sol";
 
 /// @dev Random sequences of user, keeper, market and MUSD actions against the vault.
-///      Every vault call runs inside a state snapshot: MockBTC moves balances with vm.deal,
-///      which a reverted call would not undo, unlike the real BTC precompile.
+///      Every vault call and market move runs inside a state snapshot: MockBTC moves balances
+///      with vm.deal, which a reverted call would not undo, unlike the real BTC precompile.
 contract Handler is Test {
     BtcLpVault internal vault;
     MockBTC internal btc;
@@ -32,6 +32,7 @@ contract Handler is Test {
     address[] public actors;
     mapping(bytes32 => uint256) public calls;
     mapping(bytes32 => uint256) public reverts;
+    mapping(bytes32 => uint256) public unmodelled;
 
     struct Deps {
         BtcLpVault vault;
@@ -112,16 +113,27 @@ contract Handler is Test {
         bps = bound(bps, -500, 500);
         uint256 p = feed.price() * uint256(10_000 + bps) / 10_000;
         p = bound(p, 45_000e18, 80_000e18);
+        uint256 snap = vm.snapshotState();
         feed.set(p);
-        setPoolPrice(p);
-        calls["movePrice"]++;
+        _tryPoolPrice(p, snap, "movePrice");
     }
 
     /// @dev Someone trades the pool away from the oracle (up to 8%).
     function pushPool(int256 bps) external {
         bps = bound(bps, -800, 800);
-        setPoolPrice(feed.price() * uint256(10_000 + bps) / 10_000);
-        calls["pushPool"]++;
+        _tryPoolPrice(feed.price() * uint256(10_000 + bps) / 10_000, vm.snapshotState(), "pushPool");
+    }
+
+    /// @dev Market moves run inside a snapshot too: a swap that reverts after MockBTC paid out
+    ///      would otherwise leave the pool holding less BTC than its reserves say.
+    function _tryPoolPrice(uint256 p, uint256 snap, bytes32 name) internal {
+        try this.setPoolPrice(p) {
+            vm.deleteStateSnapshot(snap);
+            calls[name]++;
+        } catch {
+            vm.revertToStateAndDelete(snap);
+            reverts[name]++;
+        }
     }
 
     function streamRewards(uint256 amount) external {
@@ -191,7 +203,13 @@ contract Handler is Test {
         uint256 snap = vm.snapshotState();
         vm.prank(caller);
         (bool ok,) = address(vault).call{value: value}(data);
-        if (ok) {
+        if (ok && btc.movesLeaked()) {
+            // A deposit's deployment step reverted inside the vault after MockBTC moved BTC.
+            // On Mezo the revert undoes those moves; here it cannot, so the call is dropped.
+            // DepositV2Test covers that path with a revert that comes before any BTC moves.
+            vm.revertToStateAndDelete(snap);
+            unmodelled[name]++;
+        } else if (ok) {
             vm.deleteStateSnapshot(snap);
             calls[name]++;
         } else {
