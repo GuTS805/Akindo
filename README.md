@@ -20,7 +20,8 @@ a collateral ratio.
   <a href="https://mblp.vercel.app/docs/">Docs</a> ·
   <a href="https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract">Verified contract</a> ·
   <a href="contracts/">Contracts &amp; tests</a> ·
-  <a href="docs/evidence.md">Evidence (every tx)</a>
+  <a href="docs/evidence.md">Evidence (every tx)</a> ·
+  <a href="docs/roadmap.md">Roadmap</a>
 </p>
 
 ---
@@ -198,9 +199,10 @@ withdraw on the rewards vault.
 
 ## Roadmap
 
-- **Concentrated BTC/MUSD pool**, which currently receives the larger gauge share
-- **Optional MEZO → veMEZO compounding**
-- **Mainnet deployment** on the official gauge: config in [`MezoMainnet`](contracts/script/Addresses.sol), already exercised by the mainnet fork test
+Full plan, including the path to a Mezo Market listing and the economics: [`docs/roadmap.md`](docs/roadmap.md).
+
+- **Wave 2:** a range-managed strategy for the concentrated BTC/MUSD pool (the larger gauge share), the incentive router live in the deployed vaults, and a real-wallet Passport run
+- **Mainnet:** freeze, audit, deploy with rising deposit caps on Mezo's own gauge; the configuration is in [`MezoMainnet`](contracts/script/Addresses.sol) and already exercised by the mainnet fork test
 
 ## Development
 

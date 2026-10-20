@@ -1,0 +1,59 @@
+# Roadmap and plan beyond the hackathon
+
+mbLP exists to deepen BTC/MUSD liquidity on Mezo. This page is the plan for getting it from a
+tested testnet product to a mainnet vault Mezo can list, and an honest look at its economics.
+
+## Where it stands (end of Wave 1)
+
+- Vault, reward gauge and incentive router written, tested (65 tests, an invariant suite, testnet
+  and mainnet fork tests, 97% line coverage) and reviewed with Slither
+- Two vaults live on Mezo testnet with real deposits, claims and withdrawals
+  ([evidence](evidence.md)); a keeper runs rebalance, harvest and reward top-ups
+- Mainnet configuration in place and exercised by a fork test against the real MUSD, pool, gauge
+  and gauge incentive contracts
+- Six-page app with EVM wallets and Bitcoin wallets through Mezo Passport
+
+## Wave 2 (2–15 Nov 2026)
+
+1. **Concentrated BTC/MUSD pool.** The CL gauge receives the larger share of emissions on mainnet
+   (69k MEZO a day against 42k on the volatile gauge in October). A range-managed strategy for it
+   is the biggest yield lever.
+2. **Incentive router in the deployed vault.** Redeploy the testnet vaults with the
+   `IncentiveRouter` as fee recipient, so the flywheel runs live, not only on a fork.
+3. **Real-wallet Passport flow.** Run deposit, claim and withdraw from a Bitcoin wallet through
+   Mezo Passport, record the transactions, fix what that turns up.
+4. **Address the Wave 1 feedback** from the Mezo team.
+
+## Path to mainnet and a Mezo Market listing
+
+Mezo's [dApp requirements](https://mezo.org/docs/developers/getting-started/dapp-requirements/)
+for featuring in the Mezo Market are MUSD integration, a third-party audit and full mainnet
+functionality.
+
+| Requirement | Status | Plan |
+| --- | --- | --- |
+| MUSD integration | Done | The vault's core is a MUSD trove |
+| Mainnet functionality | Configured, fork-tested | Deploy with deposit caps that rise in steps; seed it ourselves |
+| Third-party audit | Not started | Apply for an audit after Wave 2 with the frozen Wave 2 code; Slither triage and test suite ready for auditors |
+
+Launch steps, in order: freeze code, audit, deploy with a low cap, run the keeper, raise the cap as
+the position proves itself.
+
+## Economics, honestly
+
+- **Depositors** earn the gauge's MEZO on the LP half of their value. At October's mainnet rates
+  that is about 24% a year before 1% MUSD interest, falling as liquidity grows.
+- **The protocol** takes 10% of rewards. The whole volatile BTC/MUSD gauge emits about 42k MEZO a
+  day, roughly $45k a year at today's price, so fee revenue on this gauge alone is small. The fee
+  is better used to pull more emissions to the pool than to be kept.
+- **That is what the incentive router is for.** Posting part of the fee as gauge incentives buys
+  veBTC votes for BTC/MUSD, raising the emissions the vault earns. Every deposit deepens the pool
+  Mezo most needs, and the incentives keep that pool attractive to voters.
+- **For Mezo**, each BTC deposited adds MUSD debt (interest revenue for Mezo) and BTC/MUSD depth,
+  which makes buying BTC with MUSD cheaper for everyone.
+
+## Risks we track
+
+MEZO's thin on-chain liquidity, impermanent loss on the pool share, oracle staleness and MUSD
+recovery mode, the last exit on a thin pool, and the code being unaudited. Each is documented in
+the [README](../README.md#known-limits) and, where it can be, covered by a test.
