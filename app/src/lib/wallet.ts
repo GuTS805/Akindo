@@ -172,6 +172,9 @@ export function walletClient() {
   return { ...client, writeContract };
 }
 
+/** Safe's ExecutionFailure(bytes32,uint256) event. */
+const SAFE_EXECUTION_FAILURE = "0x23428b18acfb3ea64b08dc0c1d296ea9c09702c09083ca5272e64d115b687d23";
+
 const listening = new WeakSet<EIP1193Provider>();
 function attachListeners(p: EIP1193Provider) {
   if (listening.has(p)) return;
@@ -351,7 +354,18 @@ export async function sendTx(
     hash = await write();
     status(`${label}: sent ${txLink(hash)}, waiting for the block…`);
     const receipt = await testnet.waitForTransactionReceipt({ hash, pollingInterval: 2_000, timeout: 180_000 });
-    const ok = receipt.status === "success";
+    // A Passport smart account (a Safe paying the relayer a refund) does not revert when the inner
+    // call fails: the transaction succeeds and the Safe logs ExecutionFailure. Treat that as failed.
+    const innerFailed =
+      !!wallet.bitcoin &&
+      receipt.logs.some(
+        (l) => l.address.toLowerCase() === wallet.account?.toLowerCase() && l.topics[0] === SAFE_EXECUTION_FAILURE,
+      );
+    const ok = receipt.status === "success" && !innerFailed;
+    if (innerFailed) {
+      status(`${label} failed inside your smart account ${txLink(hash)}: nothing moved but the relayer's gas. Try again.`, true);
+      return false;
+    }
     status(ok ? `${label} confirmed ${txLink(hash)}` : `${label} reverted ${txLink(hash)}`, !ok);
     return ok;
   } catch (e) {

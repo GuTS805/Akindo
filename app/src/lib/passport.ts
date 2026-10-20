@@ -62,7 +62,12 @@ export async function connectBitcoinWallet(id: BitcoinWalletId): Promise<{ accou
           return null;
         case "eth_sendTransaction": {
           const tx = (params?.[0] ?? {}) as { to?: Address; value?: Hex; data?: Hex };
-          return client.sendTransaction({ to: tx.to, value: tx.value ? BigInt(tx.value) : 0n, data: tx.data ?? "0x" });
+          const hash = await client.sendTransaction({ to: tx.to, value: tx.value ? BigInt(tx.value) : 0n, data: tx.data ?? "0x" });
+          // On a relayer error Passport returns "0x" instead of throwing.
+          if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+            throw new Error("Mezo's relayer did not accept the transaction. Check the smart account has testnet BTC, then try again.");
+          }
+          return hash;
         }
         case "wallet_watchAsset":
         case "wallet_addEthereumChain":
