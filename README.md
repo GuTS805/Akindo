@@ -180,7 +180,7 @@ withdraw on the rewards vault.
 | Incentive router | 7 | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
 | Manipulation | 7 | Deposit → push the pool off the oracle → withdraw → push it back, with the attacker's own capital. Never profitable (512-run fuzz, 1–2,000 BTC, 2–80% skews, at mainnet's real 0.3% pool fee) |
 | Edge cases | 18 | Every config guard, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, and the last exit after a 15% fall (waits for arbitrage rather than sell below the band, then pays in full) |
-| Invariant | 65,536 random actions | Deposits, withdrawals, transfers, reward streams, oracle moves, pool manipulation, liquidations and redemptions. Checks that shares and rewards add up, the trove obeys MUSD's rules, no LP is left unstaked and **every holder can exit** |
+| Invariant | 65,536 random actions | Deposits, withdrawals, transfers, reward streams, oracle moves, pool manipulation, liquidations and redemptions. Checks that shares and rewards add up, the trove obeys MUSD's rules, no LP is left unstaked and **every holder can exit**. A replay of its one CI failure (a test-harness artifact, see [SECURITY.md](contracts/SECURITY.md#review-findings-october-2026)) runs with it |
 | Testnet fork | 1 | Full deposit → partial → full withdraw against the deployed testnet MUSD and Mezo Pools contracts (0.9997 BTC back per BTC) |
 | **Mainnet fork** | 1 | The same cycle against **mainnet** MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned **3,309 MEZO in one day** and returned 0.19995 BTC; the fee flywheel posts 184 MEZO on the gauge's real incentive contract |
 
@@ -200,6 +200,7 @@ withdraw on the rewards vault.
 - **Stale oracle:** MUSD reads the oracle on every trove change, so deposits and exits wait while it is stale.
 - **MUSD recovery mode** (system CR under 150%) blocks closing troves and restricts collateral withdrawals; exits that need either wait for the system to recover.
 - **The last exit** buys the LP's MUSD gap on the DEX and waits rather than sell BTC below the oracle band. Not binding on testnet; it can be on a thin mainnet pool.
+- **Idle deposits in some states:** after a redemption, a liquidation or exits settled inside the vault, a deposit's deployment step can fail its collateral-ratio check; the deposit still succeeds and waits as idle, withdrawable BTC. Fix planned for the next vault ([details](contracts/SECURITY.md#review-findings-october-2026)).
 
 ## Roadmap
 
