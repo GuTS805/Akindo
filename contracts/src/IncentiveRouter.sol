@@ -30,6 +30,8 @@ contract IncentiveRouter is ReentrancyGuard {
     uint256 public immutable incentiveBps;
 
     event Pushed(uint256 toIncentives, uint256 toTreasury);
+    /// @notice The incentive contract refused the tokens (e.g. no longer whitelisted, gauge killed).
+    event IncentivesRefused(uint256 amount);
 
     error BadConfig();
     error NothingToPush();
@@ -45,18 +47,24 @@ contract IncentiveRouter is ReentrancyGuard {
     }
 
     /// @notice Post this contract's balance: `incentiveBps` as a gauge incentive for the current
-    ///         epoch, the rest to the treasury.
+    ///         epoch, the rest to the treasury. If the incentive contract refuses the tokens, the
+    ///         whole balance goes to the treasury, so fees can never be stuck here.
     function push() external nonReentrant returns (uint256 toIncentives, uint256 toTreasury) {
         uint256 balance = token.balanceOf(address(this));
         if (balance == 0) revert NothingToPush();
         toIncentives = Math.mulDiv(balance, incentiveBps, BPS);
-        toTreasury = balance - toIncentives;
-        emit Pushed(toIncentives, toTreasury);
 
         if (toIncentives > 0) {
             token.forceApprove(address(incentives), toIncentives);
-            incentives.notifyRewardAmount(address(token), toIncentives);
+            try incentives.notifyRewardAmount(address(token), toIncentives) {}
+            catch {
+                token.forceApprove(address(incentives), 0);
+                emit IncentivesRefused(toIncentives);
+                toIncentives = 0;
+            }
         }
+        toTreasury = token.balanceOf(address(this));
+        emit Pushed(toIncentives, toTreasury);
         if (toTreasury > 0) token.safeTransfer(treasury, toTreasury);
     }
 }

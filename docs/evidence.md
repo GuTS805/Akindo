@@ -76,6 +76,6 @@ cd contracts && MEZO_MAINNET_RPC=https://mezo.drpc.org forge test --mc MainnetFo
 
 ## Tests and analysis
 
-- 65 unit, fuzz, recovery, gauge, router and edge-case tests, an invariant suite and two fork tests;
+- 73 unit, fuzz, recovery, gauge, router, manipulation and edge-case tests, an invariant suite and two fork tests;
   97% line and 100% function coverage of `src/`
 - Slither: 32 results, each reviewed in [`contracts/SECURITY.md`](../contracts/SECURITY.md)

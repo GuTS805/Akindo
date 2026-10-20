@@ -10,8 +10,10 @@ reproduce it.
   likewise has a fixed split and fixed destinations, and anyone can call `push()`.
 - **Oracle-priced shares.** Deposits and exits are priced from Mezo's PriceFeed. LP is valued at
   the fair price `2·√(k·price)`, so moving the pool's spot price cannot inflate or dilute shares.
-- **Oracle band.** Every pool action reverts when the pool is more than `maxDeviationBps` from the
-  oracle (testnet 6%, mainnet 2%); every swap has an oracle-based minimum output.
+- **Oracle band.** Adding liquidity and rebalancing revert when the pool is more than
+  `maxDeviationBps` from the oracle (testnet 6%, mainnet 2%), and every swap has an oracle-based
+  minimum output. Exits deliberately skip the band check so holders can always leave; what that
+  allows is measured in `Manipulation.t.sol` (see the review findings below).
 - **Reentrancy.** Every external entry point is `nonReentrant`. External calls go only to the
   configured MUSD and Mezo Pools contracts, plus the final BTC/MUSD transfer to the caller.
 - **First depositor.** 1,000 dead shares are minted to `0xdEaD` on the first deposit.
@@ -27,11 +29,14 @@ reproduce it.
 | `BtcLpVault.t.sol` (27) | Unit and fuzz tests of pricing, deposits, exits, rebalancing, slippage, donations, rewards |
 | `Recovery.t.sol` (5) | Liquidation fallback and reopening, redemption surplus, transfer reward leaks, donation attacks |
 | `RewardGauge.t.sol` (9) | Reward streaming and the vault's harvest → claim path |
-| `IncentiveRouter.t.sol` (6) | Fee split between gauge incentives and treasury, permissionless push, config guards |
+| `IncentiveRouter.t.sol` (7) | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
+| `Manipulation.t.sol` (7) | Deposit, push the pool off the oracle, withdraw, push it back, with the attacker's own capital: never profitable (512-run fuzz over 1–2,000 BTC and 2–80% skews), exits revert when the pool is pushed down |
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
 | `Invariant.t.sol` | 1,024 runs × 64 random actions, including pool manipulation, oracle moves, liquidations and redemptions: shares and rewards add up, the trove obeys MUSD's rules, no LP left unstaked, every holder can exit |
 | `Fork.t.sol` | Full cycle against the deployed testnet MUSD and Mezo Pools |
 | `MainnetFork.t.sol` | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
+
+73 unit and fuzz tests, plus the invariant suite and two fork tests.
 
 Coverage of `src/` (`forge coverage`): 97% of lines, 94% of statements, 100% of functions,
 76% of branches.
@@ -54,6 +59,25 @@ cd contracts && slither . --filter-paths "lib/|test/|script/"
 | `unused-return` (Medium) | 5 | Ignored tuple members of `getReserves`, `getEntireDebtAndColl`, `getApproxHint` | Intended: only the needed members are used. |
 | `timestamp` (Low) | 8 | Router deadlines and reward-period maths | Expected; deadlines are `block.timestamp` because outputs are bounded by the oracle, not by time. |
 | `reentrancy-benign` (Low) | 2 | Events emitted after calls in `_harvest` / `claimRewards` | Benign. |
+
+## Review findings (October 2026)
+
+A second pass with automated security, TypeScript and failure-path reviewers. Each contract
+finding was checked against a test before deciding.
+
+| Finding | Verdict |
+| --- | --- |
+| Exits remove LP at the spot price without a band check, so an attacker could deposit, skew the pool, withdraw and skew it back | **Not profitable.** The pool fee is 0.3% on mainnet (factory `getFee`), the same as the mock. Pushing the pool and back costs more than the skewed exit gains: a 1,000 BTC attack at +50% loses 0.26 BTC, and the fuzz test never finds a profit. With the pool pushed down the exit's MUSD top-up fails its price check and reverts. |
+| A deposit's MUSD borrowing fee (0.1% of the new debt) is carried by all holders, not only the depositor | **Real, small.** About 0.025% of the deposit, shared pro rata. A round trip still costs the depositor far more than it shifts, so it is not an attack. Fix planned for the Wave 2 vault: mint shares from the NAV change instead of the deposit amount. |
+| The exit's MUSD top-up swap allows up to `maxDeviationBps` of slippage | Bounded by the shortfall on a last-exit or unwind path; the pool must already be inside the band. Accepted, documented. |
+| A best-effort rebalance inside `deposit` can still revert the deposit | Denial of service only, never loss; the deposit can be retried. Wave 2 will isolate it. |
+| `IncentiveRouter.push` reverted entirely if the incentive contract refused the token | **Fixed.** A refused incentive now sends the whole balance to the treasury (`test_push_refusedIncentives_goToTreasury`). |
+| `notifyRewardAmount` on `RewardGauge` is permissionless, so dust can stretch the stream | Accepted: it slows a stream but cannot take or lock rewards. |
+
+App and keeper fixes from the same pass: event history now pages through the testnet RPC's
+10,000-block log limit (history on the older vault had gone silently empty), read failures are
+shown instead of rendered as zeros, refreshes never show one account's balances under another,
+and the keeper fails its run when a transaction reverts.
 
 ## Known limits
 

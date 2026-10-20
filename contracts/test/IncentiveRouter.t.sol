@@ -18,6 +18,13 @@ contract MockIncentives {
     }
 }
 
+/// @dev An incentive contract that no longer accepts the token (Voter whitelist removed).
+contract RefusingIncentives {
+    function notifyRewardAmount(address, uint256) external pure {
+        revert("NotWhitelisted");
+    }
+}
+
 contract IncentiveRouterTest is BaseTest {
     MockIncentives internal incentives;
     IncentiveRouter internal feeRouter;
@@ -72,6 +79,19 @@ contract IncentiveRouterTest is BaseTest {
         none.push();
         assertEq(mezo.balanceOf(treasury), 100e18);
         assertEq(incentives.tokenRewardsPerEpoch(address(mezo), _epoch()), 0);
+    }
+
+    function test_push_refusedIncentives_goToTreasury() public {
+        RefusingIncentives refusing = new RefusingIncentives();
+        IncentiveRouter r = new IncentiveRouter(address(mezo), address(refusing), treasury, 5_000);
+        mezo.mint(address(r), 100e18);
+        vm.expectEmit(address(r));
+        emit IncentiveRouter.IncentivesRefused(50e18);
+        (uint256 toIncentives, uint256 toTreasury) = r.push();
+        assertEq(toIncentives, 0);
+        assertEq(toTreasury, 100e18);
+        assertEq(mezo.balanceOf(treasury), 100e18, "nothing stuck in the router");
+        assertEq(mezo.allowance(address(r), address(refusing)), 0, "approval cleared");
     }
 
     function test_push_revertsWhenEmpty() public {

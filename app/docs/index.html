@@ -71,9 +71,11 @@
               <li><strong>Ratio too low:</strong> remove LP, repay debt with its MUSD and put its BTC back as collateral.</li>
             </ul>
             <p>
-              Every pool action first checks that the pool price is within the oracle band (±6% on testnet, ±2%
-              planned for mainnet), so a manipulated pool makes it wait instead of trading at a bad price. A GitHub
-              Action calls <code>rebalance()</code> and <code>harvest()</code> every 30 minutes; anyone else can too.
+              Adding liquidity and rebalancing first check that the pool price is within the oracle band (±6% on
+              testnet, ±2% planned for mainnet), so a manipulated pool makes them wait instead of trading at a bad
+              price. Exits skip that check so you can always leave; a test suite shows that pushing the pool to profit
+              from someone's exit costs the attacker more than it gains. A GitHub
+              Action calls <code>rebalance()</code> and <code>harvest()</code> on a schedule (every 30 minutes requested; GitHub runs it every few hours); anyone else can too.
             </p>
           </section>
 
@@ -171,7 +173,7 @@
             <h3>Why does a withdrawal sometimes return MUSD?</h3>
             <p>When BTC has risen, your LP slice holds more MUSD than your debt slice; the extra MUSD is yours.</p>
             <h3>Who runs it?</h3>
-            <p>Nobody needs to. Rebalance and harvest are permissionless; a public keeper runs every 30 minutes.</p>
+            <p>Nobody needs to. Rebalance and harvest are permissionless; a public keeper runs on a schedule, every few hours in practice.</p>
             <h3>Can I use a Bitcoin wallet?</h3>
             <p>Yes. Choose Unisat, OKX or Xverse under "Bitcoin wallets · Mezo Passport" when connecting. Mezo Passport gives your Bitcoin wallet a Mezo smart account: your wallet signs, the smart account deposits and withdraws, and Mezo's relayer submits the transaction. The smart account's address is shown in the header; send it testnet BTC from the faucet first.</p>
             <h3>What is next?</h3>
