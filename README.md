@@ -91,6 +91,7 @@ payout simulated before you sign, claim rewards, and the permissionless keeper a
 | **PriceFeed** | Prices shares, bands every pool action, values LP at the fair price `2·√(k·price)` |
 | **Mezo Pools** — Router, volatile BTC/MUSD pool, Gauge | Liquidity, LP staking and MEZO rewards |
 | **Redemptions and liquidations** | Surplus collateral is reclaimed automatically; after a liquidation the vault keeps its LP and rebuilds the trove |
+| **Mezo Passport** | Bitcoin wallets (Unisat, OKX, Xverse) connect through Passport's connectors and act through a Mezo smart account, next to any EVM wallet |
 | **Mainnet data** | Gauge emissions, pool depth, MEZO price, MUSD supply and veBTC are read live in the app |
 
 **No owner, no admin key, no upgrades.** The fee and every parameter are fixed at deployment, and
@@ -99,7 +100,7 @@ payout simulated before you sign, claim rewards, and the permissionless keeper a
 ## Try it on testnet
 
 1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
-2. Open **[mblp.vercel.app](https://mblp.vercel.app)** and connect an EVM wallet. The app adds Mezo Testnet for you.
+2. Open **[mblp.vercel.app](https://mblp.vercel.app)** and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
 3. **Deposit** from 0.001 BTC. It goes into the trove and pool in the same transaction.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
@@ -166,7 +167,6 @@ the vault tracks plain BTC closely around today's price; the rewards are what pu
 
 - **Concentrated BTC/MUSD pool**, which currently receives the larger gauge share
 - **Optional MEZO → veMEZO compounding**
-- **Mezo Passport** for Bitcoin-native wallets
 - **Mainnet deployment** on the official gauge: config in [`MezoMainnet`](contracts/script/Addresses.sol), already exercised by the mainnet fork test
 
 ## Development

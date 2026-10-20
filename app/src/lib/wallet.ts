@@ -4,20 +4,31 @@ import { explain, testnet } from "./chain";
 import { $, EXPLORER, short, txLink } from "./format";
 import { clearNotice, showNotice } from "./layout";
 
-declare global {
-  interface Window {
-    ethereum?: EIP1193Provider;
-  }
-}
+const injected = (window as { ethereum?: EIP1193Provider }).ethereum;
 
 type Announced = { info: { uuid: string; name: string; icon: string; rdns: string }; provider: EIP1193Provider };
+type BitcoinWalletId = "unisat" | "okx" | "xverse";
+type Choice = { kind: "evm"; wallet: Announced } | { kind: "btc"; id: BitcoinWalletId };
+
+const BITCOIN_WALLET_NAMES: Record<BitcoinWalletId, string> = { unisat: "Unisat", okx: "OKX Wallet", xverse: "Xverse" };
+const BTC_PREFIX = "btc:";
+
+/** Bitcoin wallets injected in this browser (checked without loading Mezo Passport). */
+function installedBitcoinWallets(): BitcoinWalletId[] {
+  const w = window as unknown as Record<string, unknown>;
+  const found: BitcoinWalletId[] = [];
+  if (w.unisat) found.push("unisat");
+  if ((w.okxwallet as { bitcoin?: unknown } | undefined)?.bitcoin) found.push("okx");
+  if (w.XverseProviders || w.BitcoinProvider) found.push("xverse");
+  return found;
+}
 
 const announced = new Map<string, Announced>();
 const WALLET_KEY = "mblp.wallet";
 const subscribers = new Set<() => void>();
 
-export const wallet: { account?: Address; provider?: EIP1193Provider; busy: boolean } = {
-  provider: window.ethereum,
+export const wallet: { account?: Address; provider?: EIP1193Provider; busy: boolean; bitcoin?: string } = {
+  provider: injected,
   busy: false,
 };
 
@@ -55,29 +66,80 @@ function remembered(): Announced | undefined {
   }
 }
 
-function pickWallet(): Promise<Announced> {
+function option(label: string, icon: string | undefined, onClick: () => void, note?: string) {
+  const li = document.createElement("li");
+  const btn = document.createElement("button");
+  btn.className = "btn wide wallet-option";
+  if (icon) {
+    const img = document.createElement("img");
+    img.src = icon;
+    img.alt = "";
+    btn.append(img);
+  }
+  btn.append(document.createTextNode(label));
+  if (note) {
+    const small = document.createElement("small");
+    small.className = "muted";
+    small.textContent = note;
+    btn.append(small);
+  }
+  btn.addEventListener("click", onClick);
+  li.append(btn);
+  return li;
+}
+
+function heading(text: string) {
+  const li = document.createElement("li");
+  li.className = "wallet-group";
+  li.textContent = text;
+  return li;
+}
+
+function rememberedBitcoin(): BitcoinWalletId | undefined {
+  try {
+    const v = localStorage.getItem(WALLET_KEY);
+    return v?.startsWith(BTC_PREFIX) ? (v.slice(BTC_PREFIX.length) as BitcoinWalletId) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function pickWallet(): Promise<Choice> {
   const dialog = $<HTMLDialogElement>("wallet-picker");
   const ul = $("wallet-list");
   ul.innerHTML = "";
   return new Promise((resolve, reject) => {
-    for (const a of announced.values()) {
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
-      btn.className = "btn wide wallet-option";
-      const img = document.createElement("img");
-      img.src = a.info.icon;
-      img.alt = "";
-      btn.append(img, document.createTextNode(a.info.name));
-      btn.addEventListener("click", () => {
-        dialog.close();
-        resolve(a);
-      });
-      li.append(btn);
-      ul.append(li);
+    const choose = (c: Choice) => {
+      dialog.close();
+      resolve(c);
+    };
+    if (announced.size > 0) ul.append(heading("EVM wallets"));
+    for (const a of announced.values()) ul.append(option(a.info.name, a.info.icon, () => choose({ kind: "evm", wallet: a })));
+    const btc = installedBitcoinWallets();
+    ul.append(heading("Bitcoin wallets · Mezo Passport"));
+    for (const id of Object.keys(BITCOIN_WALLET_NAMES) as BitcoinWalletId[]) {
+      const installed = btc.includes(id);
+      ul.append(
+        option(
+          BITCOIN_WALLET_NAMES[id],
+          undefined,
+          () => choose({ kind: "btc", id }),
+          installed ? "signs for a Mezo smart account" : "not detected in this browser",
+        ),
+      );
     }
     dialog.addEventListener("close", () => reject(new Error("No wallet chosen.")), { once: true });
     dialog.showModal();
   });
+}
+
+async function useBitcoinWallet(id: BitcoinWalletId) {
+  const { connectBitcoinWallet } = await import("./passport");
+  const { account, provider } = await connectBitcoinWallet(id);
+  wallet.provider = provider;
+  wallet.account = account;
+  wallet.bitcoin = BITCOIN_WALLET_NAMES[id];
+  remember(BTC_PREFIX + id);
 }
 
 function eth(): EIP1193Provider {
@@ -130,11 +192,18 @@ export async function ensureChain() {
 
 export async function connect() {
   try {
-    // Several wallets: let the user choose; one: use it; none announced: window.ethereum.
-    if (announced.size > 1) {
+    // Several wallets (or a Bitcoin wallet): let the user choose; one: use it; none: injected.
+    if (announced.size > 1 || installedBitcoinWallets().length > 0 || (announced.size === 0 && !injected)) {
       const chosen = await pickWallet();
-      wallet.provider = chosen.provider;
-      remember(chosen.info.rdns);
+      if (chosen.kind === "btc") {
+        await useBitcoinWallet(chosen.id);
+        clearNotice();
+        emit();
+        return;
+      }
+      wallet.provider = chosen.wallet.provider;
+      wallet.bitcoin = undefined;
+      remember(chosen.wallet.info.rdns);
     } else if (announced.size === 1) {
       const only = [...announced.values()][0];
       wallet.provider = only.provider;
@@ -174,6 +243,14 @@ export async function connect() {
 export async function initWallet() {
   $("connect").addEventListener("click", () => (wallet.account ? undefined : connect()));
   await new Promise((r) => setTimeout(r, 150)); // let EIP-6963 wallets announce
+  const btc = rememberedBitcoin();
+  if (btc && installedBitcoinWallets().includes(btc)) {
+    await useBitcoinWallet(btc).catch(() => undefined);
+    if (wallet.account) {
+      emit();
+      return;
+    }
+  }
   wallet.provider = remembered()?.provider ?? wallet.provider;
   if (wallet.provider) {
     attachListeners(wallet.provider);
@@ -185,7 +262,9 @@ export async function initWallet() {
 
 function renderConnectButton() {
   const btn = $<HTMLButtonElement>("connect");
-  if (btn && !btn.disabled) btn.textContent = wallet.account ? short(wallet.account) : "Connect wallet";
+  if (btn && !btn.disabled)
+    btn.textContent = wallet.account ? `${wallet.bitcoin ? "₿ " : ""}${short(wallet.account)}` : "Connect wallet";
+  if (btn) btn.title = wallet.bitcoin ? `${wallet.bitcoin} via Mezo Passport, smart account ${wallet.account}` : "";
 }
 
 export async function updateNetworkBadge() {

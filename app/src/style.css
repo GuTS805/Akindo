@@ -1250,3 +1250,21 @@ code {
   flex: 1 1 260px;
   min-width: 0;
 }
+
+/* wallet picker groups (EVM / Bitcoin via Mezo Passport) */
+.wallet-group {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.wallet-group:first-child {
+  margin-top: 0;
+}
+.wallet-option small {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+}

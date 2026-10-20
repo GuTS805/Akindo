@@ -8,6 +8,8 @@ export default defineConfig({
   base: process.env.GITHUB_PAGES ? "/Akindo/" : "/",
   build: {
     target: "es2022",
+    // Mezo Passport's Bitcoin wallet stack is one large chunk, loaded only when a Bitcoin wallet connects.
+    chunkSizeWarningLimit: 4_000,
     rollupOptions: {
       input: {
         home: resolve(__dirname, "index.html"),
