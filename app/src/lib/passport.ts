@@ -32,11 +32,22 @@ export function redirectRelay(url: string): string {
   return url.startsWith(DEAD_RELAY) ? LIVE_RELAY + url.slice(DEAD_RELAY.length) : url;
 }
 const nativeFetch = window.fetch.bind(window);
-window.fetch = (input, init) => {
-  if (typeof input === "string") return nativeFetch(redirectRelay(input), init);
-  if (input instanceof URL) return nativeFetch(redirectRelay(input.href), init);
-  if (input instanceof Request && input.url.startsWith(DEAD_RELAY)) return nativeFetch(new Request(redirectRelay(input.url), input), init);
-  return nativeFetch(input, init);
+window.fetch = async (input, init) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  if (!url.startsWith(DEAD_RELAY) && !url.startsWith(LIVE_RELAY)) return nativeFetch(input, init);
+  const target = redirectRelay(url);
+  const res = await nativeFetch(input instanceof Request ? new Request(target, input) : target, init);
+  // Passport reads only `transactionHash` and turns anything else into the hash "0x", hiding
+  // the relayer's reason. Surface it instead.
+  const body = (await res.clone().json().catch(() => undefined)) as
+    | { transactionHash?: string; message?: string; error?: string }
+    | undefined;
+  if (!body?.transactionHash) {
+    const reason = (body?.error ?? body?.message ?? `HTTP ${res.status}`).split("\n")[0].slice(0, 240);
+    console.error("Mezo relayer refused", target, res.status, body);
+    throw new Error(`Mezo's relayer refused the transaction: ${reason}`);
+  }
+  return res;
 };
 
 type SmartAccountClient = {
