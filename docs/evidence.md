@@ -60,7 +60,12 @@ the vault uses, takes funding from anyone, and pays the real testnet MEZO token
 ```
 MEZO claimed after 1 day: 3309.277852535972514077
 value back (BTC) for 0.2 BTC: 0.199950959043366148
+MEZO posted as a gauge incentive: 183.705393032249390098
 ```
+
+The last line is the fee flywheel: the vault's fee, routed through `IncentiveRouter`, lands on the
+gauge's real `BribeVotingReward` (`0x94A9…E305`, `PoolsVoter.gaugeToBribe`) for the current epoch,
+where veBTC voters earn it by voting for the BTC/MUSD gauge.
 
 That is about 0.06% of the deposit a day in MEZO at today's emissions. The test runs in
 [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) on every push:
@@ -71,6 +76,6 @@ cd contracts && MEZO_MAINNET_RPC=https://mezo.drpc.org forge test --mc MainnetFo
 
 ## Tests and analysis
 
-- 59 unit, fuzz, recovery, gauge and edge-case tests, an invariant suite and two fork tests;
+- 65 unit, fuzz, recovery, gauge, router and edge-case tests, an invariant suite and two fork tests;
   97% line and 100% function coverage of `src/`
-- Slither: 31 results, each reviewed in [`contracts/SECURITY.md`](../contracts/SECURITY.md)
+- Slither: 32 results, each reviewed in [`contracts/SECURITY.md`](../contracts/SECURITY.md)

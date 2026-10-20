@@ -6,6 +6,11 @@ import {BtcLpVault} from "../src/BtcLpVault.sol";
 import {ITroveManager, IGauge} from "../src/interfaces/IMezo.sol";
 import {MockBTC, MockToken} from "./mocks/Mocks.sol";
 import {MezoMainnet} from "../script/Addresses.sol";
+import {IncentiveRouter} from "../src/IncentiveRouter.sol";
+
+interface IBribe {
+    function tokenRewardsPerEpoch(address token, uint256 epochStart) external view returns (uint256);
+}
 
 interface IGaugeStream {
     function rewardRate() external view returns (uint256);
@@ -82,5 +87,38 @@ contract MainnetForkTest is Test {
         uint256 value = btc1 + btc2 + (musd1 + musd2) * 1e18 / price;
         emit log_named_decimal_uint("value back (BTC) for 0.2 BTC", value, 18);
         assertGt(value, 0.194e18);
+    }
+
+    /// The fee flywheel on mainnet: the vault's fee goes to an IncentiveRouter, which posts half
+    /// of it as a MEZO incentive on the BTC/MUSD gauge's real BribeVotingReward, for veBTC
+    /// voters to earn by voting for that gauge.
+    function test_mainnetFork_feeBecomesGaugeIncentive() public {
+        address treasury = makeAddr("treasury");
+        IncentiveRouter feeRouter =
+            new IncentiveRouter(MezoMainnet.MEZO, MezoMainnet.GAUGE_INCENTIVES, treasury, 5_000);
+        BtcLpVault.Config memory c = MezoMainnet.config(address(feeRouter));
+        BtcLpVault v = new BtcLpVault(c);
+
+        vm.prank(alice);
+        v.deposit{value: 0.2e18}(0);
+        skip(1 days);
+        IGaugeStream g = IGaugeStream(MezoMainnet.GAUGE);
+        if (g.rewardRate() == 0 || g.periodFinish() <= block.timestamp - 1 days) {
+            vm.skip(true); // gauge not streaming at this block
+            return;
+        }
+        v.harvest();
+        uint256 feeTaken = MockToken(MezoMainnet.MEZO).balanceOf(address(feeRouter));
+        assertGt(feeTaken, 0, "fee reached the router");
+
+        uint256 epoch = block.timestamp - (block.timestamp % 7 days);
+        IBribe bribe = IBribe(MezoMainnet.GAUGE_INCENTIVES);
+        uint256 before = bribe.tokenRewardsPerEpoch(MezoMainnet.MEZO, epoch);
+        (uint256 toIncentives, uint256 toTreasury) = feeRouter.push();
+
+        emit log_named_decimal_uint("MEZO posted as a gauge incentive", toIncentives, 18);
+        assertEq(bribe.tokenRewardsPerEpoch(MezoMainnet.MEZO, epoch) - before, toIncentives, "booked this epoch");
+        assertEq(MockToken(MezoMainnet.MEZO).balanceOf(treasury), toTreasury);
+        assertApproxEqAbs(toIncentives, feeTaken / 2, 1);
     }
 }

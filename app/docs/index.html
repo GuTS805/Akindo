@@ -108,6 +108,15 @@
               MUSD interest (1% a year on the vault's trove) accrues on the debt and is paid from the position when
               debt is repaid.
             </p>
+            <h3>The fee flywheel</h3>
+            <p>
+              Mezo Earn splits MEZO emissions between gauges by veBTC votes, and protocols attract those votes by
+              posting incentives on a gauge. With an <code>IncentiveRouter</code> as the vault's fee recipient, anyone
+              can push part of the collected MEZO onto the BTC/MUSD gauge's incentive contract, so the vault's own fees
+              buy votes for its own pool: more deposits, more fees, more votes, more emissions, higher yield. On a
+              Mezo mainnet fork, one day of fees from a 0.2 BTC deposit posted 184 MEZO on the live gauge's incentive
+              contract.
+            </p>
             <h3>Two testnet vaults</h3>
             <p>
               Mezo's official testnet BTC/MUSD gauge has no emissions, and only Mezo's Voter can fund it, so a vault
@@ -122,10 +131,10 @@
           <section id="safety">
             <h2>Safety and testing</h2>
             <ul>
-              <li>32 unit, fuzz and recovery tests, covering liquidation, redemption, transfers, donations and slippage, plus 9 for the reward gauge and 18 edge cases (config guards, stale oracle, slippage, the last exit after a fall). 97% line and 100% function coverage.</li>
+              <li>32 unit, fuzz and recovery tests, covering liquidation, redemption, transfers, donations and slippage, plus 9 for the reward gauge, 6 for the incentive router and 18 edge cases (config guards, stale oracle, slippage, the last exit after a fall). 97% line and 100% function coverage.</li>
               <li>An invariant suite of random action sequences (65,536 actions across 1,024 runs, including pool manipulation, liquidations and redemptions), checking that shares and rewards add up, the trove keeps MUSD's rules and every holder can exit.</li>
               <li>A mainnet fork test runs the same cycle against mainnet MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC.</li>
-              <li>CI runs every test and both fork tests on each push. Slither's 31 results are each reviewed in <a href="https://github.com/GuTS805/Akindo/blob/main/contracts/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</li>
+              <li>CI runs every test and both fork tests on each push. Slither's 32 results are each reviewed in <a href="https://github.com/GuTS805/Akindo/blob/main/contracts/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</li>
               <li>A fork test of a full deposit and withdraw cycle against the deployed testnet MUSD and Mezo Pools contracts (0.9997 BTC back per BTC).</li>
               <li>The tests found five real bugs before deployment; each fix is its own commit in the repository.</li>
               <li>Source verified on the Mezo explorer. Reentrancy guards, dead shares against first-depositor inflation, oracle-based minimum outputs on every swap.</li>

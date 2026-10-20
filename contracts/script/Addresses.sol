@@ -60,6 +60,8 @@ library MezoMainnet {
     address internal constant ROUTER = 0x16A76d3cd3C1e3CE843C6680d6B37E9116b5C706;
     address internal constant POOL = 0x52e604c44417233b6CcEDDDc0d640A405Caacefb; // volatile BTC/MUSD
     address internal constant GAUGE = 0x8Be20a5fF57E381025aE5E3A121B697269569AaF; // pays MEZO
+    /// @dev The gauge's BribeVotingReward (PoolsVoter.gaugeToBribe(GAUGE)); MEZO is whitelisted.
+    address internal constant GAUGE_INCENTIVES = 0x94A9A494872BF7231D8378d0Aef7d32BA552E305;
 
     function config(address feeRecipient) internal pure returns (BtcLpVault.Config memory) {
         return BtcLpVault.Config({
