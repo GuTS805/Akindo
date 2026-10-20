@@ -42,3 +42,44 @@ library MezoTestnet {
         });
     }
 }
+
+/// @notice Mezo mainnet (chain 31612). Sources: mezo-org/musd artifacts/deployments/mainnet,
+///         mezo-org/tigris deployments/mainnet; pool and gauge checked on chain (pool tokens,
+///         gauge staking token, router factory).
+library MezoMainnet {
+    uint256 internal constant CHAIN_ID = 31612;
+
+    address internal constant BTC = 0x7b7C000000000000000000000000000000000000;
+    address internal constant MEZO = 0x7B7c000000000000000000000000000000000001;
+    address internal constant MUSD = 0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186;
+    address internal constant BORROWER_OPERATIONS = 0x44b1bac67dDA612a41a58AAf779143B181dEe031;
+    address internal constant TROVE_MANAGER = 0x94AfB503dBca74aC3E4929BACEeDfCe19B93c193;
+    address internal constant PRICE_FEED = 0xc5aC5A8892230E0A3e1c473881A2de7353fFcA88;
+    address internal constant HINT_HELPERS = 0xD267b3bE2514375A075fd03C3D9CBa6b95317DC3;
+    address internal constant SORTED_TROVES = 0x8C5DB4C62BF29c1C4564390d10c20a47E0b2749f;
+    address internal constant ROUTER = 0x16A76d3cd3C1e3CE843C6680d6B37E9116b5C706;
+    address internal constant POOL = 0x52e604c44417233b6CcEDDDc0d640A405Caacefb; // volatile BTC/MUSD
+    address internal constant GAUGE = 0x8Be20a5fF57E381025aE5E3A121B697269569AaF; // pays MEZO
+
+    function config(address feeRecipient) internal pure returns (BtcLpVault.Config memory) {
+        return BtcLpVault.Config({
+            btc: BTC,
+            musd: MUSD,
+            borrowerOperations: BORROWER_OPERATIONS,
+            troveManager: TROVE_MANAGER,
+            priceFeed: PRICE_FEED,
+            hintHelpers: HINT_HELPERS,
+            sortedTroves: SORTED_TROVES,
+            router: ROUTER,
+            pool: POOL,
+            gauge: GAUGE,
+            feeRecipient: feeRecipient,
+            targetCR: 3e18,
+            minCR: 2.5e18,
+            maxCR: 3.5e18,
+            maxDeviationBps: 200,
+            feeBps: 1_000,
+            minDeposit: 0.001e18
+        });
+    }
+}

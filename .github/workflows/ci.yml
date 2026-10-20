@@ -23,6 +23,10 @@ jobs:
         run: forge test --mc ForkTest -vv
         env:
           MEZO_TESTNET_RPC: https://rpc.test.mezo.org
+      - name: Fork test against Mezo mainnet (real MUSD, pool and MEZO gauge)
+        run: forge test --mc MainnetForkTest -vv
+        env:
+          MEZO_MAINNET_RPC: https://mezo.drpc.org
 
   app:
     runs-on: ubuntu-latest
