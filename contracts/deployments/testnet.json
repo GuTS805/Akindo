@@ -16,5 +16,9 @@
     "seedDepositTx": "0x2323e0357026a4ec0a17edcc43a3b083d0e0f3777adf933f039a8df8a6c4c644",
     "fundTx": "0x237e1ad9c3981606b7f5fcd0ca234422c3fece0f41ba60b598076550059d8d53",
     "funded": "250 testnet MEZO over 7 days"
+  },
+  "keeper": {
+    "address": "0x3e68A7eA5A9140dE973778402C7a14d24F75228F",
+    "note": "Throwaway testnet key used by .github/workflows/keeper.yml; anyone can run the same calls"
   }
 }
