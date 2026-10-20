@@ -18,8 +18,9 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 1. **Concentrated BTC/MUSD pool.** The CL gauge receives the larger share of emissions on mainnet
    (69k MEZO a day against 42k on the volatile gauge in October). A range-managed strategy for it
    is the biggest yield lever.
-2. **Incentive router in the deployed vault.** Redeploy the testnet vaults with the
-   `IncentiveRouter` as fee recipient, so the flywheel runs live, not only on a fork.
+2. **Incentive router in the mainnet deployment.** The mainnet vault takes the `IncentiveRouter`
+   as its fee recipient. On testnet the gauge incentive contract does not whitelist MEZO, so the
+   flywheel is proven on the mainnet fork until it can run live.
 3. **Real-wallet Passport flow.** Run deposit, claim and withdraw from a Bitcoin wallet through
    Mezo Passport, record the transactions, fix what that turns up.
 4. **Address the Wave 1 feedback** from the Mezo team.

@@ -201,7 +201,7 @@ withdraw on the rewards vault.
 
 Full plan, including the path to a Mezo Market listing and the economics: [`docs/roadmap.md`](docs/roadmap.md).
 
-- **Wave 2:** a range-managed strategy for the concentrated BTC/MUSD pool (the larger gauge share), the incentive router live in the deployed vaults, and a real-wallet Passport run
+- **Wave 2:** a range-managed strategy for the concentrated BTC/MUSD pool (the larger gauge share), the incentive router as the mainnet vault's fee recipient, and a real-wallet Passport run
 - **Mainnet:** freeze, audit, deploy with rising deposit caps on Mezo's own gauge; the configuration is in [`MezoMainnet`](contracts/script/Addresses.sol) and already exercised by the mainnet fork test
 
 ## Development
