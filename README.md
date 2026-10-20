@@ -19,7 +19,8 @@ a collateral ratio.
   <a href="https://mblp.vercel.app"><b>Live app</b></a> ·
   <a href="https://mblp.vercel.app/docs/">Docs</a> ·
   <a href="https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract">Verified contract</a> ·
-  <a href="contracts/">Contracts &amp; tests</a>
+  <a href="contracts/">Contracts &amp; tests</a> ·
+  <a href="docs/evidence.md">Evidence (every tx)</a>
 </p>
 
 ---
@@ -138,6 +139,10 @@ result into MEZO rewards, impermanent loss on the pool share and MUSD interest. 
 the vault tracks plain BTC closely around today's price; the rewards are what put it ahead.
 
 ## Security and testing
+
+Every claim here is backed by a transaction or a reproducible test in
+[`docs/evidence.md`](docs/evidence.md), including a fresh wallet's live deposit → claim →
+withdraw on the rewards vault.
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
