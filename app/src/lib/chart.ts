@@ -8,6 +8,7 @@ type Options = {
   xTicks?: number;
   marker?: number; // x position of a vertical reference line
   minRelSpan?: number; // smallest y range shown, relative to the mean (keeps noise flat)
+  floor?: number; // lowest y the axis may show (e.g. 0 for cumulative amounts)
 };
 
 /** Minimal responsive SVG line chart: no dependencies, colors from CSS. */
@@ -32,6 +33,7 @@ export function lineChart(el: HTMLElement, series: Series[], opts: Options = {})
   const yPad = (y1 - y0) * 0.08;
   y0 -= yPad;
   y1 += yPad;
+  if (opts.floor !== undefined && y0 < opts.floor) y0 = opts.floor;
 
   const sx = (x: number) => pad.l + ((x - x0) / (x1 - x0)) * (W - pad.l - pad.r);
   const sy = (y: number) => pad.t + (1 - (y - y0) / (y1 - y0)) * (H - pad.t - pad.b);

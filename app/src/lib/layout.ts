@@ -81,6 +81,7 @@ export function mountShell(active: PageId) {
       <a href="${EXPLORER}/address/${VAULT}" target="_blank" rel="noopener">Vault contract</a><span>·</span>
       <a href="${EXPLORER}/address/${VAULT}?tab=contract" target="_blank" rel="noopener">Verified source</a><span>·</span>
       <a href="${GITHUB}" target="_blank" rel="noopener">GitHub</a><span>·</span>
+      <a href="${GITHUB}/blob/main/docs/evidence.md" target="_blank" rel="noopener">Evidence</a><span>·</span>
       <a href="https://faucet.test.mezo.org" target="_blank" rel="noopener">Testnet faucet</a><span>·</span>
       <a href="${pageUrl("docs")}">Docs</a>
     </footer>

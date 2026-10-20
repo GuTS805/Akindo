@@ -134,6 +134,49 @@ async function renderMarket() {
 
 type Market = Awaited<ReturnType<typeof readMarket>>;
 
+/** Gauge rewards the vault has earned (harvested plus still pending) and what holders claimed. */
+function renderRewards() {
+  const el = $("chart-rewards");
+  const symbol = vault?.rewardSymbol ?? "";
+  const ordered = [...events].reverse().filter((e) => e.time > 0n);
+  const harvests = ordered.filter((e) => e.name === "Harvest");
+  if (harvests.length === 0) {
+    el.innerHTML = `<p class="muted">No rewards harvested yet${vault && vault.stream.rate === 0n ? ": this vault's gauge is not streaming" : ""}.</p>`;
+    return;
+  }
+  const start = Number(ordered[0].time);
+  const earned: [number, number][] = [[start, 0]];
+  const claimed: [number, number][] = [[start, 0]];
+  let e = 0;
+  let c = 0;
+  for (const ev of ordered) {
+    const t = Number(ev.time);
+    if (ev.name === "Harvest") earned.push([t, (e += Number(ev.args.reward as bigint) / 1e18)]);
+    if (ev.name === "RewardClaimed") claimed.push([t, (c += Number(ev.args.amount as bigint) / 1e18)]);
+  }
+  const now = Math.floor(Date.now() / 1000);
+  earned.push([now, e + Number(vault?.stream.pending ?? 0n) / 1e18]);
+  claimed.push([now, c]);
+  const span = now - start;
+  lineChart(
+    el,
+    [
+      { name: `Earned by the vault (${symbol})`, points: earned, color: "var(--accent)" },
+      { name: `Claimed by holders (${symbol})`, points: claimed, color: "#102144", dashed: true },
+    ],
+    {
+      yFormat: (y) => y.toFixed(y < 10 ? 2 : 0),
+      floor: 0,
+      xFormat: (t) => {
+        const d = new Date(t * 1000);
+        return span < 2 * 86_400
+          ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+          : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      },
+    },
+  );
+}
+
 async function init() {
   mountShell("analytics");
   initWallet();
@@ -152,6 +195,7 @@ async function init() {
   }
   events = await readEvents();
   renderHistory();
+  renderRewards();
   renderMarket();
   renderCharts().catch(() => {
     $("chart-pps").innerHTML = $("chart-nav").innerHTML = `<p class="muted">History unavailable from the RPC right now.</p>`;
