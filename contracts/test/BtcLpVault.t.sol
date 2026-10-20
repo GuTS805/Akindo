@@ -10,23 +10,19 @@ contract BtcLpVaultTest is BaseTest {
     function test_constructor_rejectsBadConfig() public {
         BtcLpVault.Config memory c = _config();
         c.minCR = 1.2e18;
-        vm.expectRevert(BtcLpVault.BadConfig.selector);
-        new BtcLpVault(c);
+        _expectBadConfig(c);
 
         c = _config();
         c.maxCR = c.targetCR;
-        vm.expectRevert(BtcLpVault.BadConfig.selector);
-        new BtcLpVault(c);
+        _expectBadConfig(c);
 
         c = _config();
         c.feeBps = 2_001;
-        vm.expectRevert(BtcLpVault.BadConfig.selector);
-        new BtcLpVault(c);
+        _expectBadConfig(c);
 
         c = _config();
         c.gauge = address(new BadGauge(address(btc)));
-        vm.expectRevert(BtcLpVault.BadConfig.selector);
-        new BtcLpVault(c);
+        _expectBadConfig(c);
     }
 
     // ---------------------------------------------------------------- deposit

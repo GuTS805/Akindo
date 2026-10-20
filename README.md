@@ -3,7 +3,7 @@
 [![CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml)
 ![Network](https://img.shields.io/badge/network-Mezo%20testnet-e36b32)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.28-363636)
-![Tests](https://img.shields.io/badge/tests-42%20%2B%20invariant%20%2B%202%20forks-1f8a4c)
+![Tests](https://img.shields.io/badge/tests-59%20%2B%20invariant%20%2B%202%20forks-1f8a4c)
 ![Admin keys](https://img.shields.io/badge/admin%20keys-none-0e1c3b)
 
 **Deposit BTC, hold one token, earn as BTC/MUSD liquidity on Mezo.** In a single transaction the
@@ -144,6 +144,7 @@ the vault tracks plain BTC closely around today's price; the rewards are what pu
 | Unit and fuzz | 27 | Share pricing, deposit and exit paths, rebalancing in every direction, slippage, donations, reward accounting |
 | Recovery | 5 | Liquidation fallback and trove reopening, redemption surplus, reward leaks on share transfers, donation attacks |
 | Reward gauge | 9 | Streaming, top-ups, stake splits, vault harvest → claim end to end |
+| Edge cases | 18 | Every config guard, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, and the last exit after a 15% fall (waits for arbitrage rather than sell below the band, then pays in full) |
 | Invariant | 65,536 random actions | Deposits, withdrawals, transfers, reward streams, oracle moves, pool manipulation, liquidations and redemptions. Checks that shares and rewards add up, the trove obeys MUSD's rules, no LP is left unstaked and **every holder can exit** |
 | Testnet fork | 1 | Full deposit → partial → full withdraw against the deployed testnet MUSD and Mezo Pools contracts (0.9997 BTC back per BTC) |
 | **Mainnet fork** | 1 | The same cycle against **mainnet** MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned **3,309 MEZO in one day** and returned 0.19995 BTC |
@@ -151,6 +152,7 @@ the vault tracks plain BTC closely around today's price; the rewards are what pu
 - Oracle-band guard on every pool action, oracle-based minimum outputs on every swap
 - LP valued at the manipulation-resistant fair price; dead shares against first-depositor inflation; reentrancy guards
 - The tests caught five real bugs before deployment (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by minimum debt, exits walking a thin pool); each fix is its own `fix:` commit
+- Coverage of `src/`: **97% of lines, 100% of functions**, 76% of branches (`forge coverage`)
 - [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) runs every suite, both fork tests and the app build on each push
 - Slither: 31 results, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
 - Source verified on the Mezo explorer. **Not audited.**

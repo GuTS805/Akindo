@@ -122,7 +122,7 @@
           <section id="safety">
             <h2>Safety and testing</h2>
             <ul>
-              <li>32 unit, fuzz and recovery tests, covering liquidation, redemption, transfers, donations and slippage, plus 9 for the reward gauge and harvesting from it.</li>
+              <li>32 unit, fuzz and recovery tests, covering liquidation, redemption, transfers, donations and slippage, plus 9 for the reward gauge and 18 edge cases (config guards, stale oracle, slippage, the last exit after a fall). 97% line and 100% function coverage.</li>
               <li>An invariant suite of random action sequences (65,536 actions across 1,024 runs, including pool manipulation, liquidations and redemptions), checking that shares and rewards add up, the trove keeps MUSD's rules and every holder can exit.</li>
               <li>A mainnet fork test runs the same cycle against mainnet MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC.</li>
               <li>CI runs every test and both fork tests on each push. Slither's 31 results are each reviewed in <a href="https://github.com/GuTS805/Akindo/blob/main/contracts/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</li>

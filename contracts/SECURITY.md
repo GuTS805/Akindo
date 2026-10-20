@@ -26,9 +26,13 @@ reproduce it.
 | `BtcLpVault.t.sol` (27) | Unit and fuzz tests of pricing, deposits, exits, rebalancing, slippage, donations, rewards |
 | `Recovery.t.sol` (5) | Liquidation fallback and reopening, redemption surplus, transfer reward leaks, donation attacks |
 | `RewardGauge.t.sol` (9) | Reward streaming and the vault's harvest → claim path |
+| `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
 | `Invariant.t.sol` | 1,024 runs × 64 random actions, including pool manipulation, oracle moves, liquidations and redemptions: shares and rewards add up, the trove obeys MUSD's rules, no LP left unstaked, every holder can exit |
 | `Fork.t.sol` | Full cycle against the deployed testnet MUSD and Mezo Pools |
 | `MainnetFork.t.sol` | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC |
+
+Coverage of `src/` (`forge coverage`): 97% of lines, 94% of statements, 100% of functions,
+76% of branches.
 
 ## Static analysis (Slither 0.11.6)
 

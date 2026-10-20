@@ -84,6 +84,15 @@ abstract contract BaseTest is Test {
 
     // ---------------------------------------------------------------- helpers
 
+    /// @dev try/catch rather than expectRevert: a reverting `new` would end the test early.
+    function _expectBadConfig(BtcLpVault.Config memory c) internal {
+        try new BtcLpVault(c) returns (BtcLpVault) {
+            fail();
+        } catch (bytes memory err) {
+            assertEq(bytes4(err), BtcLpVault.BadConfig.selector);
+        }
+    }
+
     function _deposit(address user, uint256 amount) internal returns (uint256 shares) {
         vm.prank(user);
         shares = vault.deposit{value: amount}(0);
