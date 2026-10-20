@@ -20,15 +20,24 @@ export const BITCOIN_WALLETS = [
 export type BitcoinWalletId = (typeof BITCOIN_WALLETS)[number]["id"];
 
 /**
- * Passport's testnet relayer default, test.mezo.org, no longer resolves (Cloudflare error 1000 as
- * of October 2026); Mezo's testnet relayer now answers at testnet.mezo.org, with CORS open to
- * this app. Passport has no option to change the endpoint, so the one URL is redirected here.
+ * Passport's testnet relayer host, test.mezo.org, no longer resolves (Cloudflare error 1000 as of
+ * October 2026). Mezo's testnet relayer answers at testnet.mezo.org, with CORS open to this app,
+ * and is still relaying Safe transactions. Passport has no option to change the host and calls
+ * two paths under it (/transactions, and /deploy-safe for a new smart account), so every request
+ * under the relay prefix is redirected.
  */
-const DEAD_TESTNET_RELAY = "https://test.mezo.org/api/v2/relay/transactions";
-const TESTNET_RELAY = "https://testnet.mezo.org/api/v2/relay/transactions";
+const DEAD_RELAY = "https://test.mezo.org/api/v2/relay/";
+const LIVE_RELAY = "https://testnet.mezo.org/api/v2/relay/";
+export function redirectRelay(url: string): string {
+  return url.startsWith(DEAD_RELAY) ? LIVE_RELAY + url.slice(DEAD_RELAY.length) : url;
+}
 const nativeFetch = window.fetch.bind(window);
-window.fetch = (input, init) =>
-  nativeFetch(typeof input === "string" && input === DEAD_TESTNET_RELAY ? TESTNET_RELAY : input, init);
+window.fetch = (input, init) => {
+  if (typeof input === "string") return nativeFetch(redirectRelay(input), init);
+  if (input instanceof URL) return nativeFetch(redirectRelay(input.href), init);
+  if (input instanceof Request && input.url.startsWith(DEAD_RELAY)) return nativeFetch(new Request(redirectRelay(input.url), input), init);
+  return nativeFetch(input, init);
+};
 
 type SmartAccountClient = {
   sendTransaction(tx: { to?: Address; value?: bigint; data?: Hex }): Promise<Hex>;
