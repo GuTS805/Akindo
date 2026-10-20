@@ -267,7 +267,7 @@ function within<T>(ms: number, p: Promise<T>): Promise<T> {
 
 /** Reconnect silently to the last wallet used, if it already authorised this site. */
 export async function initWallet() {
-  $("connect").addEventListener("click", () => (wallet.account ? undefined : connect()));
+  $("connect").addEventListener("click", () => (wallet.account ? copyAddress() : connect()));
   await new Promise((r) => setTimeout(r, 150)); // let EIP-6963 wallets announce
   const btc = rememberedBitcoin();
   if (btc && installedBitcoinWallets().includes(btc)) {
@@ -286,11 +286,29 @@ export async function initWallet() {
   emit();
 }
 
+/** Connected: a click copies the full address (for the faucet, or to share). */
+async function copyAddress() {
+  const btn = $<HTMLButtonElement>("connect");
+  try {
+    await navigator.clipboard.writeText(wallet.account!);
+    btn.textContent = "Address copied";
+  } catch {
+    showNotice(`Your address: ${wallet.account}`);
+    return;
+  }
+  setTimeout(renderConnectButton, 1_500);
+}
+
 function renderConnectButton() {
   const btn = $<HTMLButtonElement>("connect");
   if (btn && !btn.disabled)
     btn.textContent = wallet.account ? `${wallet.bitcoin ? "₿ " : ""}${short(wallet.account)}` : "Connect wallet";
-  if (btn) btn.title = wallet.bitcoin ? `${wallet.bitcoin} via Mezo Passport, smart account ${wallet.account}` : "";
+  if (btn)
+    btn.title = !wallet.account
+      ? ""
+      : wallet.bitcoin
+        ? `${wallet.bitcoin} via Mezo Passport, smart account ${wallet.account}. Click to copy.`
+        : `${wallet.account}. Click to copy.`;
 }
 
 export async function updateNetworkBadge() {
