@@ -1268,3 +1268,424 @@ code {
   font-size: 12px;
   font-weight: 400;
 }
+
+/* ---------------------------------------------------------------- floating header */
+
+html {
+  scroll-padding-top: 100px;
+}
+body::before {
+  inset: 0 0 auto;
+  height: 1074px;
+}
+.topbar {
+  position: sticky;
+  top: 12px;
+  width: min(1400px, calc(100% - 2 * clamp(12px, 2.5vw, 40px)));
+  min-height: 68px;
+  margin: 12px auto 0;
+  padding: 9px 10px 9px 16px;
+  gap: 20px;
+  border: 1px solid rgba(202, 180, 157, 0.5);
+  border-radius: 22px;
+  background: rgba(255, 250, 243, 0.7);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  backdrop-filter: blur(14px) saturate(1.5);
+  box-shadow: 0 10px 30px #7a4a1e12;
+  view-transition-name: topbar;
+  transition: top 0.35s ease, min-height 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+}
+.topbar.scrolled {
+  top: 8px;
+  min-height: 60px;
+  background: rgba(255, 250, 243, 0.9);
+  box-shadow: 0 16px 40px #7a4a1e26;
+}
+.brand strong {
+  font-size: 27px;
+}
+.brand .muted {
+  font-size: 13px;
+}
+.logo {
+  width: 44px;
+  height: 44px;
+  transition: transform 0.5s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.brand:hover .logo {
+  transform: rotate(-12deg) scale(1.06);
+}
+.logo-sun {
+  width: 18px;
+  height: 18px;
+  top: 6px;
+  right: 6px;
+  animation: sun-glow 4s ease-in-out infinite;
+}
+@keyframes sun-glow {
+  50% {
+    box-shadow: 0 0 10px 3px #ffe6bbcc;
+    transform: translateY(-1px);
+  }
+}
+
+/* Dark track with a sliding pill under the current or hovered link. */
+.site-nav {
+  position: relative;
+  margin: 0 auto;
+  padding: 5px;
+  gap: 2px;
+  border-radius: 999px;
+  background: #0e1c3b;
+  box-shadow: inset 0 1px 0 #ffffff14, 0 6px 18px #0e1c3b30;
+}
+.site-nav a,
+.site-nav a[aria-current="page"] {
+  position: relative;
+  z-index: 1;
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: #b9c2d6;
+  font-weight: 600;
+  transition: color 0.25s ease;
+}
+.site-nav a:hover,
+.site-nav a[aria-current="page"] {
+  color: #fff;
+}
+.nav-pill {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f39a55, #e36b32);
+  box-shadow: 0 4px 14px #e36b3266, inset 0 1px 0 #ffffff40;
+  opacity: 0;
+}
+.pill-ready .nav-pill {
+  transition: transform 0.45s cubic-bezier(0.3, 1.25, 0.5, 1), width 0.45s cubic-bezier(0.3, 1.25, 0.5, 1),
+    opacity 0.2s ease;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fffaf3;
+  font-weight: 600;
+  font-size: 12px;
+}
+.badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--good);
+  animation: live 2s ease-out infinite;
+}
+.badge.wrong::before {
+  background: var(--bad);
+  animation: none;
+}
+@keyframes live {
+  0% {
+    box-shadow: 0 0 0 0 #1f8a4c80;
+  }
+  100% {
+    box-shadow: 0 0 0 7px #1f8a4c00;
+  }
+}
+.topbar .btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 14px;
+}
+
+/* Hamburger that turns into a cross. */
+.menu-btn {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: #fffaf3;
+}
+.menu-btn i {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+.menu-btn[aria-expanded="true"] i:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.menu-btn[aria-expanded="true"] i:nth-child(2) {
+  opacity: 0;
+}
+.menu-btn[aria-expanded="true"] i:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    top: 8px;
+    width: calc(100% - 16px);
+    min-height: 60px;
+    margin-top: 8px;
+    padding: 8px 8px 8px 12px;
+    gap: 10px;
+  }
+  .brand strong {
+    font-size: 24px;
+  }
+  .logo {
+    width: 38px;
+    height: 38px;
+  }
+  .topbar .btn {
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+  /* The menu is always rendered on phones so it can animate open and closed. */
+  .site-nav,
+  .site-nav.open {
+    display: flex;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0;
+    padding: 8px;
+    border: 0;
+    border-radius: 20px;
+    background: #0e1c3bf2;
+    box-shadow: 0 20px 40px #0e1c3b40;
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.97);
+    transform-origin: top center;
+    transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.2, 1, 0.3, 1), visibility 0s linear 0.3s;
+  }
+  .site-nav.open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+  .site-nav a,
+  .site-nav.open a {
+    padding: 13px 16px;
+    border: 0;
+    border-radius: 14px;
+    font-size: 16px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.25s ease, transform 0.3s ease, color 0.25s ease, background 0.25s ease;
+  }
+  .site-nav.open a {
+    opacity: 1;
+    transform: none;
+  }
+  .site-nav.open a:nth-child(3) { transition-delay: 30ms; }
+  .site-nav.open a:nth-child(4) { transition-delay: 60ms; }
+  .site-nav.open a:nth-child(5) { transition-delay: 90ms; }
+  .site-nav.open a:nth-child(6) { transition-delay: 120ms; }
+  .site-nav.open a:nth-child(7) { transition-delay: 150ms; }
+  .site-nav a[aria-current="page"] {
+    background: linear-gradient(135deg, #f39a55, #e36b32);
+  }
+  .nav-pill {
+    display: none;
+  }
+}
+.docs-toc {
+  top: 100px;
+}
+.docs-body section {
+  scroll-margin-top: 100px;
+}
+
+/* ---------------------------------------------------------------- popups */
+
+dialog {
+  width: min(380px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid #ffffff;
+  border-radius: 22px;
+  background: #fffaf3;
+  box-shadow: 0 30px 80px #0e1c3b40, 0 2px 0 #ffffff inset;
+  opacity: 0;
+  transform: translateY(16px) scale(0.95);
+  transition: opacity 0.25s ease, transform 0.4s cubic-bezier(0.2, 1.25, 0.4, 1), overlay 0.3s allow-discrete,
+    display 0.3s allow-discrete;
+}
+dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+}
+dialog::backdrop {
+  background: rgba(14, 28, 59, 0);
+  -webkit-backdrop-filter: blur(0);
+  backdrop-filter: blur(0);
+  transition: background 0.3s ease, backdrop-filter 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+}
+dialog[open]::backdrop {
+  background: rgba(14, 28, 59, 0.42);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+@starting-style {
+  dialog[open]::backdrop {
+    background: rgba(14, 28, 59, 0);
+    backdrop-filter: blur(0);
+  }
+}
+dialog h2 {
+  font-size: 18px;
+}
+dialog[open] .wallet-list > * {
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+dialog[open] .wallet-list > :nth-child(2) { animation-delay: 40ms; }
+dialog[open] .wallet-list > :nth-child(3) { animation-delay: 80ms; }
+dialog[open] .wallet-list > :nth-child(4) { animation-delay: 120ms; }
+dialog[open] .wallet-list > :nth-child(5) { animation-delay: 160ms; }
+dialog[open] .wallet-list > :nth-child(n + 6) { animation-delay: 200ms; }
+.wallet-option {
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.wallet-option:hover:not(:disabled) {
+  transform: translateX(3px);
+  border-color: var(--accent);
+  background: #fff;
+}
+
+/* Things that appear in place: notices, tab panels, transaction status. */
+.notice:not([hidden]),
+.alert:not([hidden]),
+#panel-deposit:not([hidden]),
+#panel-withdraw:not([hidden]),
+#p-body:not([hidden]),
+.txstatus:not([hidden]):not(:empty) {
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.tab {
+  transition: color 0.25s ease, border-color 0.3s ease;
+}
+.seg,
+.chip {
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* ---------------------------------------------------------------- motion */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* Scroll reveal (classes set by layout.ts). Fill "backwards" so hover transforms still work after. */
+.reveal:not(.in) {
+  opacity: 0;
+}
+.reveal.in {
+  animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms) backwards;
+}
+
+.btn {
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn.primary {
+  position: relative;
+  overflow: hidden;
+}
+.btn.primary:hover:not(:disabled) {
+  box-shadow: 0 10px 24px #e36b3247;
+}
+.btn.primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, #ffffff55 50%, transparent 65%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.btn.primary:hover:not(:disabled)::after {
+  transform: translateX(120%);
+  transition: transform 0.7s ease;
+}
+
+.grid.stats > .card,
+.grid.stats-3 > .card,
+.grid.stats-4 > .card,
+.grid.features > .card {
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.grid.stats > .card:hover,
+.grid.stats-3 > .card:hover,
+.grid.stats-4 > .card:hover,
+.grid.features > .card:hover {
+  transform: translateY(-4px);
+  border-color: #e9c9a6;
+  box-shadow: 0 18px 38px #98632e22;
+}
+
+/* Page-to-page: the header stays put while the content cross-fades. */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root) {
+  animation: vt-out 0.2s ease both;
+}
+::view-transition-new(root) {
+  animation: vt-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}

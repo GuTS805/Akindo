@@ -34,11 +34,11 @@ export function mountShell(active: PageId) {
         <span class="logo" aria-hidden="true"><span class="logo-sun"></span><span class="logo-hill"></span></span>
         <div><strong>mbLP</strong><span class="muted">BTC LP Vault on Mezo</span></div>
       </a>
-      <nav class="site-nav" id="site-nav" aria-label="Main navigation">${nav}</nav>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation"><span class="nav-pill" aria-hidden="true"></span>${nav}</nav>
       <div class="topbar-right">
         <span class="badge" id="network-badge">Mezo Testnet</span>
         <button class="btn" id="connect">Connect wallet</button>
-        <button class="menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="site-nav">☰</button>
+        <button class="menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><i></i><i></i><i></i></button>
       </div>
     </header>`,
   );
@@ -102,6 +102,72 @@ export function mountShell(active: PageId) {
   $("menu-btn").addEventListener("click", () => {
     const open = $("site-nav").classList.toggle("open");
     $("menu-btn").setAttribute("aria-expanded", String(open));
+  });
+
+  // The wallet picker closes with an animation; a click on its backdrop closes it too.
+  const picker = $<HTMLDialogElement>("wallet-picker");
+  picker.addEventListener("click", (e) => {
+    if (e.target === picker) picker.close();
+  });
+
+  initNavPill();
+  initScrollState();
+  initReveal();
+}
+
+/** A pill behind the current page's link that slides to whichever link is hovered. */
+function initNavPill() {
+  const navEl = $("site-nav");
+  const pill = navEl.querySelector<HTMLElement>(".nav-pill")!;
+  const current = navEl.querySelector<HTMLElement>('a[aria-current="page"]');
+  const moveTo = (a: HTMLElement | null) => {
+    if (!a) {
+      pill.style.opacity = "0";
+      return;
+    }
+    pill.style.opacity = "1";
+    pill.style.width = `${a.offsetWidth}px`;
+    pill.style.transform = `translateX(${a.offsetLeft}px)`;
+  };
+  navEl.querySelectorAll<HTMLElement>("a").forEach((a) => a.addEventListener("pointerenter", () => moveTo(a)));
+  navEl.addEventListener("pointerleave", () => moveTo(current));
+  // Place it without animating on load, then let it slide.
+  requestAnimationFrame(() => {
+    moveTo(current);
+    requestAnimationFrame(() => navEl.classList.add("pill-ready"));
+  });
+  addEventListener("resize", () => moveTo(current));
+  document.fonts?.ready.then(() => moveTo(current));
+}
+
+/** The header tightens once the page scrolls. */
+function initScrollState() {
+  const bar = document.querySelector(".topbar")!;
+  const update = () => bar.classList.toggle("scrolled", scrollY > 12);
+  addEventListener("scroll", update, { passive: true });
+  update();
+}
+
+/** Cards and section titles fade up as they scroll into view, staggered within a row. */
+function initReveal() {
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const items = document.querySelectorAll<HTMLElement>(
+    "main .card, main .section-title, main > .vault-switch, .hero > *",
+  );
+  const io = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("in");
+        io.unobserve(e.target);
+      }),
+    { rootMargin: "0px 0px -6% 0px" },
+  );
+  items.forEach((el) => {
+    const siblings = el.parentElement ? Array.from(el.parentElement.children) : [];
+    el.style.setProperty("--d", `${Math.min(siblings.indexOf(el), 6) * 70}ms`);
+    el.classList.add("reveal");
+    io.observe(el);
   });
 }
 
