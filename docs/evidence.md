@@ -33,6 +33,13 @@ A wallet outside the project's scripts then deposited through the app with MetaM
 minutes later the same wallet claimed 0.001229 MEZO through the Portfolio page:
 [`0x6efa97b8…c5a2`](https://explorer.test.mezo.org/tx/0x6efa97b8bfd354c4231516b55f6fb845a0eaf4caba3f7f3bfc93800a5349c5a2).
 
+Testers then used it on their own. `0x4820…5d07` deposited 0.001 BTC
+([`0xbc5084b4…0067`](https://explorer.test.mezo.org/tx/0xbc5084b4b324bee5357dc0bc5399a949a35e3b882e3b74d1c68ea2cabf620067)),
+which also triggered the vault's deployment step (1,282,180 gas, inside the app's headroom), and
+claimed twice
+([`0x1810944b…b971`](https://explorer.test.mezo.org/tx/0x1810944b7eb6e5c7ae2bb2b8776dd885c056c6f6735f83c74c43fe730f6fb971),
+[`0x56b0b705…3794`](https://explorer.test.mezo.org/tx/0x56b0b705b83668eb10d4675c14b889cc3f4ba485dbfc9cd29e01943b5a593794)).
+
 ## The full user cycle, live
 
 A fresh wallet, [`0x6ADe…82D6`](https://explorer.test.mezo.org/address/0x6ADe5c2CAdD3C7234e2B9F043eEc6caC790382D6),
