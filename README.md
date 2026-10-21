@@ -187,9 +187,9 @@ withdraw on the rewards vault.
 - Oracle-band guard on adding liquidity and rebalancing, oracle-based minimum outputs on every swap; exits skip the band so holders can always leave, and the manipulation suite shows that cannot be exploited
 - LP valued at the manipulation-resistant fair price; dead shares against first-depositor inflation; reentrancy guards
 - The tests caught five real bugs before deployment (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by minimum debt, exits walking a thin pool); each fix is its own `fix:` commit
-- Coverage of `src/`: **97% of lines, 100% of functions**, 76% of branches (`forge coverage`)
+- Coverage of `src/`: **97% of lines, 100% of functions**, 79% of branches (`forge coverage`)
 - [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) runs every suite, both fork tests and the app build on each push
-- Slither: 32 results, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
+- Slither: 41 results, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
 - A second review pass (security, TypeScript, failure paths) and what each finding led to: [`contracts/SECURITY.md#review-findings-october-2026`](contracts/SECURITY.md#review-findings-october-2026)
 - Source verified on the Mezo explorer. **Not audited.**
 

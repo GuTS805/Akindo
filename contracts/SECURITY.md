@@ -40,8 +40,8 @@ reproduce it.
 
 78 unit and fuzz tests, plus the invariant suite, its regression replay and two fork tests.
 
-Coverage of `src/` (`forge coverage`): 97% of lines, 94% of statements, 100% of functions,
-76% of branches.
+Coverage of `src/` (`forge coverage`): 97% of lines, 95% of statements, 100% of functions,
+79% of branches.
 
 ## Static analysis (Slither 0.11.6)
 
@@ -50,17 +50,20 @@ pip install slither-analyzer
 cd contracts && slither . --filter-paths "lib/|test/|script/"
 ```
 
-32 results on `src/`, all reviewed. None needed a code change.
+41 results on `src/` (re-run after v2 and the incentive router), all reviewed. None needed a code change.
 
 | Detector | Count | Finding | Assessment |
 | --- | --- | --- | --- |
-| `reentrancy-balance` (High) | 4 | `withdraw` compares `btcOut`, computed from a snapshot, after calls to the gauge, router and BorrowerOperations | False positive. `withdraw` is `nonReentrant` and the callees are the fixed Mezo contracts. `btcOut` is the caller's pro-rata entitlement by design; if the vault held less, the final `sendValue` would revert. |
+| `reentrancy-balance` (High) | 5 | `withdraw` compares `btcOut`, computed from a snapshot, after calls to the gauge, router and BorrowerOperations | False positive. `withdraw` is `nonReentrant` and the callees are the fixed Mezo contracts. `btcOut` is the caller's pro-rata entitlement by design; if the vault held less, the final `sendValue` would revert. |
+| `reentrancy-balance` (High), v2 | (incl. above) | `deposit` reads `navBefore` before `this.deployIdle()` and mints `shares` after it | False positive. Reading NAV before deployment is the v2 design (shares come from the NAV change); `shares` is computed after the call from `navAfter`, not before it. The call goes to the vault itself; `deployIdle` reverts unless the caller is the vault with its lock held, and `deposit` is `nonReentrant`. |
 | `reentrancy-no-eth` (Medium) | 1 | `claimRewards` writes `rewardReserve` after `gauge.getReward` | False positive. `nonReentrant`, trusted gauge; the reward is credited by balance difference before any state is used. |
 | `incorrect-equality` (Medium) | 10 | `== 0` checks such as `shares == 0`, `got == 0`, `navMusd == 0`, and `balance == 0` in `IncentiveRouter.push` | Intended guards against empty values, not balance equalities an attacker can target. |
 | `uninitialized-local` (Medium) | 2 | `addColl` / `withdrawColl` in `_lever` | Intended: exactly one of them is set, the other stays 0. |
 | `unused-return` (Medium) | 5 | Ignored tuple members of `getReserves`, `getEntireDebtAndColl`, `getApproxHint` | Intended: only the needed members are used. |
 | `timestamp` (Low) | 8 | Router deadlines and reward-period maths | Expected; deadlines are `block.timestamp` because outputs are bounded by the oracle, not by time. |
 | `reentrancy-benign` (Low) | 2 | Events emitted after calls in `_harvest` / `claimRewards` | Benign. |
+| `reentrancy-events` (Low) | 7 | `Deployed` and `Rebalance` emitted after calls to BorrowerOperations, the router and the gauge | Accepted. The callees are the fixed Mezo contracts and every entry point is `nonReentrant`; the events report what those calls did. |
+| `cyclomatic-complexity` (Informational) | 1 | `deposit` has complexity 13 | Accepted: cap check, first-deposit path, best-effort deployment and the NAV-delta mint in one function, each covered by `DepositV2.t.sol`. |
 
 ## Review findings (October 2026)
 
