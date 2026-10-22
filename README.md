@@ -12,12 +12,12 @@ and stakes the LP in the pool's gauge. Your exposure stays about 1x BTC, and nob
 a collateral ratio.
 
 <p align="center">
-  <a href="https://mblp.vercel.app"><img src="assets/readme/home.png" alt="mbLP home page" width="100%"></a>
+  <a href="https://mblp.surge.sh"><img src="assets/readme/home.png" alt="mbLP home page" width="100%"></a>
 </p>
 
 <p align="center">
-  <a href="https://mblp.vercel.app"><b>Live app</b></a> ·
-  <a href="https://mblp.vercel.app/docs/">Docs</a> ·
+  <a href="https://mblp.surge.sh"><b>Live app</b></a> ·
+  <a href="https://mblp.surge.sh/docs/">Docs</a> ·
   <a href="https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract">Verified contract</a> ·
   <a href="contracts/">Contracts &amp; tests</a> ·
   <a href="docs/evidence.md">Evidence (every tx)</a> ·
@@ -129,7 +129,7 @@ owner; its split and destinations are fixed at deployment.
 ## Try it on testnet
 
 1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
-2. Open **[mblp.vercel.app](https://mblp.vercel.app)** and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
+2. Open **[mblp.surge.sh](https://mblp.surge.sh)** (or the [Vercel mirror](https://mblp.vercel.app), which MetaMask flags like every free `*.vercel.app` domain) and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
 3. **Deposit** from 0.001 BTC. It goes into the trove and pool in the same transaction.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
