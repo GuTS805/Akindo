@@ -8,7 +8,7 @@
 #
 # Usage: set PRIVATE_KEY (and optionally FEE_RECIPIENT) in contracts/.env, then
 #   bash script/deploy-testnet.sh
-# GAUGE overrides the official BTC/MUSD gauge (see deploy-rewards-testnet.sh).
+# GAUGE overrides the live BTC/MUSD gauge (see deploy-rewards-testnet.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Values passed by the caller win over contracts/.env (which may set FEE_RECIPIENT).
@@ -23,7 +23,7 @@ RPC="${RPC:-https://rpc.test.mezo.org}"
 
 DEPLOYER=$("$CAST" wallet address --private-key "$PRIVATE_KEY")
 FEE_RECIPIENT="${FEE_RECIPIENT:-$DEPLOYER}"
-GAUGE="${GAUGE:-0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3}"
+GAUGE="${GAUGE:-0x72D88B0795373437E86792DEd8362D66dC43Cd2c}" # live BTC/MUSD gauge (MezoTestnet.GAUGE)
 DEPOSIT_CAP="${DEPOSIT_CAP:-0}" # max vault value in BTC wei after a deposit; 0 = no cap
 
 # Must match script/Addresses.sol (MezoTestnet.config)

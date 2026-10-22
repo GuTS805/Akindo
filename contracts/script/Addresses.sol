@@ -5,6 +5,9 @@ import {BtcLpVault} from "../src/BtcLpVault.sol";
 
 /// @notice Mezo testnet (chain 31611). Sources: mezo-org/musd deployments/matsnet,
 ///         mezo-org/tigris deployments/testnet; pool and gauge read from PoolFactory and Voter.
+/// @dev    The BTC/MUSD pool has two gauges on testnet. GAUGE is the live one, on the Voter that
+///         Mezo distributes MEZO through each epoch (760,811 MEZO on 22 Oct 2026). LEGACY_GAUGE,
+///         on the older Voter, has not been paid since its Splitter stopped on 13 Nov 2025.
 library MezoTestnet {
     uint256 internal constant CHAIN_ID = 31611;
 
@@ -17,7 +20,12 @@ library MezoTestnet {
     address internal constant SORTED_TROVES = 0x722E4D24FD6Ff8b0AC679450F3D91294607268fA;
     address internal constant ROUTER = 0x9a1ff7FE3a0F69959A3fBa1F1e5ee18e1A9CD7E9;
     address internal constant POOL = 0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9; // volatile BTC/MUSD
-    address internal constant GAUGE = 0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3;
+    address internal constant MEZO = 0x7B7c000000000000000000000000000000000001;
+    address internal constant VOTER = 0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D;
+    address internal constant GAUGE = 0x72D88B0795373437E86792DEd8362D66dC43Cd2c; // pays MEZO
+    /// @dev VOTER.gaugeToBribe(GAUGE); MEZO is whitelisted on this Voter.
+    address internal constant GAUGE_INCENTIVES = 0x75b6B35Fc78826A0B7E1f9c08bb7d84bd70D0ee1;
+    address internal constant LEGACY_GAUGE = 0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3;
 
     function config(address feeRecipient) internal pure returns (BtcLpVault.Config memory) {
         return BtcLpVault.Config({
