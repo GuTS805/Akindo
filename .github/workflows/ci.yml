@@ -20,7 +20,9 @@ jobs:
       - name: Unit, fuzz, recovery and invariant tests
         run: forge test -vv
       - name: Fork test against the live Mezo testnet
-        run: forge test --mc '^ForkTest' -vv || (sleep 30 && forge test --mc '^ForkTest' -vv)
+        # One backend behind the public RPC can lag days behind; a fork that reads from it fails
+        # at once. Retry before failing.
+        run: forge test --mc '^ForkTest' -vv || (sleep 30 && forge test --mc '^ForkTest' -vv) || (sleep 60 && forge test --mc '^ForkTest' -vv)
         env:
           MEZO_TESTNET_RPC: https://rpc.test.mezo.org
       - name: Fork test against Mezo mainnet (real MUSD, pool and MEZO gauge)
