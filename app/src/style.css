@@ -681,7 +681,7 @@ main > .alert { order: 2; }
 .card { box-shadow: 0 8px 28px #98632e10; }
 .card h2 { color: #102144; font-size: 18px; }
 .footer { position: relative; z-index: 1; padding-top: 25px; background: #fff7ec; }
-@media (max-width: 1100px) {
+@media (max-width: 1180px) { /* also while a wallet side panel narrows the page */
   .site-nav { gap: 12px; }
   .brand .muted { display: none; }
   .steps { gap: 18px; }
@@ -1434,7 +1434,11 @@ body::before {
   transform: translateY(-6px) rotate(-45deg);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1024px) {
+  /* full nav needs ~1025px; below that (tablets, or a wallet side panel) use the menu */
+  .menu-btn {
+    display: inline-flex;
+  }
   .topbar {
     top: 8px;
     width: calc(100% - 16px);
