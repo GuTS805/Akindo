@@ -3,6 +3,7 @@ import {
   ContractFunctionRevertedError,
   UserRejectedRequestError,
   createPublicClient,
+  custom,
   fallback,
   formatUnits,
   http,
@@ -29,17 +30,77 @@ import { ratio } from "./format";
 
 export const WAD = 10n ** 18n;
 
-// Mezo's own RPC first. drpc's testnet endpoint is a fallback for reads (state, balances, history
-// samples) if it goes down; its eth_getLogs is unreliable, so event history still needs Mezo's.
+const mezoTestnetRpc = createPublicClient({ chain: mezoTestnet, transport: http(undefined, { retryCount: 1, timeout: 10_000 }) });
+const drpcTestnet = createPublicClient({ chain: mezoTestnet, transport: http("https://mezo-testnet.drpc.org", { timeout: 10_000 }) });
+
+/**
+ * rpc.test.mezo.org spreads requests over several backends, and one of them has run days behind
+ * (about 99,000 blocks in October 2026). It answers "latest" with old state (a funded wallet at
+ * zero, a new vault with no code), reports an old block number, and returns an empty list for
+ * logs past its head. So reads are pinned to the highest block seen from several samples: a
+ * lagging backend then rejects the block and the request is retried, and an empty log query is
+ * asked again before it is believed.
+ */
+let head = 0n;
+let headAt = 0;
+let headPending: Promise<bigint> | undefined;
+const hex = (n: bigint) => `0x${n.toString(16)}`;
+function freshHead(): Promise<bigint> {
+  if (head > 0n && Date.now() - headAt < 6_000) return Promise.resolve(head);
+  const sample = () => mezoTestnetRpc.request({ method: "eth_blockNumber" });
+  headPending ??= Promise.allSettled([sample(), sample(), sample(), sample()])
+    .then(async (rs) => {
+      let seen = 0n;
+      for (const r of rs) if (r.status === "fulfilled" && BigInt(r.value) > seen) seen = BigInt(r.value);
+      if (seen === 0n) seen = BigInt(await drpcTestnet.request({ method: "eth_blockNumber" }));
+      // A few blocks back: every current backend has them, the lagging one does not.
+      if (seen - 3n > head) head = seen - 3n;
+      headAt = Date.now();
+      return head;
+    })
+    .finally(() => (headPending = undefined));
+  return headPending;
+}
+const LAGGING = /must be less than or equal to the current block|header not found|unknown block|block not found|missing trie node/i;
+/** Position of the block-tag parameter for state reads. */
+const BLOCK_ARG: Record<string, number> = { eth_call: 1, eth_estimateGas: 1, eth_getBalance: 1, eth_getCode: 1, eth_getTransactionCount: 1, eth_getStorageAt: 2 };
+
+async function guarded({ method, params }: { method: string; params?: unknown }): Promise<unknown> {
+  const p = Array.isArray(params) ? [...params] : [];
+  // Mezo's RPC first; drpc only when Mezo's cannot be reached (drpc's testnet endpoint no longer
+  // serves eth_call or eth_getLogs, so it cannot stand in for those).
+  const send = () =>
+    (mezoTestnetRpc.request({ method, params: p } as never) as Promise<unknown>).catch((e) => {
+      if (LAGGING.test(String((e as Error)?.message ?? e))) throw e;
+      return drpcTestnet.request({ method, params: p } as never) as Promise<unknown>;
+    });
+  if (method === "eth_blockNumber") return hex(await freshHead());
+  if (method === "eth_getBlockByNumber" && (p[0] === "latest" || p[0] === undefined)) p[0] = hex(await freshHead());
+  const at = BLOCK_ARG[method];
+  if (at !== undefined && (p[at] === undefined || p[at] === "latest")) p[at] = hex(await freshHead());
+  if (method === "eth_getLogs" && p[0] && typeof p[0] === "object") {
+    const f = { ...(p[0] as Record<string, unknown>) };
+    if (f.toBlock === undefined || f.toBlock === "latest") f.toBlock = hex(await freshHead());
+    p[0] = f;
+  }
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const out = await send();
+      // An empty log list may come from the lagging backend: ask twice more before believing it.
+      if (method === "eth_getLogs" && Array.isArray(out) && out.length === 0 && attempt < 2) continue;
+      // So may a missing block at a height the chain has reached.
+      if (method === "eth_getBlockByNumber" && out == null && attempt < 3) continue;
+      return out;
+    } catch (e) {
+      if (attempt < 4 && LAGGING.test(String((e as Error)?.message ?? e))) continue;
+      throw e;
+    }
+  }
+}
+
 export const testnet = createPublicClient({
   chain: mezoTestnet,
-  transport: fallback(
-    [
-      http(undefined, { retryCount: 2, timeout: 20_000 }),
-      http("https://mezo-testnet.drpc.org", { retryCount: 1, timeout: 15_000 }),
-    ],
-    { rank: false },
-  ),
+  transport: custom({ request: guarded }, { retryCount: 0 }),
   batch: { multicall: true },
 });
 
