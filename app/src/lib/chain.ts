@@ -86,6 +86,15 @@ async function guarded({ method, params }: { method: string; params?: unknown })
   for (let attempt = 0; ; attempt++) {
     try {
       const out = await send();
+      // A receipt proves its block exists on the backend that answered: never read older state
+      // than that after a transaction (otherwise a refresh could show the pre-transaction position).
+      if (method === "eth_getTransactionReceipt" && out && typeof out === "object") {
+        const n = BigInt((out as { blockNumber?: string }).blockNumber ?? "0x0");
+        if (n > head) {
+          head = n;
+          headAt = Date.now();
+        }
+      }
       // An empty log list may come from the lagging backend: ask twice more before believing it.
       if (method === "eth_getLogs" && Array.isArray(out) && out.length === 0 && attempt < 2) continue;
       // So may a missing block at a height the chain has reached.
