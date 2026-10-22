@@ -22,11 +22,22 @@ export const mezoMainnet = defineChain({
 });
 
 /**
- * Two deployments of the same vault contract. The official testnet BTC/MUSD gauge has no
- * emissions (only Mezo's Voter can fund it), so the second one stakes in a RewardGauge that
- * streams testnet MEZO, which is where harvest and claim actually pay out.
+ * Deployments of the vault contract on testnet. v3 stakes in Mezo's live BTC/MUSD gauge (the Voter
+ * pays it MEZO each epoch); v1 and v2 stake in a RewardGauge that anyone can fund with testnet MEZO;
+ * Legacy stakes in the BTC/MUSD gauge of Mezo's older Voter, which has paid nothing since Nov 2025.
  */
 export const VAULTS = {
+  v3: {
+    id: "v3",
+    label: "v3",
+    address: "0x75532765bfBa32E8DC796292937F9c571a2dBFEC",
+    deployBlock: 16_299_122n,
+    gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+    rewardSymbol: "MEZO",
+    hasCap: true,
+    gaugeNote:
+      "v3: the v2 contract staked in Mezo's live BTC/MUSD gauge, so it earns the MEZO emissions Mezo distributes each epoch; its fees are posted as incentives on that gauge.",
+  },
   v2: {
     id: "v2",
     label: "v2",
@@ -50,19 +61,19 @@ export const VAULTS = {
   },
   official: {
     id: "official",
-    label: "Official",
+    label: "Legacy",
     address: "0x187958091532733eF2f8703F8029Cd72aA85B2d4",
     deployBlock: 16_249_561n,
     gauge: "0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3",
-    rewardSymbol: "BTC", // Mezo's testnet gauges pay in the BTC precompile
+    rewardSymbol: "BTC", // the legacy gauge pays in the BTC precompile
     hasCap: false,
-    gaugeNote: "Stakes in Mezo's official testnet BTC/MUSD gauge, which has no emissions on testnet.",
+    gaugeNote: "Stakes in the BTC/MUSD gauge on Mezo's older testnet Voter, which has paid no emissions since Nov 2025. v3 uses the live gauge.",
   },
 } as const;
 export type VaultId = keyof typeof VAULTS;
 
 const VAULT_KEY = "mblp.vault";
-const DEFAULT_VAULT: VaultId = "v2";
+const DEFAULT_VAULT: VaultId = "v3";
 
 /** Selected with ?vault=<id> (remembered) or a previous choice; pages reload to switch. */
 function pickVault(): VaultId {
@@ -113,7 +124,7 @@ export const TESTNET = {
   priceFeed: "0x86bCF0841622a5dAC14A313a15f96A95421b9366",
   router: "0x9a1ff7FE3a0F69959A3fBa1F1e5ee18e1A9CD7E9",
   pool: "0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9",
-  gauge: "0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3",
+  gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c", // live BTC/MUSD gauge (Voter 0x263F…5F0D)
   btc: "0x7b7C000000000000000000000000000000000000",
   musd: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
 } as const;
