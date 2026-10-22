@@ -18,6 +18,8 @@ a collateral ratio.
 <p align="center">
   <a href="https://mblp.surge.sh"><b>Live app</b></a> ·
   <a href="https://mblp.surge.sh/docs/">Docs</a> ·
+  <a href="https://youtu.be/ICVxyTolYig">Demo video</a> ·
+  <a href="docs/mbLP-deck.pdf">Deck</a> ·
   <a href="https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract">Verified contract</a> ·
   <a href="contracts/">Contracts &amp; tests</a> ·
   <a href="docs/evidence.md">Evidence (every tx)</a> ·
