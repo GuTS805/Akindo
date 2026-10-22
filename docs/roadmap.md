@@ -7,8 +7,9 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 
 - Vault, reward gauge and incentive router written, tested (78 tests, an invariant suite, testnet
   and mainnet fork tests, 97% line coverage) and reviewed with Slither
-- Two vaults live on Mezo testnet with real deposits, claims and withdrawals
-  ([evidence](evidence.md)); a keeper runs rebalance, harvest and reward top-ups
+- Vaults live on Mezo testnet with real deposits, claims and withdrawals ([evidence](evidence.md));
+  the default (v3) stakes in Mezo's live BTC/MUSD gauge, earns its MEZO emissions and runs the fee
+  flywheel live; a keeper runs rebalance, harvest, reward top-ups and router pushes
 - Mainnet configuration in place and exercised by a fork test against the real MUSD, pool, gauge
   and gauge incentive contracts
 - Six-page app with EVM wallets and Bitcoin wallets through Mezo Passport; a real Unisat wallet
@@ -19,10 +20,12 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 1. **Concentrated BTC/MUSD pool.** The CL gauge receives the larger share of emissions on mainnet
    (69k MEZO a day against 42k on the volatile gauge in October). A range-managed strategy for it
    is the biggest yield lever.
-2. **Incentive router in the mainnet deployment.** The mainnet vault takes the `IncentiveRouter`
-   as its fee recipient. On testnet the gauge incentive contract does not whitelist MEZO, so the
-   flywheel is proven on the mainnet fork until it can run live.
-3. **Address the Wave 1 feedback** from the Mezo team.
+2. **Deployment sizing after a redemption.** Cap the extra debt `_lever` takes so the trove stays
+   at its target ratio when the vault holds more LP than its trove supports (today such a deposit
+   waits as idle BTC; see SECURITY.md).
+3. **Incentive router in the mainnet deployment.** The mainnet vault takes the `IncentiveRouter`
+   as its fee recipient, as v3 already does on testnet.
+4. **Address the Wave 1 feedback** from the Mezo team.
 
 ## Path to mainnet and a Mezo Market listing
 

@@ -35,7 +35,7 @@ reproduce it.
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
 | `Invariant.t.sol` | 1,024 runs × 64 random actions, including pool manipulation, oracle moves, liquidations and redemptions: shares and rewards add up, the trove obeys MUSD's rules, no LP left unstaked, every holder can exit |
 | `InvariantRegression.t.sol` (1) | Replays the invariant suite's one CI failure: a test-harness artifact (below), kept so it cannot return |
-| `Fork.t.sol` | Full cycle against the deployed testnet MUSD and Mezo Pools |
+| `Fork.t.sol` (3) | Against the deployed testnet contracts: full cycle, MEZO earned from Mezo's live BTC/MUSD gauge, and fees booked as incentives on its incentive contract |
 | `MainnetFork.t.sol` | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
 
 78 unit and fuzz tests, plus the invariant suite, its regression replay and two fork tests.

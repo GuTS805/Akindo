@@ -7,11 +7,18 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
 
 | Contract | Address | Deploy tx |
 | --- | --- | --- |
-| **BtcLpVault v2** (app default) | [`0x652e31Ba2658CC27ff0E36431cA008De7D439102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102?tab=contract) | [`0x24e9ec15…f6409`](https://explorer.test.mezo.org/tx/0x24e9ec1599a462f6c614e71082279303267b8093ff4b4e7bf9eb363e84ff6409) |
+| **BtcLpVault v3** (app default) | [`0x75532765bfBa32E8DC796292937F9c571a2dBFEC`](https://explorer.test.mezo.org/address/0x75532765bfBa32E8DC796292937F9c571a2dBFEC) | [`0x734f475b…046e`](https://explorer.test.mezo.org/tx/0x734f475b06a20cd8a29c0e94884bd1a6c3157392d0cb586ba6825c4603f7046e) |
+| IncentiveRouter (v3 fee recipient) | [`0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605) | [`0xe3edf374…8beb`](https://explorer.test.mezo.org/tx/0xe3edf37469743381a1c46f090a53ce243cb79753a753021b6614442dafe38beb) |
+| **BtcLpVault v2** | [`0x652e31Ba2658CC27ff0E36431cA008De7D439102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102?tab=contract) | [`0x24e9ec15…f6409`](https://explorer.test.mezo.org/tx/0x24e9ec1599a462f6c614e71082279303267b8093ff4b4e7bf9eb363e84ff6409) |
 | IncentiveRouter (v2 fee recipient) | [`0x924b8a4585B659D78041569fE0074719116126F2`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2?tab=contract) | [`0x275be767…56f41`](https://explorer.test.mezo.org/tx/0x275be76796e08a2e42e3b73f74ebdc25b058f2631de685f6cd65858184e56f41) |
 | BtcLpVault v1, MEZO rewards | [`0xc41192A186C0ee2F593D611b0D0C00501B5Eea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract) | [`0xf6e25d64…5af1`](https://explorer.test.mezo.org/tx/0xf6e25d6458b4f2bcdd607c2fd3f3caa4c988b06124e7df4c95fc6071f1b45af1) |
 | RewardGauge (testnet MEZO) | [`0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b?tab=contract) | [`0x6f18affd…d14a`](https://explorer.test.mezo.org/tx/0x6f18affd16e0a207c9ab67d13f0a52ecacf9310088bcb059c447f2693e7bd14a) |
-| BtcLpVault, official gauge | [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4?tab=contract) | [`0x494f7cbd…45a5`](https://explorer.test.mezo.org/tx/0x494f7cbdb55db1cd30eae97bf74574949fe51fc5a91ca26bf513770c396e45a5) |
+| BtcLpVault, legacy gauge | [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4?tab=contract) | [`0x494f7cbd…45a5`](https://explorer.test.mezo.org/tx/0x494f7cbdb55db1cd30eae97bf74574949fe51fc5a91ca26bf513770c396e45a5) |
+
+The v3 vault and router were deployed on 22 Oct 2026. Their creation inputs match a local build of
+this repository byte for byte (compiled bytecode plus constructor arguments); the explorer's
+verifier has not yet accepted the submissions that verified the earlier contracts, so they show as
+unverified for now.
 
 v2 was seeded with 0.1 BTC in [`0x00500517…aa75`](https://explorer.test.mezo.org/tx/0x00500517070cd3d072e34d88a2621850bc15ff062961767b3c459bdcdf7faa75):
 one deposit opened its trove at 296% CR (1,890 MUSD debt) and staked the LP in the reward gauge. A
@@ -92,15 +99,46 @@ The keeper is [`0x3e68…228F`](https://explorer.test.mezo.org/address/0x3e68A7e
 a throwaway key run by [`.github/workflows/keeper.yml`](../.github/workflows/keeper.yml). Every
 call it makes is open to anyone.
 
-## Why a reward gauge on testnet
+## v3: Mezo's live gauge on testnet
 
-Mezo's official testnet BTC/MUSD gauge
-[`0xeF07…0Cc3`](https://explorer.test.mezo.org/address/0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3)
-reports `rewardRate() = 0` and `periodFinish() = 0`. `notifyRewardAmount` reverts with
-`NotVoter()` for anyone but Mezo's Voter, and `notifyRewardWithoutClaim` with `NotTeam()`. So a
-vault staked there can never harvest anything on testnet. The RewardGauge has the same interface
-the vault uses, takes funding from anyone, and pays the real testnet MEZO token
-(`0x7b7C…0001`).
+The testnet BTC/MUSD pool has two gauges, on two Voters (both governed by the same Mezo address):
+
+| Voter | BTC/MUSD gauge | State |
+| --- | --- | --- |
+| [`0x263F…5F0D`](https://explorer.test.mezo.org/address/0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D) | [`0x72D8…Cd2c`](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c) | Live. The Voter sent it 647,418 MEZO on 15 Oct 2026 and 760,811 MEZO on 22 Oct; MEZO is whitelisted on its incentive contract [`0x75b6…0ee1`](https://explorer.test.mezo.org/address/0x75b6B35Fc78826A0B7E1f9c08bb7d84bd70D0ee1) |
+| [`0x72F8…5738`](https://explorer.test.mezo.org/address/0x72F8dd7F44fFa19E45955aa20A5486E8EB255738) | [`0xeF07…0Cc3`](https://explorer.test.mezo.org/address/0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3) | Stopped. Its Splitter's `activePeriod` is 13 Nov 2025 and `updatePeriod()` reverts, so `distribute()` reverts for every gauge; MEZO is not whitelisted there |
+
+The earlier vaults used the second one (its addresses came from `mezo-org/tigris`), which is why
+they needed the RewardGauge below. A builder in Mezo's Discord pointed to the live gauge. v3 is the
+v2 contract staked there:
+
+| Step | Result | Tx |
+| --- | --- | --- |
+| Seed 0.1 BTC | Trove opened at 296.8% CR; 6.72 LP staked in the live gauge | [`0x3c446a7e…dcaf`](https://explorer.test.mezo.org/tx/0x3c446a7ed8cc08a9f95e8ba592d37b083022bfcae03191fe642afd27325adcaf) |
+| Harvest | ~1.92 MEZO from Mezo's gauge; the 10% fee (0.192 MEZO) to the router | [`0xb78d005d…0973`](https://explorer.test.mezo.org/tx/0xb78d005dbb2e18e6738b754dd33bef688d96951ab1e2e53ef5bf4bc58be40973) |
+| Router `push()` | 0.0961 MEZO posted on the gauge's incentive contract, 0.0961 MEZO to the treasury: the fee flywheel, live | [`0xa7724a6c…cb26`](https://explorer.test.mezo.org/tx/0xa7724a6c5cda61f678b71d477412c39f16a59e210ba448544ed7f89ea48dcb26) |
+
+The testnet fork tests run the same against the live gauge: 1 BTC earned 652 MEZO in a day, and
+one day of its fees booked 36.25 MEZO as an incentive for the current epoch
+([`Fork.t.sol`](../contracts/test/Fork.t.sol)).
+
+### A lagging RPC backend
+
+`rpc.test.mezo.org` spreads requests over several backends, and one ran about 99,000 blocks (some
+5 days) behind on 22 Oct 2026. Requests that land on it see old state: a funded wallet at balance 0
+and nonce 0, a new contract with no code, and empty logs past its head. Before the fix, the app
+could show an empty history or zeros for the new vault, and transactions could fail with
+"insufficient funds". The app now pins every read to the highest block it has seen (the lagging
+backend then rejects the block and the read is retried) and asks again before believing an empty
+log list; the keeper does the same, and CI retries the testnet fork tests.
+
+## Why a reward gauge on testnet (v1, v2)
+
+The gauge the earlier vaults stake in,
+[`0xeF07…0Cc3`](https://explorer.test.mezo.org/address/0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3),
+reports `rewardRate() = 0` and `periodFinish() = 0`, and `notifyRewardAmount` reverts with
+`NotVoter()` for anyone but its Voter. The RewardGauge has the same interface the vault uses,
+takes funding from anyone, and pays the real testnet MEZO token (`0x7b7C…0001`).
 
 ## Mainnet, on a fork
 

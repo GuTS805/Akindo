@@ -93,7 +93,7 @@ payout simulated before you sign, claim rewards, and the permissionless keeper a
 | **PriceFeed** | Prices shares, bands every pool action, values LP at the fair price `2·√(k·price)` |
 | **Mezo Pools** — Router, volatile BTC/MUSD pool, Gauge | Liquidity, LP staking and MEZO rewards |
 | **Redemptions and liquidations** | Surplus collateral is reclaimed automatically; after a liquidation the vault keeps its LP and rebuilds the trove |
-| **Mezo Earn** (vote-escrow) | The vault's fee can flow through `IncentiveRouter` into the BTC/MUSD gauge's incentive contract, buying veBTC votes for its own pool (below) |
+| **Mezo Earn** (vote-escrow) | The vault's fee flows through `IncentiveRouter` into the BTC/MUSD gauge's incentive contract, buying veBTC votes for its own pool; live on testnet (below) |
 | **Mezo Passport** | Bitcoin wallets (Unisat, OKX, Xverse) connect through Passport's connectors and act through a Mezo smart account, next to any EVM wallet |
 | **Mainnet data** | Gauge emissions, pool depth, MEZO price, MUSD supply and veBTC are read live in the app |
 
@@ -116,10 +116,12 @@ flowchart LR
     Y --> D
 ```
 
-On a Mezo mainnet fork, one day of fees from a 0.2 BTC deposit posted **184 MEZO** on the live
-gauge's incentive contract, booked to the current epoch
-([`MainnetFork.t.sol`](contracts/test/MainnetFork.t.sol)). The router has no owner; its split
-and destinations are fixed at deployment.
+It runs live on testnet: the v3 vault's router posted its first fees on the live BTC/MUSD gauge's
+incentive contract in [`0xa7724a6c…cb26`](https://explorer.test.mezo.org/tx/0xa7724a6c5cda61f678b71d477412c39f16a59e210ba448544ed7f89ea48dcb26)
+(0.0961 MEZO as an incentive, 0.0961 MEZO to the treasury). On a Mezo mainnet fork, one day of
+fees from a 0.2 BTC deposit posted **184 MEZO** on the mainnet gauge's incentive contract, booked
+to the current epoch ([`MainnetFork.t.sol`](contracts/test/MainnetFork.t.sol)). The router has no
+owner; its split and destinations are fixed at deployment.
 
 **No owner, no admin key, no upgrades.** The fee and every parameter are fixed at deployment, and
 `rebalance` and `harvest` can be called by anyone.
@@ -132,14 +134,15 @@ and destinations are fixed at deployment.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
 
-The testnet runs three deployments, selectable at the top of the Vault, Portfolio and Analytics
+The testnet runs four deployments, selectable at the top of the Vault, Portfolio and Analytics
 pages:
 
 | Vault | Gauge | Why |
 | --- | --- | --- |
-| **v2** (default) — [`0x652e…9102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102) | [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) | The current contract. Fixes from the [review pass](contracts/SECURITY.md#review-findings-october-2026): a deposit pays its own MUSD borrowing fee, a 2 BTC deposit cap, and a failed deployment leaves the deposit idle instead of reverting it. Its fee recipient is the [`IncentiveRouter`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2). |
-| **v1** — [`0xc411…Ea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) | Same [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b), streaming testnet MEZO | The first release, where the live deposit → claim → withdraw in the evidence ran. Mezo's official testnet gauge has never received emissions and only the Voter can fund it; this gauge has the same interface and anyone can fund it, so harvest and claim pay out for real. |
-| **Official gauge** — [`0x1879…B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4) | Mezo's testnet BTC/MUSD gauge | The setup the vault would use on mainnet. |
+| **v3** (default) — [`0x7553…BFEC`](https://explorer.test.mezo.org/address/0x75532765bfBa32E8DC796292937F9c571a2dBFEC) | Mezo's live BTC/MUSD [gauge](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c), paid MEZO by Mezo's Voter each epoch | The v2 contract, earning real MEZO emissions exactly as it would on mainnet. Its fee recipient, an [`IncentiveRouter`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605), posts fees on that gauge's incentive contract, where MEZO is whitelisted. |
+| **v2** — [`0x652e…9102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102) | [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) | The current contract. Fixes from the [review pass](contracts/SECURITY.md#review-findings-october-2026): a deposit pays its own MUSD borrowing fee, a 2 BTC deposit cap, and a failed deployment leaves the deposit idle instead of reverting it. Its fee recipient is the [`IncentiveRouter`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2). |
+| **v1** — [`0xc411…Ea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03) | Same [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b), streaming testnet MEZO | The first release, where the live deposit → claim → withdraw in the evidence ran. The RewardGauge has the same interface as Mezo's gauges and anyone can fund it. |
+| **Legacy** — [`0x1879…B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4) | The BTC/MUSD gauge on Mezo's older testnet Voter | That Voter's emissions stopped on 13 Nov 2025, so this vault earns nothing; v3 replaced it. |
 
 <p align="center">
   <img src="assets/readme/analytics.png" alt="Analytics page with share price and vault value history" width="100%">
@@ -181,7 +184,7 @@ withdraw on the rewards vault.
 | Manipulation | 7 | Deposit → push the pool off the oracle → withdraw → push it back, with the attacker's own capital. Never profitable (512-run fuzz, 1–2,000 BTC, 2–80% skews, at mainnet's real 0.3% pool fee) |
 | Edge cases | 18 | Every config guard, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, and the last exit after a 15% fall (waits for arbitrage rather than sell below the band, then pays in full) |
 | Invariant | 65,536 random actions | Deposits, withdrawals, transfers, reward streams, oracle moves, pool manipulation, liquidations and redemptions. Checks that shares and rewards add up, the trove obeys MUSD's rules, no LP is left unstaked and **every holder can exit**. A replay of its one CI failure (a test-harness artifact, see [SECURITY.md](contracts/SECURITY.md#review-findings-october-2026)) runs with it |
-| Testnet fork | 1 | Full deposit → partial → full withdraw against the deployed testnet MUSD and Mezo Pools contracts (0.9997 BTC back per BTC) |
+| Testnet fork | 3 | Against the deployed testnet contracts: full deposit → partial → full withdraw (0.9997 BTC back per BTC), MEZO earned from Mezo's live testnet gauge (652 MEZO in a day on 1 BTC), and fees booked as incentives on its incentive contract |
 | **Mainnet fork** | 1 | The same cycle against **mainnet** MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned **3,309 MEZO in one day** and returned 0.19995 BTC; the fee flywheel posts 184 MEZO on the gauge's real incentive contract |
 
 - Oracle-band guard on adding liquidity and rebalancing, oracle-based minimum outputs on every swap; exits skip the band so holders can always leave, and the manipulation suite shows that cannot be exploited
