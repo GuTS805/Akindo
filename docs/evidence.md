@@ -118,6 +118,18 @@ v2 contract staked there:
 | Harvest | ~1.92 MEZO from Mezo's gauge; the 10% fee (0.192 MEZO) to the router | [`0xb78d005d…0973`](https://explorer.test.mezo.org/tx/0xb78d005dbb2e18e6738b754dd33bef688d96951ab1e2e53ef5bf4bc58be40973) |
 | Router `push()` | 0.0961 MEZO posted on the gauge's incentive contract, 0.0961 MEZO to the treasury: the fee flywheel, live | [`0xa7724a6c…cb26`](https://explorer.test.mezo.org/tx/0xa7724a6c5cda61f678b71d477412c39f16a59e210ba448544ed7f89ea48dcb26) |
 
+### The demo video, from MetaMask
+
+The [demo video](https://youtu.be/ICVxyTolYig) runs one cycle on v3 from MetaMask, with a fresh
+wallet [`0x32e2…cCC4`](https://explorer.test.mezo.org/address/0x32e271dc4693dF1EdB59e0353dE7470B2E9acCC4)
+on 22 Oct 2026:
+
+| Step | Result | Tx |
+| --- | --- | --- |
+| Deposit 0.01 BTC | 0.0099997 mbLP minted; the BTC joins the trove, the pool and Mezo's live gauge | [`0x87428726…459d`](https://explorer.test.mezo.org/tx/0x874287262fadf7c3470ed3ae127c9dc7e826841f3e27901f3fe39252906d459d) |
+| Claim | 0.0182 MEZO from Mezo's gauge to the wallet | [`0x08b84374…35cd1`](https://explorer.test.mezo.org/tx/0x08b84374d1914380bc21016c4535a2b76066cd8f2f3a439805365b0201235cd1) |
+| Withdraw 50% | 0.005 mbLP burned for 0.0049987 BTC and no MUSD (the app had simulated 0.004998 BTC before signing) | [`0xdff587eb…2817`](https://explorer.test.mezo.org/tx/0xdff587ebe9c0cae4eaa484fccd9b804694d8f60a2df56fe3845515d160362817) |
+
 The testnet fork tests run the same against the live gauge: 1 BTC earned 652 MEZO in a day, and
 one day of its fees booked 36.25 MEZO as an incentive for the current epoch
 ([`Fork.t.sol`](../contracts/test/Fork.t.sol)).
