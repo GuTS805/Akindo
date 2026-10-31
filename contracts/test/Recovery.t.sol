@@ -70,6 +70,32 @@ contract RecoveryTest is BaseTest {
         assertEq(b, 0);
     }
 
+    /// @notice A liquidation redistributed to the vault's trove adds debt that MUSD reports
+    ///         inside `interest` and again as `pendingInterest`. It must be counted once.
+    function test_redistribution_pendingDebtCountedOnce() public {
+        _deposit(alice, 1e18);
+        BtcLpVault.Snapshot memory s0 = vault.snapshot();
+
+        uint256 coll = 0.05e18;
+        uint256 principal = 2_000e18;
+        uint256 interest = 500e18;
+        vm.deal(address(this), address(this).balance + coll);
+        troves.redistribute{value: coll}(address(vault), principal, interest);
+
+        BtcLpVault.Snapshot memory s1 = vault.snapshot();
+        assertEq(s1.coll, s0.coll + coll);
+        assertEq(s1.debt, s0.debt + principal + interest);
+        assertApproxEqAbs(s1.navMusd + (principal + interest), s0.navMusd + coll * PRICE / 1e18, 1);
+        assertEq(vault.currentCR(), s1.coll * PRICE / s1.debt);
+
+        // Once a trove operation applies the redistribution, nothing changes in the vault's view.
+        _deposit(bob, 1e18);
+        (uint256 pc,,) = troves.pending(address(vault));
+        assertEq(pc, 0);
+        _withdrawAll(bob);
+        _withdrawAll(alice);
+    }
+
     function test_donation_cannotStealFromNextDepositor() public {
         _deposit(alice, 0.01e18);
         vm.deal(address(vault), address(vault).balance + 10e18);

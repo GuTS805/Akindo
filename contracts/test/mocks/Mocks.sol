@@ -120,6 +120,16 @@ contract MockTroveSystem {
     mapping(address => Trove) public troves;
     mapping(address => uint256) public surplus;
 
+    /// @dev A liquidation's debt and collateral redistributed to a trove but not yet applied to it,
+    ///      as in MUSD's TroveManager.
+    struct Pending {
+        uint256 coll;
+        uint256 principal;
+        uint256 interest;
+    }
+
+    mapping(address => Pending) public pending;
+
     constructor(MockToken m, MockPriceFeed f) {
         musd = m;
         feed = f;
@@ -144,6 +154,7 @@ contract MockTroveSystem {
     {
         Trove storage t = troves[msg.sender];
         require(t.status == 1, "no trove");
+        _applyPending(msg.sender);
         require(!(collWithdrawal > 0 && msg.value > 0), "both coll changes");
         require(collWithdrawal > 0 || msg.value > 0 || debtChange > 0, "no change");
         t.coll = t.coll + msg.value - collWithdrawal;
@@ -163,6 +174,7 @@ contract MockTroveSystem {
     function closeTrove() external {
         Trove storage t = troves[msg.sender];
         require(t.status == 1, "no trove");
+        _applyPending(msg.sender);
         musd.burn(msg.sender, t.debt - GAS_COMP);
         uint256 coll = t.coll;
         t.coll = 0;
@@ -183,8 +195,11 @@ contract MockTroveSystem {
         view
         returns (uint256, uint256, uint256, uint256, uint256, uint256)
     {
+        // Like MUSD: principal and interest already include the pending amounts, which are
+        // also returned on their own.
         Trove storage t = troves[b];
-        return (t.coll, t.debt, 0, 0, 0, 0);
+        Pending storage p = pending[b];
+        return (t.coll + p.coll, t.debt + p.principal, p.interest, p.coll, p.principal, p.interest);
     }
 
     function getTroveStatus(address b) external view returns (uint8) {
@@ -209,7 +224,17 @@ contract MockTroveSystem {
         troves[b].debt += amount;
     }
 
+    /// @dev Redistribute part of another trove's liquidation to `b`; the BTC sent is its collateral.
+    function redistribute(address b, uint256 principal, uint256 interest) external payable {
+        require(troves[b].status == 1, "no trove");
+        Pending storage p = pending[b];
+        p.coll += msg.value;
+        p.principal += principal;
+        p.interest += interest;
+    }
+
     function liquidate(address b) external {
+        _applyPending(b);
         Trove storage t = troves[b];
         t.coll = 0;
         t.debt = 0;
@@ -217,6 +242,7 @@ contract MockTroveSystem {
     }
 
     function redeemFully(address b) external {
+        _applyPending(b);
         Trove storage t = troves[b];
         uint256 price = feed.fetchPrice();
         uint256 collTaken = Math.mulDiv(t.debt - GAS_COMP, 1e18, price);
@@ -225,6 +251,13 @@ contract MockTroveSystem {
         t.debt = 0;
         t.status = 4;
         payable(address(0xBEEF)).transfer(collTaken);
+    }
+
+    function _applyPending(address b) internal {
+        Pending memory p = pending[b];
+        delete pending[b];
+        troves[b].coll += p.coll;
+        troves[b].debt += p.principal + p.interest;
     }
 
     function _requireCR(Trove storage t) internal view {

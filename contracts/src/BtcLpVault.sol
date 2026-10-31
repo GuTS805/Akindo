@@ -677,10 +677,10 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
 
         s.troveActive = troveManager.getTroveStatus(address(this)) == TROVE_ACTIVE;
         if (s.troveActive) {
-            (uint256 coll, uint256 principal, uint256 interest,,, uint256 pendingInterest) =
-                troveManager.getEntireDebtAndColl(address(this));
+            // principal and interest already include redistributed (pending) debt
+            (uint256 coll, uint256 principal, uint256 interest,,,) = troveManager.getEntireDebtAndColl(address(this));
             s.coll = coll;
-            s.debt = principal + interest + pendingInterest;
+            s.debt = principal + interest;
             s.netDebt = s.debt > MUSD_GAS_COMPENSATION ? s.debt - MUSD_GAS_COMPENSATION : 0;
         }
 
@@ -703,17 +703,15 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
 
     function _troveCR(uint256 price) internal view returns (uint256) {
         if (troveManager.getTroveStatus(address(this)) != TROVE_ACTIVE) return 0;
-        (uint256 coll, uint256 principal, uint256 interest,,, uint256 pendingInterest) =
-            troveManager.getEntireDebtAndColl(address(this));
-        uint256 debt = principal + interest + pendingInterest;
+        (uint256 coll, uint256 principal, uint256 interest,,,) = troveManager.getEntireDebtAndColl(address(this));
+        uint256 debt = principal + interest;
         return debt == 0 ? 0 : Math.mulDiv(coll, price, debt);
     }
 
     function _netDebt() internal view returns (uint256) {
         if (troveManager.getTroveStatus(address(this)) != TROVE_ACTIVE) return 0;
-        (, uint256 principal, uint256 interest,,, uint256 pendingInterest) =
-            troveManager.getEntireDebtAndColl(address(this));
-        uint256 debt = principal + interest + pendingInterest;
+        (, uint256 principal, uint256 interest,,,) = troveManager.getEntireDebtAndColl(address(this));
+        uint256 debt = principal + interest;
         return debt > MUSD_GAS_COMPENSATION ? debt - MUSD_GAS_COMPENSATION : 0;
     }
 
