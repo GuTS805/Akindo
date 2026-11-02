@@ -89,6 +89,37 @@ contract MainnetForkTest is Test {
         assertGt(value, 0.194e18);
     }
 
+    /// MUSD caps a trove's debt at its opening collateral over 110%. A deposit many times the
+    /// vault's size must refinance the real trove and still deploy in full.
+    function test_mainnetFork_growsPastBorrowingCap() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 10e18);
+        vm.prank(alice);
+        vault.deposit{value: 0.2e18}(0);
+        ITroveManager tm = ITroveManager(MezoMainnet.TROVE_MANAGER);
+        assertEq(tm.getTroveStatus(address(vault)), 1, "trove opened by the first deposit");
+        uint256 cap0 = tm.getTroveMaxBorrowingCapacity(address(vault));
+        assertGt(cap0, 0);
+
+        vm.prank(bob);
+        vault.deposit{value: 2e18}(0);
+        uint256 cap1 = tm.getTroveMaxBorrowingCapacity(address(vault));
+        emit log_named_decimal_uint("borrowing cap before (MUSD)", cap0, 18);
+        emit log_named_decimal_uint("borrowing cap after (MUSD)", cap1, 18);
+        assertGt(cap1, cap0 * 5, "trove refinanced");
+        assertApproxEqRel(vault.currentCR(), 3e18, 0.05e18);
+        assertLt(address(vault).balance, 0.01e18, "deposit deployed");
+        (, uint256 principal, uint256 interest,,,) = tm.getEntireDebtAndColl(address(vault));
+        assertLe(principal + interest, cap1);
+
+        vm.startPrank(bob);
+        (uint256 b, uint256 m) = vault.withdraw(vault.balanceOf(bob), 0);
+        vm.stopPrank();
+        uint256 value = b + m * 1e18 / vault.snapshot().price;
+        emit log_named_decimal_uint("value back (BTC)", value, 18);
+        assertGt(value, 1.94e18);
+    }
+
     /// The fee flywheel on mainnet: the vault's fee goes to an IncentiveRouter, which posts half
     /// of it as a MEZO incentive on the BTC/MUSD gauge's real BribeVotingReward, for veBTC
     /// voters to earn by voting for that gauge.

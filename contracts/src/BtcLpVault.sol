@@ -438,7 +438,30 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
 
     /// @dev Borrow more and add it to the pool with matching BTC, taken from idle BTC first and
     ///      then from collateral. Leftover idle BTC goes to collateral.
+    ///      MUSD caps a trove's debt at its collateral value when opened or last refinanced, over
+    ///      110%, and adding collateral does not raise the cap. When the new debt would pass it, the
+    ///      idle BTC goes into the trove and the trove is refinanced, which resets the cap to all of
+    ///      that collateral; the pool's BTC is then taken back out of collateral. If refinancing is
+    ///      not possible (Recovery Mode), the vault borrows up to the cap.
     function _lever(Snapshot memory s, uint256 extraDebt) internal {
+        if (_debtAfter(s.debt, extraDebt) > troveManager.getTroveMaxBorrowingCapacity(address(this))) {
+            address up;
+            address low;
+            if (s.idleBtc > 0) {
+                (up, low) = _hints(s.coll + s.idleBtc, s.debt);
+                borrowerOperations.adjustTrove{value: s.idleBtc}(0, 0, false, up, low);
+            }
+            (up, low) = _hints(s.coll + s.idleBtc, s.debt);
+            try borrowerOperations.refinance(up, low) {} catch {}
+            s = _snapshot(s.price, 0); // idle BTC is now collateral; any refinancing fee is debt
+
+            uint256 cap = troveManager.getTroveMaxBorrowingCapacity(address(this));
+            if (_debtAfter(s.debt, extraDebt) > cap) {
+                extraDebt = cap > s.debt ? _debtWithin(cap - s.debt) : 0;
+                if (extraDebt == 0) return;
+            }
+        }
+
         uint256 musdForPool = extraDebt + s.idleMusd;
         uint256 btcForPool = Math.mulDiv(musdForPool, 1e18, s.poolPrice);
 
@@ -713,6 +736,17 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         (, uint256 principal, uint256 interest,,,) = troveManager.getEntireDebtAndColl(address(this));
         uint256 debt = principal + interest;
         return debt > MUSD_GAS_COMPENSATION ? debt - MUSD_GAS_COMPENSATION : 0;
+    }
+
+    /// @dev Trove debt after borrowing `extra` more, MUSD's borrowing fee included.
+    function _debtAfter(uint256 debt, uint256 extra) internal view returns (uint256) {
+        return debt + extra + borrowerOperations.getBorrowingFee(extra);
+    }
+
+    /// @dev Largest borrow whose debt, fee included, fits in `room`.
+    function _debtWithin(uint256 room) internal view returns (uint256) {
+        uint256 fee = borrowerOperations.getBorrowingFee(room);
+        return room > fee ? room - fee : 0;
     }
 
     function _hints(uint256 coll, uint256 debt) internal view returns (address up, address low) {

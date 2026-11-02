@@ -20,6 +20,12 @@ interface IBorrowerOperations {
     /// @notice Claims collateral left over after a trove was fully redeemed.
     function claimCollateral() external;
 
+    /// @notice Resets the trove's borrowing capacity to its collateral at today's price, for a
+    ///         fee of a fifth of the borrowing fee on its debt. Reverts in Recovery Mode.
+    function refinance(address upperHint, address lowerHint) external;
+
+    function getBorrowingFee(uint256 debt) external view returns (uint256);
+
     function minNetDebt() external view returns (uint256);
 }
 
@@ -38,6 +44,10 @@ interface ITroveManager {
 
     // 0 nonExistent, 1 active, 2 closedByOwner, 3 closedByLiquidation, 4 closedByRedemption
     function getTroveStatus(address borrower) external view returns (uint8);
+
+    /// @notice Most debt the trove may carry: its collateral at the price when it was opened or
+    ///         last refinanced, over 110%. Adding collateral does not raise it.
+    function getTroveMaxBorrowingCapacity(address borrower) external view returns (uint256);
 }
 
 interface IPriceFeed {

@@ -130,6 +130,11 @@ contract MockTroveSystem {
 
     mapping(address => Pending) public pending;
 
+    /// @dev MUSD's debt cap: collateral value at open (or last refinance) over 110%.
+    mapping(address => uint256) public maxBorrowingCapacity;
+    uint256 public constant REFINANCING_FEE_PERCENTAGE = 20;
+    bool public recoveryMode;
+
     constructor(MockToken m, MockPriceFeed f) {
         musd = m;
         feed = f;
@@ -145,7 +150,22 @@ contract MockTroveSystem {
         t.debt = debt;
         t.status = 1;
         _requireCR(t);
+        maxBorrowingCapacity[msg.sender] = _capacity(t.coll);
         musd.mint(msg.sender, debtAmount);
+    }
+
+    function refinance(address, address) external {
+        Trove storage t = troves[msg.sender];
+        require(t.status == 1, "no trove");
+        require(!recoveryMode, "recovery mode");
+        _applyPending(msg.sender);
+        t.debt += getBorrowingFee((REFINANCING_FEE_PERCENTAGE * (t.debt - GAS_COMP)) / 100);
+        _requireCR(t);
+        maxBorrowingCapacity[msg.sender] = _capacity(t.coll);
+    }
+
+    function getBorrowingFee(uint256 debt) public view returns (uint256) {
+        return (debt * feeBps) / 10_000;
     }
 
     function adjustTrove(uint256 collWithdrawal, uint256 debtChange, bool isDebtIncrease, address, address)
@@ -159,7 +179,9 @@ contract MockTroveSystem {
         require(collWithdrawal > 0 || msg.value > 0 || debtChange > 0, "no change");
         t.coll = t.coll + msg.value - collWithdrawal;
         if (isDebtIncrease) {
-            t.debt += debtChange + (debtChange * feeBps) / 10_000;
+            uint256 added = debtChange + getBorrowingFee(debtChange);
+            require(t.debt + added <= maxBorrowingCapacity[msg.sender], "exceeds maxBorrowingCapacity");
+            t.debt += added;
             musd.mint(msg.sender, debtChange);
         } else if (debtChange > 0) {
             require(debtChange <= t.debt - GAS_COMP, "repay too much");
@@ -168,7 +190,10 @@ contract MockTroveSystem {
         }
         require(t.debt - GAS_COMP >= minNetDebt, "below min debt");
         _requireCR(t);
-        if (collWithdrawal > 0) payable(msg.sender).transfer(collWithdrawal);
+        if (collWithdrawal > 0) {
+            maxBorrowingCapacity[msg.sender] = Math.min(maxBorrowingCapacity[msg.sender], _capacity(t.coll));
+            payable(msg.sender).transfer(collWithdrawal);
+        }
     }
 
     function closeTrove() external {
@@ -204,6 +229,10 @@ contract MockTroveSystem {
 
     function getTroveStatus(address b) external view returns (uint8) {
         return troves[b].status;
+    }
+
+    function getTroveMaxBorrowingCapacity(address b) external view returns (uint256) {
+        return maxBorrowingCapacity[b];
     }
 
     // ---- HintHelpers / SortedTroves
@@ -251,6 +280,14 @@ contract MockTroveSystem {
         t.debt = 0;
         t.status = 4;
         payable(address(0xBEEF)).transfer(collTaken);
+    }
+
+    function setRecoveryMode(bool on) external {
+        recoveryMode = on;
+    }
+
+    function _capacity(uint256 coll) internal view returns (uint256) {
+        return Math.mulDiv(coll, feed.fetchPrice(), MCR);
     }
 
     function _applyPending(address b) internal {
