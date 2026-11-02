@@ -128,6 +128,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     error InsolventVault();
     error DepositCapReached(uint256 navBtc, uint256 cap);
     error OnlySelf();
+    error RecoveryModeExitTooLarge();
 
     constructor(Config memory c) ERC20("Mezo BTC LP Vault", "mbLP") {
         if (
@@ -245,7 +246,9 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
             // MUSD reads the oracle on every trove change, so nothing can exit while it is stale.
             if (price == 0) revert OracleUnavailable();
             uint256 repay = Math.mulDiv(s.netDebt, shares, supply);
-            if (totalSupply() == DEAD_SHARES || s.netDebt - repay < borrowerOperations.minNetDebt()) {
+            if (troveManager.checkRecoveryMode(price)) {
+                (btcOut, musdOut) = _recoveryExit(s, shares, supply);
+            } else if (totalSupply() == DEAD_SHARES || s.netDebt - repay < borrowerOperations.minNetDebt()) {
                 _unwind(s, price);
                 (btcOut, musdOut) = _idleSlice(shares, supply);
             } else {
@@ -441,8 +444,9 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     ///      MUSD caps a trove's debt at its collateral value when opened or last refinanced, over
     ///      110%, and adding collateral does not raise the cap. When the new debt would pass it, the
     ///      idle BTC goes into the trove and the trove is refinanced, which resets the cap to all of
-    ///      that collateral; the pool's BTC is then taken back out of collateral. If refinancing is
-    ///      not possible (Recovery Mode), the vault borrows up to the cap.
+    ///      that collateral; the pool's BTC is then taken back out of collateral.
+    ///      In Recovery Mode MUSD refuses both the refinance and a debt increase that lowers the
+    ///      ratio, so this reverts and a deposit's BTC waits idle, where it can still be withdrawn.
     function _lever(Snapshot memory s, uint256 extraDebt) internal {
         if (_debtAfter(s.debt, extraDebt) > troveManager.getTroveMaxBorrowingCapacity(address(this))) {
             address up;
@@ -452,14 +456,8 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
                 borrowerOperations.adjustTrove{value: s.idleBtc}(0, 0, false, up, low);
             }
             (up, low) = _hints(s.coll + s.idleBtc, s.debt);
-            try borrowerOperations.refinance(up, low) {} catch {}
-            s = _snapshot(s.price, 0); // idle BTC is now collateral; any refinancing fee is debt
-
-            uint256 cap = troveManager.getTroveMaxBorrowingCapacity(address(this));
-            if (_debtAfter(s.debt, extraDebt) > cap) {
-                extraDebt = cap > s.debt ? _debtWithin(cap - s.debt) : 0;
-                if (extraDebt == 0) return;
-            }
+            borrowerOperations.refinance(up, low);
+            s = _snapshot(s.price, 0); // idle BTC is now collateral; the refinancing fee is debt
         }
 
         uint256 musdForPool = extraDebt + s.idleMusd;
@@ -502,6 +500,50 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     function _idleSlice(uint256 shares, uint256 supply) internal view returns (uint256 btcOut, uint256 musdOut) {
         btcOut = Math.mulDiv(address(this).balance - rewardReserveIf(btc), shares, supply);
         musdOut = Math.mulDiv(musd.balanceOf(address(this)) - rewardReserveIf(musd), shares, supply);
+    }
+
+    /// @dev Exit while MUSD is in Recovery Mode, which blocks collateral withdrawals and closing
+    ///      the trove but allows repaying debt. The leaver is paid this share of the NAV at the
+    ///      oracle price: idle BTC first, then idle MUSD, then LP worth twice the rest at its
+    ///      manipulation-resistant fair value, whose BTC pays the leaver and whose MUSD repays debt.
+    ///      Those who stay keep 1x BTC exposure and a higher ratio, and nothing is swapped.
+    ///      Beyond the idle assets about a quarter of the NAV can leave this way; larger exits wait
+    ///      for Recovery Mode to end.
+    function _recoveryExit(Snapshot memory s, uint256 shares, uint256 supply)
+        internal
+        returns (uint256 btcOut, uint256 musdOut)
+    {
+        _checkBand(s.poolPrice, s.price);
+        uint256 owed = Math.mulDiv(s.navMusd, shares, supply);
+        btcOut = Math.min(s.idleBtc, Math.mulDiv(owed, 1e18, s.price));
+        owed -= Math.mulDiv(btcOut, s.price, 1e18);
+        musdOut = Math.min(s.idleMusd, owed);
+        owed -= musdOut;
+        uint256 lpOut = s.lpFairValue == 0 ? 0 : Math.mulDiv(s.lp, 2 * owed, s.lpFairValue);
+        if (lpOut > s.lp || (owed > 0 && s.lpFairValue == 0)) revert RecoveryModeExitTooLarge();
+        if (lpOut > 0) {
+            (uint256 b, uint256 m) = _recoveryLp(s, lpOut, owed);
+            btcOut += b;
+            musdOut += m;
+        }
+    }
+
+    /// @dev Remove `lpOut` and pay exactly `owed` at the oracle price whatever the pool's mix:
+    ///      BTC first, MUSD for any shortfall. The rest of the MUSD repays debt; spare BTC stays
+    ///      with those who remain.
+    function _recoveryLp(Snapshot memory s, uint256 lpOut, uint256 owed)
+        internal
+        returns (uint256 btcOut, uint256 musdOut)
+    {
+        (uint256 b, uint256 m) = _removeLiquidity(lpOut);
+        btcOut = Math.min(b, Math.mulDiv(owed, 1e18, s.price));
+        musdOut = Math.min(m, owed - Math.mulDiv(btcOut, s.price, 1e18));
+        uint256 repay = m - musdOut;
+        if (s.netDebt < repay + borrowerOperations.minNetDebt()) revert RecoveryModeExitTooLarge();
+        if (repay > 0) {
+            (address up, address low) = _hints(s.coll, s.debt - repay);
+            borrowerOperations.adjustTrove(0, repay, false, up, low);
+        }
     }
 
     /// @dev Take this share of idle assets and LP, repay this share of the debt and withdraw
@@ -741,12 +783,6 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     /// @dev Trove debt after borrowing `extra` more, MUSD's borrowing fee included.
     function _debtAfter(uint256 debt, uint256 extra) internal view returns (uint256) {
         return debt + extra + borrowerOperations.getBorrowingFee(extra);
-    }
-
-    /// @dev Largest borrow whose debt, fee included, fits in `room`.
-    function _debtWithin(uint256 room) internal view returns (uint256) {
-        uint256 fee = borrowerOperations.getBorrowingFee(room);
-        return room > fee ? room - fee : 0;
     }
 
     function _hints(uint256 coll, uint256 debt) internal view returns (address up, address low) {

@@ -31,17 +31,19 @@ contract CapacityTest is BaseTest {
         _withdrawAll(alice);
     }
 
-    function test_recoveryMode_depositStaysWithinCap_thenDeploys() public {
+    /// In Recovery Mode MUSD refuses the refinance and any debt increase that lowers the ratio, so
+    /// the deposit waits idle (still withdrawable) and is deployed once Recovery Mode ends.
+    function test_recoveryMode_depositWaitsIdle_thenDeploys() public {
         _deposit(alice, 1e18);
+        (uint256 coll0, uint256 debt0,) = troves.troves(address(vault));
         troves.setRecoveryMode(true);
 
         uint256 shares = _deposit(bob, 20e18);
         assertGt(shares, 0);
         (uint256 coll, uint256 debt,) = troves.troves(address(vault));
-        assertLe(debt, troves.maxBorrowingCapacity(address(vault)), "debt above cap");
-        assertGe(_cr(), 3.5e18, "BTC that could not be paired went to collateral");
-        assertEq(address(vault).balance, 0, "BTC left idle");
-        assertGt(coll, 15e18);
+        assertEq(coll, coll0, "trove changed");
+        assertEq(debt, debt0, "trove changed");
+        assertGe(address(vault).balance, 20e18, "deposit not idle");
 
         troves.setRecoveryMode(false);
         vault.rebalance();

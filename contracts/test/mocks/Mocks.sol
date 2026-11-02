@@ -111,6 +111,7 @@ contract MockTroveSystem {
     }
 
     uint256 public constant MCR = 1.1e18;
+    uint256 public constant CCR = 1.5e18;
     uint256 public constant GAS_COMP = 200e18;
     uint256 public minNetDebt = 1800e18;
     uint256 public feeBps = 10;
@@ -150,6 +151,7 @@ contract MockTroveSystem {
         t.debt = debt;
         t.status = 1;
         _requireCR(t);
+        require(!recoveryMode || _icr(t) >= CCR, "recovery mode: ICR < CCR");
         maxBorrowingCapacity[msg.sender] = _capacity(t.coll);
         musd.mint(msg.sender, debtAmount);
     }
@@ -177,6 +179,8 @@ contract MockTroveSystem {
         _applyPending(msg.sender);
         require(!(collWithdrawal > 0 && msg.value > 0), "both coll changes");
         require(collWithdrawal > 0 || msg.value > 0 || debtChange > 0, "no change");
+        require(!recoveryMode || collWithdrawal == 0, "recovery mode: no collateral withdrawal");
+        uint256 icrBefore = _icr(t);
         t.coll = t.coll + msg.value - collWithdrawal;
         if (isDebtIncrease) {
             uint256 added = debtChange + getBorrowingFee(debtChange);
@@ -190,6 +194,9 @@ contract MockTroveSystem {
         }
         require(t.debt - GAS_COMP >= minNetDebt, "below min debt");
         _requireCR(t);
+        if (recoveryMode && isDebtIncrease) {
+            require(_icr(t) >= CCR && _icr(t) >= icrBefore, "recovery mode: debt increase lowers ICR");
+        }
         if (collWithdrawal > 0) {
             maxBorrowingCapacity[msg.sender] = Math.min(maxBorrowingCapacity[msg.sender], _capacity(t.coll));
             payable(msg.sender).transfer(collWithdrawal);
@@ -199,6 +206,7 @@ contract MockTroveSystem {
     function closeTrove() external {
         Trove storage t = troves[msg.sender];
         require(t.status == 1, "no trove");
+        require(!recoveryMode, "recovery mode: cannot close");
         _applyPending(msg.sender);
         musd.burn(msg.sender, t.debt - GAS_COMP);
         uint256 coll = t.coll;
@@ -229,6 +237,10 @@ contract MockTroveSystem {
 
     function getTroveStatus(address b) external view returns (uint8) {
         return troves[b].status;
+    }
+
+    function checkRecoveryMode(uint256) external view returns (bool) {
+        return recoveryMode;
     }
 
     function getTroveMaxBorrowingCapacity(address b) external view returns (uint256) {
@@ -284,6 +296,10 @@ contract MockTroveSystem {
 
     function setRecoveryMode(bool on) external {
         recoveryMode = on;
+    }
+
+    function _icr(Trove storage t) internal view returns (uint256) {
+        return Math.mulDiv(t.coll, feed.fetchPrice(), t.debt);
     }
 
     function _capacity(uint256 coll) internal view returns (uint256) {

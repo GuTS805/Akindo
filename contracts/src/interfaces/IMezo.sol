@@ -48,6 +48,10 @@ interface ITroveManager {
     /// @notice Most debt the trove may carry: its collateral at the price when it was opened or
     ///         last refinanced, over 110%. Adding collateral does not raise it.
     function getTroveMaxBorrowingCapacity(address borrower) external view returns (uint256);
+
+    /// @notice True when the system's collateral ratio is below 150%. MUSD then blocks collateral
+    ///         withdrawals, closing troves and any debt increase that lowers a trove's ratio.
+    function checkRecoveryMode(uint256 price) external view returns (bool);
 }
 
 interface IPriceFeed {

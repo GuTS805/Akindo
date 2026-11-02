@@ -99,6 +99,37 @@ contract ForkTest is Test {
         assertGt(value, 1.94e18);
     }
 
+    /// In Recovery Mode MUSD blocks collateral withdrawals. The exit then leaves the collateral,
+    /// repays debt with LP MUSD and pays the leaver his value at the oracle price, here against the real trove contracts
+    /// (only the Recovery Mode flag is forced).
+    function test_fork_recoveryModeExit() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 1e18);
+        vm.prank(alice);
+        vault.deposit{value: 1.6e18}(0);
+        vm.prank(bob);
+        vault.deposit{value: 0.4e18}(0);
+
+        ITroveManager tm = ITroveManager(MezoTestnet.TROVE_MANAGER);
+        (uint256 coll0, uint256 p0, uint256 i0,,,) = tm.getEntireDebtAndColl(address(vault));
+        vm.mockCall(
+            MezoTestnet.TROVE_MANAGER, abi.encodeWithSelector(ITroveManager.checkRecoveryMode.selector), abi.encode(true)
+        );
+
+        vm.startPrank(bob);
+        (uint256 b, uint256 m) = vault.withdraw(vault.balanceOf(bob), 0);
+        vm.stopPrank();
+        uint256 value = b + m * 1e18 / vault.snapshot().price;
+        emit log_named_decimal_uint("bob's BTC back for 0.4 BTC", b, 18);
+        emit log_named_decimal_uint("bob's MUSD back (the pool's mix)", m, 18);
+        emit log_named_decimal_uint("value back (BTC)", value, 18);
+        assertGt(value, 0.398e18);
+
+        (uint256 coll1, uint256 p1, uint256 i1,,,) = tm.getEntireDebtAndColl(address(vault));
+        assertEq(coll1, coll0, "collateral untouched");
+        assertLt(p1 + i1, p0 + i0, "debt repaid");
+    }
+
     /// The vault earns MEZO from Mezo's live BTC/MUSD gauge on testnet.
     function test_fork_earnsMezoFromLiveGauge() public {
         vm.prank(alice);
