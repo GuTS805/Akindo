@@ -103,6 +103,10 @@ contract MainnetForkTest is Test {
 
         vm.prank(bob);
         vault.deposit{value: 2e18}(0);
+        // Mainnet's pool is small: the deposit goes in over several keeper steps of a fifth of it.
+        for (uint256 i; i < 40 && vault.needsRebalance(); i++) {
+            vault.rebalance();
+        }
         uint256 cap1 = tm.getTroveMaxBorrowingCapacity(address(vault));
         emit log_named_decimal_uint("borrowing cap before (MUSD)", cap0, 18);
         emit log_named_decimal_uint("borrowing cap after (MUSD)", cap1, 18);

@@ -87,6 +87,34 @@ App and keeper fixes from the same pass: event history now pages through the tes
 shown instead of rendered as zeros, refreshes never show one account's balances under another,
 and the keeper fails its run when a transaction reverts.
 
+## Review findings (November 2026, Wave 2)
+
+Wave 1's judge review found the first item; the rest come from a pass over every public path,
+with each suspected gap measured in a test before it was fixed or accepted.
+
+| Finding | Status |
+| --- | --- |
+| `_snapshot`, `_troveCR` and `_netDebt` added `pendingInterest` to MUSD's `interest`, which already includes it: NAV and share price read low after a liquidation was redistributed to the vault's trove | **Fixed.** The mock now models redistribution like MUSD; `test_redistribution_pendingDebtCountedOnce` failed before the fix. |
+| MUSD caps a trove's debt at its opening collateral over 110%, so the vault stopped borrowing at about 2.7x its first deposit and later deposits sat idle | **Fixed** by refinancing when a lever would pass the cap (`Capacity.t.sol`, and a 13x deposit in both fork suites). |
+| In Recovery Mode every exit that touched the trove reverted, so holders were stuck | **Fixed.** Exits pay the NAV share from idle assets and LP, repay debt with LP MUSD, leave collateral alone (`RecoveryMode.t.sol`, `test_fork_recoveryModeExit`). |
+| A third party could push the pool to the edge of the oracle band, call `rebalance()` (or let a deposit deploy), and push it back: liquidity added at the edge loses value when the price returns, and that loss went to the attacker. At a 6% band, with a step half the pool's size, the attacker made about 0.002 BTC per 20 BTC deployed. Mainnet's pool is ~0.8 BTC, so any real deposit there would be that large | **Fixed.** One deployment step adds at most `MAX_ADD_BPS` (20%) of the pool's MUSD reserve; larger deposits deploy over several keeper steps. `Sandwich.t.sol` asserts that sandwiching a rebalance, a deposit or a withdrawal loses money at both the 2% and 6% bands, pushing either way. |
+| A small deposit could trigger deployment work the vault already owed (such as the rest of a large deposit) and pay its borrowing fee, minting it fewer shares or none (found by the fuzz test once deployment became step-limited) | **Fixed.** A deposit deploys only when it creates the need; owed work is the keeper's, paid by all holders. |
+| Could anyone claim the vault's gauge rewards to it outside `_harvest`, leaving them uncredited? | **Not possible.** Mezo's gauges revert `getReward(vault)` from any other caller (`NotAuthorized`, checked on testnet and mainnet). |
+
+Accepted, with their bounds:
+
+- After a large deposit is deployed in steps, the borrowing fee of the later keeper steps is shared
+  by all holders (0.1% of the step's new debt, about 0.025% of the value it deploys).
+- A refinance moves the trove to MUSD's current interest rate. A large deposit can trigger one; it
+  pays the refinancing fee itself, but the rate change is shared.
+- `minBtcOut` bounds only the BTC of a withdrawal. A sandwich shifts a leaver's payout from MUSD to
+  BTC, and the leaver comes out ahead in `Sandwich.t.sol`; the last exit's top-up swap is bounded by
+  the oracle band.
+- Holding the pool outside the oracle band blocks Recovery Mode exits and deployment while it
+  lasts, at the cost of the trades that keep it there.
+- The testnet vaults use a 6% band because the testnet pool drifts with no arbitrage; mainnet uses
+  2%. New deployments should use 2%.
+
 ## Known limits
 
 See [the root README](../README.md#known-limits): MEZO liquidity, impermanent loss on the pool

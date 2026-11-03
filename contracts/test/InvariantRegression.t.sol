@@ -19,19 +19,20 @@ contract InvariantRegressionTest is BaseTest {
     }
 
     function test_caughtDeploymentRevert_doesNotCorruptPool() public {
-        h.deposit(4508, 12);
-        h.deposit(15, 3423);
-        h.redeem(8e22);
-        h.deposit(4012, 6e22);
-        h.withdraw(1059946039, 661694442);
-        h.deposit(2268, 8);
-        h.withdraw(9817, 20);
-        h.movePrice(-488);
-        h.liquidate(259200);
-        h.deposit(6, 1e20);
-        h.deposit(57005, 11295);
-        h.redeem(1601264161297887046092300);
-        h.deposit(12892, 1.1e18);
+        // The CI sequence stopped reaching the caught revert once deposits stopped deploying
+        // work the vault already owed; this generated one (seed 2, 20 steps) reaches it again.
+        uint256 r = 2;
+        for (uint256 i; i < 20; i++) {
+            r = uint256(keccak256(abi.encode(r)));
+            uint256 op = r % 6;
+            uint256 a = (r >> 8) % 100_000;
+            uint256 b = (r >> 40) % 1e22;
+            if (op <= 1) h.deposit(a, b);
+            else if (op == 2) h.withdraw(a, b);
+            else if (op == 3) h.movePrice(int256(a % 1000) - 500);
+            else if (op == 4) h.pushPool(int256(a % 1000) - 500);
+            else h.liquidate(a * 20);
+        }
 
         assertFalse(btc.movesLeaked());
         (uint256 r0, uint256 r1,) = pool.getReserves();

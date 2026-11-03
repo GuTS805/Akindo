@@ -22,7 +22,8 @@ contract CapacityTest is BaseTest {
         // At a 300% target the first trove can carry about 1/0.27 of its own size.
         assertLt(cap * 3e18 / PRICE, 3 * coll0, "cap is already loose");
 
-        _deposit(bob, 20e18);
+        _deposit(bob, 20e18); // twice the pool: deployed over several keeper steps
+        _rebalanceUntilDone();
         assertGt(troves.maxBorrowingCapacity(address(vault)), cap * 10, "cap not reset");
         _assertDeployed();
 
@@ -46,8 +47,16 @@ contract CapacityTest is BaseTest {
         assertGe(address(vault).balance, 20e18, "deposit not idle");
 
         troves.setRecoveryMode(false);
-        vault.rebalance();
+        _rebalanceUntilDone();
         _assertDeployed();
+    }
+
+    /// @dev What the keeper does every 30 minutes, until nothing is left to deploy.
+    function _rebalanceUntilDone() internal {
+        for (uint256 i; i < 30 && vault.needsRebalance(); i++) {
+            vault.rebalance();
+        }
+        assertFalse(vault.needsRebalance(), "still deploying after 30 steps");
     }
 
     function _assertDeployed() internal view {

@@ -77,6 +77,12 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     uint256 public constant IDLE_THRESHOLD_BPS = 100;
     /// @notice Premium a leaver pays, in collateral, for debt left to remaining holders.
     uint256 public constant EXIT_SETTLE_PREMIUM_BPS = 50;
+    /// @notice Most MUSD one deployment step adds to the pool, as a share of its MUSD reserve.
+    ///         Liquidity added at the edge of the oracle band loses value when the price returns,
+    ///         and that loss goes to whoever moves it back. Keeping each step small next to the pool
+    ///         makes pushing the pool to the edge cost more than it earns, for any allowed band.
+    ///         A larger deposit is deployed over several rebalances.
+    uint256 public constant MAX_ADD_BPS = 2_000;
     uint8 internal constant TROVE_ACTIVE = 1;
     uint8 internal constant TROVE_CLOSED_BY_REDEMPTION = 4;
 
@@ -189,7 +195,11 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         if (price == 0) revert OracleUnavailable();
 
         uint256 supply = totalSupply();
-        uint256 navBefore = Math.mulDiv(_snapshot(price, msg.value).navMusd, 1e18, price);
+        Snapshot memory s = _snapshot(price, msg.value);
+        // Deployment work the vault already owed (a step-limited earlier deposit, a CR drift) is
+        // the keeper's, paid by all holders; a deposit only deploys what it brings.
+        bool owed = _needsRebalance(s);
+        uint256 navBefore = Math.mulDiv(s.navMusd, 1e18, price);
         if (depositCap != 0 && navBefore + msg.value > depositCap) {
             revert DepositCapReached(navBefore + msg.value, depositCap);
         }
@@ -197,8 +207,8 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
 
         // Best effort: if the pool is off the oracle, the vault is still below the trove
         // minimum or deployment reverts, the BTC waits idle until a later rebalance.
-        Snapshot memory s = _snapshot(price, 0);
-        if (_withinBand(s.poolPrice, price) && _needsRebalance(s)) {
+        s = _snapshot(price, 0);
+        if (!owed && _withinBand(s.poolPrice, price) && _needsRebalance(s)) {
             try this.deployIdle() {} catch {}
         }
 
@@ -386,7 +396,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         uint256 before = s.netDebt;
 
         if (!s.troveActive) {
-            uint256 debt = _openableDebt(s);
+            uint256 debt = Math.min(_openableDebt(s), _addRoom(s));
             if (debt < minNet) {
                 if (strict) revert NothingToRebalance();
                 return;
@@ -448,6 +458,14 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     ///      In Recovery Mode MUSD refuses both the refinance and a debt increase that lowers the
     ///      ratio, so this reverts and a deposit's BTC waits idle, where it can still be withdrawn.
     function _lever(Snapshot memory s, uint256 extraDebt) internal {
+        extraDebt = Math.min(extraDebt, _addRoom(s));
+        if (extraDebt == 0) {
+            if (s.idleBtc > 0) {
+                (address u, address l) = _hints(s.coll + s.idleBtc, s.debt);
+                borrowerOperations.adjustTrove{value: s.idleBtc}(0, 0, false, u, l);
+            }
+            return;
+        }
         if (_debtAfter(s.debt, extraDebt) > troveManager.getTroveMaxBorrowingCapacity(address(this))) {
             address up;
             address low;
@@ -778,6 +796,14 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         (, uint256 principal, uint256 interest,,,) = troveManager.getEntireDebtAndColl(address(this));
         uint256 debt = principal + interest;
         return debt > MUSD_GAS_COMPENSATION ? debt - MUSD_GAS_COMPENSATION : 0;
+    }
+
+    /// @dev New debt one deployment step may add: MAX_ADD_BPS of the pool's MUSD reserve, less
+    ///      the idle MUSD that goes in with it.
+    function _addRoom(Snapshot memory s) internal view returns (uint256) {
+        (uint256 r0, uint256 r1,) = pool.getReserves();
+        uint256 room = Math.mulDiv(btcIsToken0 ? r1 : r0, MAX_ADD_BPS, BPS);
+        return room > s.idleMusd ? room - s.idleMusd : 0;
     }
 
     /// @dev Trove debt after borrowing `extra` more, MUSD's borrowing fee included.

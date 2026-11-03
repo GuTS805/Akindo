@@ -69,16 +69,22 @@ contract ManipulationTest is BaseTest {
 
     /// @dev With the pool pushed down (BTC cheap), the exit's MUSD top-up fails its price check,
     ///      so the attack cannot complete; the attacker eats the swap fees of the push.
-    function test_skewDown_exitReverts() public {
-        vault.deposit{value: 100e18}(0);
-        uint256 shares = vault.balanceOf(address(this));
+    /// @dev Pushing the pool down before exiting. Depending on how much of the deposit the vault
+    ///      has deployed (one step adds at most a fifth of the pool), the exit either reverts
+    ///      (the attacker only eats the swap fees of the push) or completes at a loss.
+    function test_skewDown_neverProfits() public {
         uint256 snap = vm.snapshotState();
         for (uint256 pctDown = 10; pctDown <= 50; pctDown += 20) {
             vm.revertToState(snap);
-            _push(PRICE * (100 - pctDown) / 100);
-            vm.expectRevert();
-            vault.withdraw(shares, 0);
+            try this.attackFor(100e18, PRICE * (100 - pctDown) / 100) returns (int256 profit) {
+                assertLe(profit, 0, "attacker profits from a downward skew");
+            } catch {}
         }
+    }
+
+    function attackFor(uint256 size, uint256 skewedPrice) external returns (int256 profit) {
+        require(msg.sender == address(this));
+        (profit,) = _run("pool down, 100 BTC", size, skewedPrice);
     }
 
     function test_control_noSkew() public {
