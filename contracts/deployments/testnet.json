@@ -6,7 +6,7 @@
   "seedDepositTx": "0xa36213e3f99118eb2a91839453d3ceb495661ae4db765ab45376ce9fbe60435a",
   "explorer": "https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4",
   "v3": {
-    "note": "v3 vault (app default): the v2 contract staked in Mezo's live BTC/MUSD gauge (Voter 0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D), which Mezo pays MEZO each epoch; fee recipient is an IncentiveRouter posting on that gauge's incentive contract, where MEZO is whitelisted",
+    "note": "v3 vault: the v2 contract staked in Mezo's live BTC/MUSD gauge (Voter 0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D), which Mezo pays MEZO each epoch; fee recipient is an IncentiveRouter posting on that gauge's incentive contract, where MEZO is whitelisted",
     "BtcLpVault": "0x75532765bfBa32E8DC796292937F9c571a2dBFEC",
     "deployTx": "0x734f475b06a20cd8a29c0e94884bd1a6c3157392d0cb586ba6825c4603f7046e",
     "deployBlock": 16299122,
@@ -46,5 +46,17 @@
   "keeper": {
     "address": "0x3e68A7eA5A9140dE973778402C7a14d24F75228F",
     "note": "Throwaway testnet key used by .github/workflows/keeper.yml; anyone can run the same calls"
+  },
+  "v4": {
+    "note": "v4 vault (app default): staked in Mezo's live BTC/MUSD gauge like v3; refinances past MUSD's borrowing cap, exits in Recovery Mode, counts redistributed debt once; fee recipient is v3's IncentiveRouter",
+    "BtcLpVault": "0x897F89aBf67dACC3634E169a3896bfCaFd388D9f",
+    "deployTx": "0x030aa50e230e53f3edb71e59cbd6b2ae13e86ca3055bd0add016efd6aaf4de46",
+    "deployBlock": 16536712,
+    "explorer": "https://explorer.test.mezo.org/address/0x897F89aBf67dACC3634E169a3896bfCaFd388D9f",
+    "seedDepositTx": "0x72385121293b5c8b7a593ef776b13a5146c3d31315d1cf93971ee71b86ec20a7",
+    "IncentiveRouter": "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605",
+    "gauge": "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+    "depositCap": "2000000000000000000",
+    "verified": true
   }
 }
