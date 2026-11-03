@@ -483,6 +483,8 @@ const ERRORS: Record<string, string> = {
   BelowMinCR: "This would put the trove under its minimum collateral ratio.",
   InsolventVault: "Vault value is zero.",
   DepositCapReached: "This deposit would take the vault past its deposit cap.",
+  RecoveryModeExitTooLarge:
+    "MUSD is in Recovery Mode, which blocks collateral withdrawals. A smaller withdrawal works now; the rest can leave once Recovery Mode ends.",
 };
 
 function revertName(e: unknown): string | undefined {

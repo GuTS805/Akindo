@@ -4,8 +4,9 @@ import { mountShell } from "../lib/layout";
 import { initWallet } from "../lib/wallet";
 
 const CONTRACTS: [string, string, string][] = [
-  ["mbLP vault v3 (default)", VAULTS.v3.address, "The v2 contract staked in Mezo's live BTC/MUSD gauge: earns the MEZO emissions Mezo distributes each epoch"],
-  ["IncentiveRouter (v3)", "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605", "v3's fee recipient: posts half of each fee as a MEZO incentive on the live gauge's incentive contract, the rest to the treasury"],
+  ["mbLP vault v4 (default)", VAULTS.v4.address, "Staked in Mezo's live BTC/MUSD gauge; refinances its trove to grow past MUSD's borrowing cap, keeps exits open in Recovery Mode, counts redistributed debt once"],
+  ["mbLP vault v3", VAULTS.v3.address, "The v2 contract staked in Mezo's live BTC/MUSD gauge: earns the MEZO emissions Mezo distributes each epoch"],
+  ["IncentiveRouter (v3, v4)", "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605", "Fee recipient of v3 and v4: posts half of each fee as a MEZO incentive on the live gauge's incentive contract, the rest to the treasury"],
   ["mbLP vault v2", VAULTS.v2.address, "Shares from the NAV change, 2 BTC deposit cap, isolated deployment; staked in the reward gauge"],
   ["IncentiveRouter (v2)", "0x924b8a4585B659D78041569fE0074719116126F2", "v2's fee recipient; its incentive contract (legacy Voter) does not whitelist MEZO, so fees fall back to the treasury"],
   ["mbLP vault v1", VAULTS.rewards.address, "First release, staked in the same reward gauge; harvest and claim pay testnet MEZO"],

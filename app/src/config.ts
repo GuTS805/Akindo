@@ -22,11 +22,22 @@ export const mezoMainnet = defineChain({
 });
 
 /**
- * Deployments of the vault contract on testnet. v3 stakes in Mezo's live BTC/MUSD gauge (the Voter
- * pays it MEZO each epoch); v1 and v2 stake in a RewardGauge that anyone can fund with testnet MEZO;
- * Legacy stakes in the BTC/MUSD gauge of Mezo's older Voter, which has paid nothing since Nov 2025.
+ * Deployments of the vault contract on testnet. v4 and v3 stake in Mezo's live BTC/MUSD gauge (the
+ * Voter pays it MEZO each epoch); v1 and v2 stake in a RewardGauge that anyone can fund with testnet
+ * MEZO; Legacy stakes in the BTC/MUSD gauge of Mezo's older Voter, which has paid nothing since Nov 2025.
  */
 export const VAULTS = {
+  v4: {
+    id: "v4",
+    label: "v4",
+    address: "0x897F89aBf67dACC3634E169a3896bfCaFd388D9f",
+    deployBlock: 16_536_712n,
+    gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+    rewardSymbol: "MEZO",
+    hasCap: true,
+    gaugeNote:
+      "v4: staked in Mezo's live BTC/MUSD gauge like v3, and refinances its trove to grow past MUSD's borrowing cap, keeps exits open in Recovery Mode and counts redistributed debt once.",
+  },
   v3: {
     id: "v3",
     label: "v3",
@@ -72,8 +83,8 @@ export const VAULTS = {
 } as const;
 export type VaultId = keyof typeof VAULTS;
 
-const VAULT_KEY = "mblp.vault";
-const DEFAULT_VAULT: VaultId = "v3";
+const VAULT_KEY = "mblp.vault.v4"; // renamed with v4 so earlier visitors land on the new default
+const DEFAULT_VAULT: VaultId = "v4";
 
 /** Selected with ?vault=<id> (remembered) or a previous choice; pages reload to switch. */
 function pickVault(): VaultId {

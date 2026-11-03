@@ -131,10 +131,14 @@
             </p>
             <h3>Testnet vaults</h3>
             <p>
-              <strong>v3</strong> (the default) stakes in Mezo's live testnet BTC/MUSD gauge, the one Mezo's Voter
+              <strong>v4</strong> (the default) stakes in Mezo's live testnet BTC/MUSD gauge, the one Mezo's Voter
               pays MEZO each epoch (760,811 MEZO on 22 Oct 2026), so it earns real emissions exactly as it would on
               mainnet, and its incentive router posts half of each fee on that gauge's incentive contract, where MEZO
-              is whitelisted. <strong>v2</strong> is the same contract staked in a small <code>RewardGauge</code> that
+              is whitelisted. It adds what Wave 1's review asked for: when a deposit would pass MUSD's borrowing cap
+              (set when the trove opened), the vault refinances its trove so it keeps growing; in Recovery Mode, which
+              blocks collateral withdrawals, holders can still leave at their share of the NAV; and debt redistributed
+              from a liquidation is counted once. <strong>v3</strong> is the same strategy without those changes.
+              <strong>v2</strong> is the same contract staked in a small <code>RewardGauge</code> that
               anyone can fund with testnet MEZO; it fixed what a review of <strong>v1</strong> found: a deposit pays
               its own MUSD borrowing fee instead of spreading it over holders, a 2 BTC deposit cap bounds the
               unaudited vault, and a failed deployment step leaves a deposit idle instead of reverting it. The

@@ -1336,6 +1336,11 @@ export const vaultAbi = [
   },
   {
     "type": "error",
+    "name": "RecoveryModeExitTooLarge",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "ReentrancyGuardReentrantCall",
     "inputs": []
   },
