@@ -152,11 +152,13 @@ export const FAUCET = "https://faucet.test.mezo.org";
 /** The deployer wallet that seeded the vaults. */
 export const DEPLOYER = "0x6E82652eDb746f6E4132B064E11753D7A7B2ED40";
 
-/** Every wallet the team controls: the deployer, the keeper and a test wallet. Never counted as users. */
+/** Every wallet the team controls: the deployer, the keeper, a test wallet and two demo wallets. Never counted as users. */
 export const TEAM_WALLETS = [
   DEPLOYER,
   "0x3e68A7eA5A9140dE973778402C7a14d24F75228F", // keeper (GitHub Action)
   "0xA80fB557259Cbd623B07d0e361bC78c4F8923bE4", // team test wallet
+  "0x6ADe5c2CAdD3C7234e2B9F043eEc6caC790382D6", // team demo wallet (docs/evidence.md user cycle)
+  "0xee33B6b098fdc0766Da2FFD669f15E42a79c5c39", // team video wallet (Wave 1 demo recording)
 ];
 
 /** Mainnet contracts used only to show what the same strategy earns there today. */

@@ -54,7 +54,7 @@ function render() {
       `</tbody>`;
   }
   $("c-note").textContent =
-    "Counted from the Deposit events of v4, v5 and v6. The team's own wallets (deployer, keeper and a test wallet, listed in the app's config) are excluded.";
+    "Counted from the Deposit events of v4, v5 and v6. The team's own wallets (deployer, keeper, a test wallet and two demo wallets, listed in the app's config) are excluded.";
 
   const me = wallet.account?.toLowerCase();
   const deposited = !!me && others.some((d) => d.user.toLowerCase() === me);

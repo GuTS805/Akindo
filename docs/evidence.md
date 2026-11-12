@@ -157,8 +157,8 @@ empty transaction hash, so the app now shows the relayer's own reason instead.
 
 ## The full user cycle, live
 
-A fresh wallet, [`0x6ADe…82D6`](https://explorer.test.mezo.org/address/0x6ADe5c2CAdD3C7234e2B9F043eEc6caC790382D6),
-used the MEZO rewards vault like any user would:
+The team's demo wallet, [`0x6ADe…82D6`](https://explorer.test.mezo.org/address/0x6ADe5c2CAdD3C7234e2B9F043eEc6caC790382D6)
+(funded by the deployer, so not an outside user), ran the MEZO rewards vault through a full user cycle:
 
 | Step | Result | Tx |
 | --- | --- | --- |
