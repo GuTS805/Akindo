@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/Test.sol";
+import {PoolAligner} from "./PoolAligner.sol";
 import {BtcLpVault} from "../src/BtcLpVault.sol";
 import {ITroveManager, IGauge} from "../src/interfaces/IMezo.sol";
 import {MockBTC, MockToken} from "./mocks/Mocks.sol";
@@ -16,7 +16,7 @@ interface ITestnetBribe {
 ///         Set MEZO_TESTNET_RPC to enable, e.g. MEZO_TESTNET_RPC=https://rpc.test.mezo.org
 /// @dev    The BTC precompile does not exist in a local EVM, so its address gets a mock
 ///         with the same behavior (ERC-20 balances are native balances).
-contract ForkTest is Test {
+contract ForkTest is PoolAligner {
     BtcLpVault internal vault;
     address internal alice = makeAddr("alice");
 
@@ -41,6 +41,9 @@ contract ForkTest is Test {
         vm.mockCall(MezoTestnet.PRICE_FEED, abi.encodeWithSignature("fetchPrice()"), live);
 
         vault = new BtcLpVault(MezoTestnet.config(makeAddr("fee")));
+        _alignPool(
+            MezoTestnet.BTC, MezoTestnet.MUSD, MezoTestnet.POOL, MezoTestnet.ROUTER, vault.poolFactory(), vault.snapshot().price
+        );
         vm.deal(alice, 10e18);
     }
 

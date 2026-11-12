@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/Test.sol";
+import {PoolAligner} from "./PoolAligner.sol";
 import {BtcLpVault} from "../src/BtcLpVault.sol";
 import {ITroveManager, IGauge} from "../src/interfaces/IMezo.sol";
 import {MockBTC, MockToken} from "./mocks/Mocks.sol";
@@ -22,7 +22,7 @@ interface IGaugeStream {
 ///         Set MEZO_MAINNET_RPC to enable, e.g. MEZO_MAINNET_RPC=https://mezo.drpc.org
 /// @dev    BTC and MEZO are precompiles, absent from a local EVM, so their addresses get ERC-20
 ///         mocks (BTC keeps native-balance semantics; the gauge is given MEZO to pay out).
-contract MainnetForkTest is Test {
+contract MainnetForkTest is PoolAligner {
     BtcLpVault internal vault;
     address internal alice = makeAddr("alice");
     address internal fee = makeAddr("fee");
@@ -46,6 +46,9 @@ contract MainnetForkTest is Test {
         vm.mockCall(MezoMainnet.PRICE_FEED, abi.encodeWithSignature("fetchPrice()"), live);
 
         vault = new BtcLpVault(MezoMainnet.config(fee));
+        _alignPool(
+            MezoMainnet.BTC, MezoMainnet.MUSD, MezoMainnet.POOL, MezoMainnet.ROUTER, vault.poolFactory(), vault.snapshot().price
+        );
         vm.deal(alice, 10e18);
 
         // A live market: if the pool sits outside the oracle band at this block, the vault

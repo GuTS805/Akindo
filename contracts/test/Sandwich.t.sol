@@ -133,4 +133,42 @@ contract SandwichTest is BaseTest {
             }
         }
     }
+
+    /// D. After a fall the pool trails the oracle and `rebalance()` may cut debt outside the band.
+    ///    Mode 0: eve only arbitrages the stale pool back to the oracle. Mode 1: an honest
+    ///    rebalance, then the arbitrage. Mode 2/3: eve pushes the pool further away (up/down),
+    ///    makes the rebalance happen there, then arbitrages. NAV is read once the pool is back at
+    ///    the oracle, so the stale pool's own mispricing is in every mode.
+    function _crashRun(uint256 mode) internal returns (int256 profit, int256 navBtc) {
+        _setUpBand(200);
+        _deposit(alice, 10e18);
+        feed.set(PRICE * 55 / 100); // oracle falls 45%, the pool does not follow
+        uint256 w0 = _wealth(eve);
+        if (mode == 2) _push(PRICE * 130 / 100);
+        if (mode == 3) _push(PRICE * 40 / 100);
+        if (mode >= 1) vault.rebalance();
+        _push(feed.price());
+        profit = int256(_wealth(eve)) - int256(w0);
+        navBtc = int256(vault.snapshot().navMusd * 1e18 / feed.price());
+    }
+
+    function test_offBandDelever_neverProfits() public {
+        uint256 snap = vm.snapshotState();
+        (int256 arbOnly,) = _crashRun(0);
+        vm.revertToState(snap);
+        (int256 honest, int256 navHonest) = _crashRun(1);
+        vm.revertToState(snap);
+        console2.log("eve arbitrage only (sats)    ", arbOnly / 1e10);
+        console2.log("eve after honest rebalance   ", honest / 1e10);
+        for (uint256 mode = 2; mode <= 3; mode++) {
+            (int256 p, int256 nav) = _crashRun(mode);
+            vm.revertToState(snap);
+            console2.log(mode == 2 ? "pushed up   : eve profit" : "pushed down : eve profit", p / 1e10);
+            console2.log("  holders NAV vs honest (sats)", (nav - navHonest) / 1e10);
+            int256 best = arbOnly > honest ? arbOnly : honest;
+            assertLe(p, best + int256(0.001e18), "attack earns more than the plain arbitrage");
+            // Griefing is allowed only at a loss: what holders lose is bounded by what it costs eve.
+            assertLe(navHonest - nav, best - p + int256(0.001e18), "holders pay more than the attacker");
+        }
+    }
 }

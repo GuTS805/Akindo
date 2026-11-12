@@ -303,7 +303,11 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         if (price == 0) revert OracleUnavailable();
         Snapshot memory s = _snapshot(price, 0);
         if (!_needsRebalance(s)) revert NothingToRebalance();
-        _checkBand(s.poolPrice, price);
+        // Outside the oracle band the vault may only cut its debt, and only once the trove is
+        // under minCR: after a fast fall the pool trails the oracle, and refusing to run then
+        // would leave the trove to be liquidated. Removing LP and repaying debt does not depend
+        // on the pool price; adding liquidity does.
+        if (!_withinBand(s.poolPrice, price) && !_mustDelever(s)) revert PoolPriceOffOracle(s.poolPrice, price);
         _rebalance(s, true);
     }
 
@@ -391,6 +395,14 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         return idleHigh || cr < minCR || cr > maxCR;
     }
 
+    /// @dev The trove is under minCR and `_rebalance` would take the delever branch.
+    function _mustDelever(Snapshot memory s) internal view returns (bool) {
+        if (!s.troveActive || s.debt == 0) return false;
+        if (Math.mulDiv(s.coll, s.price, s.debt) >= minCR) return false;
+        uint256 target = Math.max(_targetNetDebt(s.navMusd), borrowerOperations.minNetDebt());
+        return target < s.netDebt;
+    }
+
     function _rebalance(Snapshot memory s, bool strict) internal {
         uint256 minNet = borrowerOperations.minNetDebt();
         uint256 before = s.netDebt;
@@ -466,9 +478,9 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
             }
             return;
         }
+        address up;
+        address low;
         if (_debtAfter(s.debt, extraDebt) > troveManager.getTroveMaxBorrowingCapacity(address(this))) {
-            address up;
-            address low;
             if (s.idleBtc > 0) {
                 (up, low) = _hints(s.coll + s.idleBtc, s.debt);
                 borrowerOperations.adjustTrove{value: s.idleBtc}(0, 0, false, up, low);
@@ -487,7 +499,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         else withdrawColl = btcForPool - s.idleBtc;
 
         uint256 newDebt = s.debt + extraDebt;
-        (address up, address low) = _hints(s.coll + addColl - withdrawColl, newDebt);
+        (up, low) = _hints(s.coll + addColl - withdrawColl, newDebt);
         borrowerOperations.adjustTrove{value: addColl}(withdrawColl, extraDebt, true, up, low);
         _addLiquidity(musdForPool, btcForPool);
     }
