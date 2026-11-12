@@ -16,9 +16,10 @@ async function renderVault() {
   }
 }
 
-async function renderMarket() {
+async function renderMarket(vaultRead: Promise<void>) {
   try {
-    const m = await readMarket();
+    // Mainnet and testnet reads run together; the APR needs both.
+    const [m] = await Promise.all([readMarket(), vaultRead]);
     $("h-apr").textContent = `≈ ${pct(depositorApr(m.vamm.apr, vault))}`;
     $("w-vebtc").textContent = `${num(m.veBtcLocked, 0)} BTC`;
     $("w-liq").textContent = `${num(m.vamm.btc + m.cl.btc, 2)} BTC`;
@@ -27,15 +28,16 @@ async function renderMarket() {
     $("w-emissions-sub").textContent = `MEZO per day ≈ $${num((m.vamm.perDay + m.cl.perDay) * m.mezoPrice, 0)}`;
     $("w-musd").textContent = `${num(m.musdSupply / 1e6, 1)}M`;
   } catch {
+    $("h-apr").textContent = "n/a";
+    $("h-apr-sub").textContent = "mainnet RPC unavailable, reload shortly";
     $("w-liq-sub").textContent = "mainnet RPC unavailable, try again shortly";
   }
 }
 
-async function init() {
+function init() {
   mountShell("home");
   initWallet();
-  await renderVault();
-  renderMarket();
+  renderMarket(renderVault());
 }
 
 init();
