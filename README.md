@@ -18,7 +18,8 @@ a collateral ratio.
 <p align="center">
   <a href="https://mblp.surge.sh"><b>Live app</b></a> ·
   <a href="https://mblp.surge.sh/docs/">Docs</a> ·
-  <a href="https://youtu.be/ICVxyTolYig">Demo video</a> ·
+  <a href="https://youtu.be/ICVxyTolYig">Wave 1 video</a> ·
+  <a href="docs/mbLP-wave2-video.srt">Wave 2 video script</a> ·
   <a href="docs/mbLP-wave2-deck.pdf">Wave 2 deck</a> ·
   <a href="docs/mbLP-deck.pdf">Wave 1 deck</a> ·
   <a href="https://mblp.surge.sh/break/">Try to break it</a> ·

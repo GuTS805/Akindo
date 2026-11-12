@@ -73,6 +73,36 @@ at October's mainnet gas price.
 - **For Mezo**, each BTC deposited adds MUSD debt (interest revenue for Mezo) and BTC/MUSD depth,
   which makes buying BTC with MUSD cheaper for everyone.
 
+### Revenue model and who pays the keeper
+
+Measured on 12 Nov 2026 (MEZO $0.0041, BTC $72,895, Mezo mainnet gas price 0.0014625 gwei):
+
+| Item | Value |
+| --- | --- |
+| Fee | 10% of the MEZO the vault earns (`feeBps` 1000), taken at harvest. No deposit or withdrawal fee |
+| Where the fee goes | The IncentiveRouter posts 50% as a gauge incentive for veBTC voters (`incentiveBps` 5000) and sends 50% to the treasury |
+| Ceiling on this gauge | The whole volatile BTC/MUSD gauge paid ~15,100 MEZO a day, so even owning all of it the fee is ~1,510 MEZO a day (~$6), half of it to the treasury |
+| At 0.2 BTC (mainnet fork) | 1,595 MEZO a day earned, a 160 MEZO fee (~$0.65 a day) |
+| Keeper cost | Each keeper call was charged 1.5M gas on testnet, about 0.0000022 BTC (~$0.16) at mainnet gas. A harvest and a push once a day is ~$10 a month |
+| Who pays | The treasury half of the fee. The keeper is a convenience, not a dependency: deposits, withdrawals and claims harvest on their own, and anyone can call `rebalance()` and `harvest()` |
+
+Fee revenue on the volatile gauge alone does not pay a team; the treasury half covers a daily keeper
+from about 0.2 BTC of deposits. The business case is the next step below and the votes the incentives attract, not the fee.
+
+### The next strategy: the concentrated BTC/MUSD pool
+
+Mainnet, read on chain on 12 Nov 2026 (Voter `0x4823…1f03`):
+
+| BTC/MUSD gauge | veBTC votes | MEZO a day | Pool liquidity | MEZO a day per $1k of liquidity |
+| --- | --- | --- | --- | --- |
+| Concentrated (`0x9CBc…5022`, tick spacing 200) | 240 | ~37,600 | ~$34.6k | ~1,090 |
+| Volatile (`0x52e6…cefb`, mbLP's) | 96 | ~15,100 | ~$70.6k | ~214 |
+
+The concentrated gauge pays about five times as much per dollar of liquidity, before counting that
+only in-range liquidity earns. A range-managed strategy is a large change to the vault, so it comes
+after the audit. On testnet the order is reversed (the concentrated gauge `0xFe31…5997` pays about a
+sixteenth of the volatile one), so a testnet demo would not show the gain.
+
 ## Risks we track
 
 MEZO's thin on-chain liquidity, impermanent loss on the pool share, oracle staleness and MUSD
