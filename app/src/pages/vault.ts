@@ -176,8 +176,12 @@ function renderDepositPreview() {
     const shares = vault.supply === 0n || nav === 0n ? amount : (amount * vault.supply) / nav;
     const inBand = Math.abs(poolGap(vault.snap)) <= Number(vault.maxDeviationBps) / 10_000;
     const opens = firstTroveBtc(vault);
+    const perDay = rewardsPerSecond(vault, shares) * 86_400;
     el.innerHTML =
       `You get ≈ <strong>${btc(shares, 6)} mbLP</strong>.<br/>` +
+      (perDay > 0 && !vault.recoveryMode && inBand
+        ? `At today's gauge emissions that earns about <strong>${num(perDay, perDay < 0.01 ? 5 : 3)} ${vault.rewardSymbol}</strong> a day (testnet tokens, no value).<br/>`
+        : "") +
       (vault.recoveryMode
         ? "MUSD is in Recovery Mode, which blocks new borrowing. Your BTC waits idle, and you can withdraw it any time, until Recovery Mode ends."
         : opens > 0n && amount < opens
