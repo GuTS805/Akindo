@@ -6,7 +6,9 @@
 #     (default 5; deposits, withdrawals and claims harvest on their own anyway)
 #   - tops up a RewardGauge with the keeper's testnet MEZO when its stream has under
 #     TOPUP_BELOW seconds left (default 3 days), at most TOPUP_MAX MEZO (default 100)
-#   - calls push() on a vault's IncentiveRouter fee recipient when it holds fees
+#   - calls push() once on each IncentiveRouter fee recipient that holds fees, after every harvest
+#     (vaults share a router, and reads are pinned to a block, so pushing per vault would retry an
+#     emptied router)
 # Without KEEPER_PRIVATE_KEY it only reports state. FORCE_HARVEST=1 harvests even with nothing earned.
 # A dry run that reverts (e.g. the pool is outside the oracle band) is a skip, not a failure. A sent
 # transaction that reverts or never confirms fails the run after every vault has been processed.
@@ -28,13 +30,16 @@ first() { awk '{print $1}'; }
 # One backend behind rpc.test.mezo.org has run days behind and answers "latest" with old state.
 # Reads are pinned to the highest block from several samples, minus a margin; that backend then
 # rejects the block, so each read is retried a few times.
-BLOCK=0
-for _ in 1 2 3 4 5; do
-  b="$("$CAST" block-number -r "$RPC" 2>/dev/null || echo 0)"
-  [[ "$b" =~ ^[0-9]+$ ]] && [ "$b" -gt "$BLOCK" ] && BLOCK="$b"
-done
-[ "$BLOCK" -gt 3 ] || { echo "cannot read the block number from $RPC"; exit 1; }
-BLOCK=$((BLOCK - 3))
+pin() {
+  local top=0 b
+  for _ in 1 2 3 4 5; do
+    b="$("$CAST" block-number -r "$RPC" 2>/dev/null || echo 0)"
+    [[ "$b" =~ ^[0-9]+$ ]] && [ "$b" -gt "$top" ] && top="$b"
+  done
+  [ "$top" -gt 3 ] || { echo "cannot read the block number from $RPC"; exit 1; }
+  BLOCK=$((top - 3))
+}
+pin
 rd() {
   local out
   for _ in 1 2 3 4 5; do
@@ -69,6 +74,7 @@ wait_receipt() {
 }
 
 FAILS=0
+ROUTERS=""
 fail() {
   FAILS=$((FAILS + 1))
   [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error::$1"
@@ -141,16 +147,26 @@ for VAULT in $VAULTS; do
   if rd "$GAUGE" "duration()(uint256)" >/dev/null 2>&1; then
     topup "$GAUGE"
   fi
-  # A vault whose fee recipient is an IncentiveRouter: post the fees it holds.
+  # A vault whose fee recipient is an IncentiveRouter: remember it, push once after the loop.
   FEE="$(rd "$VAULT" "feeRecipient()(address)" || true)"
   if [ -n "$FEE" ] && rd "$FEE" "incentiveBps()(uint256)" >/dev/null 2>&1; then
+    case " $ROUTERS " in *" $FEE "*) ;; *) ROUTERS="$ROUTERS $FEE" ;; esac
+  fi
+done
+
+# Post each router's fees once, read at a block after this run's harvests.
+if [ -n "$KEEPER" ] && [ -n "$ROUTERS" ]; then
+  sleep 20 # reads are pinned 3 blocks behind the head; let this run's harvests fall inside
+  pin
+  for FEE in $ROUTERS; do
     held="$(rd "$MEZO" "balanceOf(address)(uint256)" "$FEE" | first)"
     if [[ "$held" =~ ^[0-9]+$ ]] && [ "$held" != "0" ]; then
+      echo
       echo "push fees from router $FEE ($("$CAST" from-wei "$held") MEZO):"
       send "$FEE" "push()" || fail "push of $FEE failed"
     fi
-  fi
-done
+  done
+fi
 if [ "$FAILS" -gt 0 ]; then
   echo "done with $FAILS failure(s)"
   exit 1
