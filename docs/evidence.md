@@ -7,16 +7,17 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
 
 | Contract | Address | Deploy tx |
 | --- | --- | --- |
-| **BtcLpVault v4** (app default) | [`0x897F89aBf67dACC3634E169a3896bfCaFd388D9f`](https://explorer.test.mezo.org/address/0x897F89aBf67dACC3634E169a3896bfCaFd388D9f?tab=contract) | [`0x030aa50e…de46`](https://explorer.test.mezo.org/tx/0x030aa50e230e53f3edb71e59cbd6b2ae13e86ca3055bd0add016efd6aaf4de46) |
+| **BtcLpVault v5** (app default) | [`0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D`](https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D?tab=contract) | [`0x39d2be69…69a6`](https://explorer.test.mezo.org/tx/0x39d2be6920afd0a820cac62579bd9f01682f483421f47f544bf16b7939a369a6) |
+| **BtcLpVault v4** | [`0x897F89aBf67dACC3634E169a3896bfCaFd388D9f`](https://explorer.test.mezo.org/address/0x897F89aBf67dACC3634E169a3896bfCaFd388D9f?tab=contract) | [`0x030aa50e…de46`](https://explorer.test.mezo.org/tx/0x030aa50e230e53f3edb71e59cbd6b2ae13e86ca3055bd0add016efd6aaf4de46) |
 | **BtcLpVault v3** | [`0x75532765bfBa32E8DC796292937F9c571a2dBFEC`](https://explorer.test.mezo.org/address/0x75532765bfBa32E8DC796292937F9c571a2dBFEC) | [`0x734f475b…046e`](https://explorer.test.mezo.org/tx/0x734f475b06a20cd8a29c0e94884bd1a6c3157392d0cb586ba6825c4603f7046e) |
-| IncentiveRouter (v3 and v4 fee recipient) | [`0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605) | [`0xe3edf374…8beb`](https://explorer.test.mezo.org/tx/0xe3edf37469743381a1c46f090a53ce243cb79753a753021b6614442dafe38beb) |
+| IncentiveRouter (v3, v4 and v5 fee recipient) | [`0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605) | [`0xe3edf374…8beb`](https://explorer.test.mezo.org/tx/0xe3edf37469743381a1c46f090a53ce243cb79753a753021b6614442dafe38beb) |
 | **BtcLpVault v2** | [`0x652e31Ba2658CC27ff0E36431cA008De7D439102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102?tab=contract) | [`0x24e9ec15…f6409`](https://explorer.test.mezo.org/tx/0x24e9ec1599a462f6c614e71082279303267b8093ff4b4e7bf9eb363e84ff6409) |
 | IncentiveRouter (v2 fee recipient) | [`0x924b8a4585B659D78041569fE0074719116126F2`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2?tab=contract) | [`0x275be767…56f41`](https://explorer.test.mezo.org/tx/0x275be76796e08a2e42e3b73f74ebdc25b058f2631de685f6cd65858184e56f41) |
 | BtcLpVault v1, MEZO rewards | [`0xc41192A186C0ee2F593D611b0D0C00501B5Eea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract) | [`0xf6e25d64…5af1`](https://explorer.test.mezo.org/tx/0xf6e25d6458b4f2bcdd607c2fd3f3caa4c988b06124e7df4c95fc6071f1b45af1) |
 | RewardGauge (testnet MEZO) | [`0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b?tab=contract) | [`0x6f18affd…d14a`](https://explorer.test.mezo.org/tx/0x6f18affd16e0a207c9ab67d13f0a52ecacf9310088bcb059c447f2693e7bd14a) |
 | BtcLpVault, legacy gauge | [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4?tab=contract) | [`0x494f7cbd…45a5`](https://explorer.test.mezo.org/tx/0x494f7cbdb55db1cd30eae97bf74574949fe51fc5a91ca26bf513770c396e45a5) |
 
-v4, v3 and the IncentiveRouter are source-verified through the explorer's Blockscout verifier
+v5, v4, v3 and the IncentiveRouter are source-verified through the explorer's Blockscout verifier
 (`forge verify-contract --verifier blockscout`); v3 from the commit it was deployed from.
 
 v4 was deployed on 3 Nov 2026 and seeded with 0.2 BTC in
@@ -40,6 +41,29 @@ v4 adds what Wave 1's review asked for:
 - **Redistributed debt.** MUSD's `getEntireDebtAndColl` already includes pending interest; v3 added
   it again, understating NAV after a liquidation was redistributed to its trove until the next trove
   operation.
+
+v5 was deployed on 12 Nov 2026 and seeded with 0.2 BTC in
+[`0x49f5f746…1359`](https://explorer.test.mezo.org/tx/0x49f5f7461a95b9157383f64dad7a78bc51ac1cb48d17b478ee1a2fe565ec1359):
+the trove opened at 305.8% CR and 12.57 LP were staked in the live gauge. The 0.2 BTC came from the
+deployer's v4 position, withdrawn in
+[`0xd42c2e60…a9da`](https://explorer.test.mezo.org/tx/0xd42c2e60f7ac2e2a87cdb8c8002a518a5f64669ef665fefa844c0e92a18da4a9).
+A first v5, `0xEC3c…56D9` (steps of a fifth of the pool, 6% band), was withdrawn unused: the testnet pool
+stood 6.7% above the oracle that day, outside its band, so its seed deposit waited idle (as designed). The
+final v5 uses the widest band the contract allows, 10%, because the testnet pool drifts 4-7% from the
+oracle with no arbitrage; mainnet uses 2%. v5 changes two things, both found by attacking v4:
+
+- **Deployment sandwich.** An attacker can push the pool to the band edge, let a deposit or a keeper
+  step add liquidity there, and push it back. With steps of a fifth of the pool the attacker still made
+  0.0004 BTC (8% band) and 0.0014 BTC (10% band) per 20 BTC deployed; with steps of a tenth, every
+  sandwich of a rebalance, a deposit or a withdrawal loses money at the 2%, 6% and 10% bands, in both
+  directions (`Sandwich.t.sol`).
+- **A fall with the pool left behind.** After BTC falls fast the pool trails the oracle, and v4's
+  `rebalance()` reverted on the band while the trove sat under its minimum ratio. v5 lets it cut debt
+  there (`CrashExit.t.sol`: oracle -45%, the trove returns above 250%). Pushing the pool further away
+  first earns an attacker nothing beyond the plain arbitrage of the stale pool.
+
+Fork suites after the change: 5/5 against the testnet contracts and 3/3 on a Mezo mainnet fork, with a
+13x deposit still deployed in full over several keeper steps and withdrawn at (almost) its full value.
 
 v2 was seeded with 0.1 BTC in [`0x00500517…aa75`](https://explorer.test.mezo.org/tx/0x00500517070cd3d072e34d88a2621850bc15ff062961767b3c459bdcdf7faa75):
 one deposit opened its trove at 296% CR (1,890 MUSD debt) and staked the LP in the reward gauge. A

@@ -60,15 +60,17 @@
     "verified": true
   },
   "v5": {
-    "note": "v5 vault (app default): v4 plus deployment steps capped at a fifth of the pool's MUSD reserve, deposits deploy only their own BTC, and rebalance() may cut debt outside the oracle band once the trove is under minCR; fee recipient is v3's IncentiveRouter",
-    "BtcLpVault": "0xEC3cf4a5B2307897d9C90C616737e2c6418456D9",
-    "deployTx": "0x27adb63798049ab1e41edc2b993f7cbd04f31510e4c245b6a9e60b757b81fdf7",
-    "deployBlock": 16729069,
-    "explorer": "https://explorer.test.mezo.org/address/0xEC3cf4a5B2307897d9C90C616737e2c6418456D9",
-    "seedDepositTx": "0x2ab78bf695ede36249e5f2fe298b772e3e102975d72bd823f3250408ec691435",
+    "note": "v5 vault (app default): v4 plus deployment steps capped at a tenth of the pool's MUSD reserve, deposits deploy only their own BTC, and rebalance() may cut debt outside the oracle band once the trove is under minCR; 10% oracle band because the testnet pool drifts 4-7%; fee recipient is v3's IncentiveRouter",
+    "BtcLpVault": "0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D",
+    "deployTx": "0x39d2be6920afd0a820cac62579bd9f01682f483421f47f544bf16b7939a369a6",
+    "deployBlock": 16729245,
+    "explorer": "https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D",
+    "seedDepositTx": "0x49f5f7461a95b9157383f64dad7a78bc51ac1cb48d17b478ee1a2fe565ec1359",
     "IncentiveRouter": "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605",
     "gauge": "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
     "depositCap": "2000000000000000000",
-    "verified": true
+    "maxDeviationBps": 1000,
+    "verified": true,
+    "superseded": "0xEC3cf4a5B2307897d9C90C616737e2c6418456D9 (20% steps, 6% band; its seed waited idle because the pool was 6.7% off the oracle; withdrawn in 0xedd11c19a2a4ca67f3de99184cdce583b368893fef487708677b7f4508308521, never used)"
   }
 }
