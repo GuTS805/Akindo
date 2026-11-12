@@ -15,6 +15,11 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
 - **Community** ([mblp.surge.sh/community](https://mblp.surge.sh/community/)) lists every Deposit event on v4, v5
   and v6 from an address other than the deployer's, read from the explorer's log index (RPC fallback), with a
   link to each transaction.
+- **Round trip on v6 (our own keeper wallet, not a third-party user).** Deposit of 0.002 BTC in
+  [`0xc1fa8fda…d973`](https://explorer.test.mezo.org/tx/0xc1fa8fda1cb9b8f3a89857ee71a43912a726d830f28819bddd896eccd2f5d973),
+  full exit through `withdrawMinValue` with a 0.0019 BTC value floor in
+  [`0xeecae225…b3f4`](https://explorer.test.mezo.org/tx/0xeecae2258027b80ffe50abcbf4c4d4dbd1bc0acb6cc92ffda03985c7f7c5b3f4):
+  0.0020005 BTC back for 0.002 BTC in, and the vault stayed at about 306% CR.
 - **Wave 2 deck:** [`docs/mbLP-wave2-deck.pdf`](mbLP-wave2-deck.pdf).
 
 ## Contracts (Mezo testnet, source verified)
