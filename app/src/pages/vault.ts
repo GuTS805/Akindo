@@ -186,14 +186,33 @@ function renderDepositPreview() {
         ? "MUSD is in Recovery Mode, which blocks new borrowing. Your BTC waits idle, and you can withdraw it any time, until Recovery Mode ends."
         : opens > 0n && amount < opens
           ? `No position is open yet. MUSD needs at least ${musd(vault.minNetDebt, 0)} MUSD of debt, which takes about ${btc(opens, 3)} BTC. Your BTC waits idle, and you can withdraw it any time, until deposits reach that.`
-          : inBand
-            ? "Your BTC goes into the position in the same transaction."
-            : "The pool is outside the oracle band, so your BTC waits idle until the next rebalance.") +
+          : !inBand
+            ? "The pool is outside the oracle band, so your BTC waits idle until the next rebalance."
+            : vault.needsRebalance
+              ? "The vault has a keeper step pending, so your BTC joins the position at the next rebalance (the keeper runs every 30 minutes, and anyone can call it)."
+              : deploysNow(vault, amount)
+                ? "Your BTC goes into the position in the same transaction."
+                : `Deposits that leave idle BTC under 1% of the vault (about ${btc(idleRoom(vault), 4)} BTC now) wait idle until the total passes it, so a small deposit does not pay MUSD's borrowing fee on its own. Your shares count in full and earn rewards from the start.`) +
       (vault.depositCap > 0n
         ? `<br/><span class="muted">Deposit cap: ${btc(navBtc(vault), 3)} of ${btc(vault.depositCap, 0)} BTC used.</span>`
         : "");
   }
   renderButtons();
+}
+
+/** Mirrors `_needsRebalance` after a deposit: idle value above IDLE_THRESHOLD_BPS (1%) of NAV deploys it. */
+function deploysNow(v: VaultState, amount: bigint): boolean {
+  if (!v.snap || !v.snap.troveActive || v.snap.price === 0n) return false;
+  const idleAfter = v.snap.idleBtc + amount + (v.snap.idleMusd * WAD) / v.snap.price;
+  return idleAfter * 100n > navBtc(v) + amount;
+}
+
+/** Idle BTC the vault can hold before a deposit deploys (1% of NAV, less what is idle already). */
+function idleRoom(v: VaultState): bigint {
+  if (!v.snap || v.snap.price === 0n) return 0n;
+  const idle = v.snap.idleBtc + (v.snap.idleMusd * WAD) / v.snap.price;
+  const limit = navBtc(v) / 100n;
+  return limit > idle ? limit - idle : 0n;
 }
 
 /** BTC a vault with no trove needs before it can open one (mirrors the vault's `_openableDebt`). */
