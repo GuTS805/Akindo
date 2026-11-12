@@ -25,14 +25,14 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 
 | Plan | Status |
 | --- | --- |
-| Address the Wave 1 feedback from the Mezo team | **Four of five done**: borrowing cap (refinance), Recovery Mode exits, the debt double-count, verified sources. The fifth, real third-party usage, has started: the first outside deposit is on v6 and the [Community page](https://mblp.surge.sh/community/) lists every one |
+| Address the Wave 1 feedback from the Mezo team | **Four of five done**: borrowing cap (refinance), Recovery Mode exits, the debt double-count, verified sources. The fifth, real third-party usage, has started: the first outside deposit is on v6 and the [Community page](https://mblp.neocities.org/community/) lists every one |
 | Deployment sizing after a redemption | **Done in v6**: new debt is capped by the collateral ratio it leaves, so a deployment no longer reverts |
 | Incentive router in the mainnet deployment | **Ready**: `script/deploy-mainnet.sh` deploys the router as the vault's fee recipient. Not run: mainnet waits for an audit |
 | Concentrated BTC/MUSD pool | **Not started.** Moved after the audit: a range-managed strategy is a large change to audited code, and the review pass came first |
 
 Added during the wave: an attack pass that found five more gaps (deployment sandwich, a fall with the pool
 left behind, owed deployment work, the deployment revert above, and a value floor for exits), each fixed with a
-test that failed first; a live [attack lab](https://mblp.surge.sh/break/); and vaults v4, v5 and v6.
+test that failed first; a live [attack lab](https://mblp.neocities.org/break/); and vaults v4, v5 and v6.
 
 ## Path to mainnet and a Mezo Market listing
 

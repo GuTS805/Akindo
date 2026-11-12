@@ -5,14 +5,14 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
 
 ## Live checks anyone can run
 
-- **Try to break it** ([mblp.surge.sh/break](https://mblp.surge.sh/break/)) sends twelve attacks to the deployed v6 vault
+- **Try to break it** ([mblp.neocities.org/break](https://mblp.neocities.org/break/)) sends twelve attacks to the deployed v6 vault
   as an `eth_call` from a stranger's address that holds 10 test BTC (set for the call only). On 12 Nov 2026
   eleven reverted with the contract's own error (`OnlySelf`, `DepositTooSmall`, `DepositCapReached`, `Slippage`,
   `ERC20InsufficientBalance`, `ZeroShares`, Mezo gauge's `NotAuthorized`, `NothingToRebalance`, and MUSD's
   `CollSurplusPool: No collateral available to claim`), one ran and returned 0 (a stranger's `claimRewards()`),
   and none got through. The page also tabulates the sandwich tests: the attacker loses 52,019 to 403,379 sats per
   attempt across the 2%, 6% and 10% bands (`forge test --match-contract SandwichTest -vv`).
-- **Community** ([mblp.surge.sh/community](https://mblp.surge.sh/community/)) lists every Deposit event on v4, v5
+- **Community** ([mblp.neocities.org/community](https://mblp.neocities.org/community/)) lists every Deposit event on v4, v5
   and v6 from an address other than the deployer's, read from the explorer's log index (RPC fallback), with a
   link to each transaction.
 - **Round trip on v6 (our own keeper wallet, not a third-party user).** Deposit of 0.002 BTC in
@@ -24,7 +24,7 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
   team's test wallet) deposited 0.002 BTC and received 0.002001 mbLP in
   [`0x00634449…0163`](https://explorer.test.mezo.org/tx/0x006344492ac95de801ed2b19c384d5d1cad970f42ae9703a9e866cbc059a0163)
   (block 16,732,986), through the explorer's Write contract tab. The same address list is read live on the
-  [Community page](https://mblp.surge.sh/community/).
+  [Community page](https://mblp.neocities.org/community/).
 - **Wave 2 deck:** [`docs/mbLP-wave2-deck.pdf`](mbLP-wave2-deck.pdf).
 
 ## Contracts (Mezo testnet, source verified)

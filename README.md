@@ -12,18 +12,18 @@ and stakes the LP in the pool's gauge. Your exposure stays about 1x BTC, and nob
 a collateral ratio.
 
 <p align="center">
-  <a href="https://mblp.surge.sh"><img src="assets/readme/home.png" alt="mbLP home page" width="100%"></a>
+  <a href="https://mblp.neocities.org"><img src="assets/readme/home.png" alt="mbLP home page" width="100%"></a>
 </p>
 
 <p align="center">
-  <a href="https://mblp.surge.sh"><b>Live app</b></a> ·
-  <a href="https://mblp.surge.sh/docs/">Docs</a> ·
+  <a href="https://mblp.neocities.org"><b>Live app</b></a> ·
+  <a href="https://mblp.neocities.org/docs/">Docs</a> ·
   <a href="https://youtu.be/ICVxyTolYig">Wave 1 video</a> ·
   <a href="docs/mbLP-wave2-video.srt">Wave 2 video script</a> ·
   <a href="docs/mbLP-wave2-deck.pdf">Wave 2 deck</a> ·
   <a href="docs/mbLP-deck.pdf">Wave 1 deck</a> ·
-  <a href="https://mblp.surge.sh/break/">Try to break it</a> ·
-  <a href="https://mblp.surge.sh/community/">Community</a> ·
+  <a href="https://mblp.neocities.org/break/">Try to break it</a> ·
+  <a href="https://mblp.neocities.org/community/">Community</a> ·
   <a href="https://explorer.test.mezo.org/address/0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0?tab=contract">Verified contract</a> ·
   <a href="contracts/">Contracts &amp; tests</a> ·
   <a href="docs/evidence.md">Evidence (every tx)</a> ·
@@ -136,8 +136,8 @@ owner; its split and destinations are fixed at deployment.
 ## Try it on testnet
 
 1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
-2. Open **[mblp.surge.sh](https://mblp.surge.sh)** (mirrors: [GitHub Pages](https://guts805.github.io/Akindo/), [Vercel](https://mblp.vercel.app)) and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
-   MetaMask's site scanner flags these new hackathon domains as unsafe before it has seen them; the app only asks to connect and to send transactions you confirm. To avoid the warning, deposit from Mezo's own explorer instead: the [Community page](https://mblp.surge.sh/community/#explorer-route) has the five steps.
+2. Open **[mblp.neocities.org](https://mblp.neocities.org)** and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
+   MetaMask's site scanner marks whole free-hosting domains as unsafe (vercel.app, github.io and, since November, surge.sh), so the app moved to Neocities, which it does not flag (checked 12 Nov). The mirrors at [mblp.vercel.app](https://mblp.vercel.app) and [GitHub Pages](https://guts805.github.io/Akindo/) still work but show that warning. Mezo's explorer is another route: the [Community page](https://mblp.neocities.org/community/#explorer-route) has the five steps.
 3. **Deposit** from 0.001 BTC. It goes into the trove and pool in the same transaction.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
@@ -215,7 +215,7 @@ withdraw on the rewards vault.
 - [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) runs every suite, both fork tests and the app build on each push
 - Slither: 48 results on the current code, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
 - Two review passes and what each finding led to: [October](contracts/SECURITY.md#review-findings-october-2026) and [November (Wave 2)](contracts/SECURITY.md#review-findings-november-2026-wave-2), where attacking the vault found five more gaps, each fixed with a test that failed first
-- [Try to break it](https://mblp.surge.sh/break/): twelve attacks sent live to the deployed vault from a stranger's address, with the revert reasons shown
+- [Try to break it](https://mblp.neocities.org/break/): twelve attacks sent live to the deployed vault from a stranger's address, with the revert reasons shown
 - Source verified on the Mezo explorer. **Not audited.** Reviewers welcome: [`contracts/REVIEW.md`](contracts/REVIEW.md) has the scope, the eight properties we believe hold and how to check each
 
 ## Known limits

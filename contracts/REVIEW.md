@@ -78,7 +78,7 @@ forge coverage --fuzz-seed 1 --no-match-contract Fork --no-match-coverage "(test
 slither . --filter-paths "lib/|test/|script/"
 ```
 
-The live vault can also be attacked without a wallet at [mblp.surge.sh/break](https://mblp.surge.sh/break/),
+The live vault can also be attacked without a wallet at [mblp.neocities.org/break](https://mblp.neocities.org/break/),
 which sends twelve calls from a stranger's address and shows each revert reason.
 
 ## Reporting
