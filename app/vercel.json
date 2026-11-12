@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/", "destination": "https://mblp.neocities.org/", "permanent": false },
+    { "source": "/:path*", "destination": "https://mblp.neocities.org/:path*", "permanent": false }
+  ]
+}

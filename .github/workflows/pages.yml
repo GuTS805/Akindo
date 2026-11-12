@@ -1,4 +1,4 @@
-name: Deploy app to GitHub Pages
+name: Redirect GitHub Pages to mblp.neocities.org
 
 on:
   push:
@@ -26,15 +26,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-      - run: npm ci
-      - run: npm run build
-        env:
-          GITHUB_PAGES: "1"
+      # The app lives on mblp.neocities.org; MetaMask flags all of github.io, so Pages only redirects there.
+      - run: node redirect-site.mjs dist-redirect /Akindo
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: app/dist
+          path: app/dist-redirect
 
   deploy:
     needs: build

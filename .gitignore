@@ -6,4 +6,5 @@ contracts/broadcast/
 *.log
 app/node_modules/
 app/dist/
+app/dist-redirect/
 submission/
