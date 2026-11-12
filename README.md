@@ -3,7 +3,7 @@
 [![CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml)
 ![Network](https://img.shields.io/badge/network-Mezo%20testnet-e36b32)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.28-363636)
-![Tests](https://img.shields.io/badge/tests-96%20%2B%208%20fork-1f8a4c)
+![Tests](https://img.shields.io/badge/tests-142%20%2B%208%20fork-1f8a4c)
 ![Admin keys](https://img.shields.io/badge/admin%20keys-none-0e1c3b)
 
 **Deposit BTC, hold one token, earn as BTC/MUSD liquidity on Mezo.** In a single transaction the
@@ -189,7 +189,14 @@ withdraw on the rewards vault.
 | Suite | Tests | Covers |
 | --- | --- | --- |
 | Unit and fuzz | 27 | Share pricing, deposit and exit paths, rebalancing in every direction, slippage, donations, reward accounting |
-| Recovery | 5 | Liquidation fallback and trove reopening, redemption surplus, reward leaks on share transfers, donation attacks |
+| Recovery | 6 | Liquidation fallback and trove reopening, redemption surplus, reward leaks on share transfers, donation attacks, debt redistributed from a liquidation counted once |
+| Borrowing cap | 3 | MUSD's borrowing cap: a small deposit does not refinance, a 20x deposit refinances and deploys in full over keeper steps, a deposit in Recovery Mode waits idle and deploys after |
+| Recovery Mode | 4 | Exits pay the NAV share in BTC and repay debt, wait once LP runs out, refuse a skewed pool; a deposit made then stays withdrawable |
+| Sandwich | 2 | Pushing the pool to the band edge around a rebalance, a deposit or a withdrawal never profits (2%, 6% and 10% bands, both directions); an off-band delever after a fall is never worth more than the plain arbitrage |
+| Crash exit | 1 | Oracle -45% with the pool left behind: `rebalance()` cuts the debt and the trove is back above `minCR` |
+| Value floor | 5 | `withdrawMinValue` floors BTC plus MUSD at the oracle price, also when a pushed pool shifts the mix |
+| Guards | 9 | First deposit above the dead shares, a deposit that would round to zero shares, an emptied vault, a value floor without an oracle, a Recovery Mode exit under MUSD's minimum debt, a small vault held at the minimum debt after a fall, a pool too thin for the minimum debt, an empty pool |
+| Mainnet token order | 37 | The unit, borrowing-cap, Recovery Mode and sandwich suites rerun with BTC as the pool's token0, as on mainnet (on testnet MUSD sorts first) |
 | Reward gauge | 9 | Streaming, top-ups, stake splits, vault harvest → claim end to end |
 | v2 deposits | 5 | A newcomer pays its own MUSD borrowing fee (holders are not diluted), the deposit cap, a failed deployment leaves the deposit idle instead of reverting it |
 | Incentive router | 7 | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
@@ -199,10 +206,12 @@ withdraw on the rewards vault.
 | Testnet fork | 5 | Against the deployed testnet contracts: full deposit → partial → full withdraw (0.9997 BTC back per BTC), a 13x deposit past MUSD's borrowing cap (cap 7,590 → 106,843 MUSD, 1.9995 of 2 BTC back), an exit in Recovery Mode (0.3999 of 0.4 BTC back), MEZO earned from Mezo's live testnet gauge (691 MEZO in a day on 1 BTC), and fees booked as incentives on its incentive contract |
 | **Mainnet fork** | 3 | The same cycle against **mainnet** MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned **1,595 MEZO in one day** at 12 Nov emissions (3,309 in October) and returned 0.19995 BTC; a 13x deposit past the borrowing cap (cap 10,076 → 109,371 MUSD, 1.9995 of 2 BTC back); the fee flywheel posts 89 MEZO a day on the gauge's real incentive contract |
 
+142 tests in 21 suites (the invariant suite counts as one), plus eight fork tests.
+
 - Oracle-band guard on adding liquidity and rebalancing, oracle-based minimum outputs on every swap; exits skip the band so holders can always leave, and the manipulation suite shows that cannot be exploited
 - LP valued at the manipulation-resistant fair price; dead shares against first-depositor inflation; reentrancy guards
 - The tests caught five real bugs before deployment (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by minimum debt, exits walking a thin pool); each fix is its own `fix:` commit
-- Coverage of `src/`: **97% of lines, 94% of statements, 100% of functions**, 74% of branches (`forge coverage`, November 2026)
+- Coverage of `src/`: **97% of lines, 95% of statements, 100% of functions, 81% of branches** (`forge coverage --fuzz-seed 1`, November 2026; the invariant suite's random seed moves these by a few points)
 - [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) runs every suite, both fork tests and the app build on each push
 - Slither: 48 results on the current code, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
 - Two review passes and what each finding led to: [October](contracts/SECURITY.md#review-findings-october-2026) and [November (Wave 2)](contracts/SECURITY.md#review-findings-november-2026-wave-2), where attacking the vault found five more gaps, each fixed with a test that failed first
@@ -214,9 +223,9 @@ withdraw on the rewards vault.
 - **MEZO rewards** have little on-chain liquidity today. The vault pays them out and never sells them.
 - **Impermanent loss** applies to the ~25% of value in the pool.
 - **Stale oracle:** MUSD reads the oracle on every trove change, so deposits and exits wait while it is stale.
-- **MUSD Recovery Mode** (system CR under 150%) blocks collateral withdrawals, closing troves and new borrowing. v4 and v5 keep exits open: a leaver is paid their NAV share from idle assets and LP, with debt repaid from the LP's MUSD. Beyond the idle assets about a quarter of the NAV can leave this way, larger exits wait for Recovery Mode to end, and deposits wait idle (still withdrawable).
+- **MUSD Recovery Mode** (system CR under 150%) blocks collateral withdrawals, closing troves and new borrowing. v4 to v6 keep exits open: a leaver is paid their NAV share from idle assets and LP, with debt repaid from the LP's MUSD. Beyond the idle assets about a quarter of the NAV can leave this way, larger exits wait for Recovery Mode to end, and deposits wait idle (still withdrawable).
 - **The last exit** buys the LP's MUSD gap on the DEX and waits rather than sell BTC below the oracle band. Not binding on testnet; it can be on a thin mainnet pool.
-- **Idle deposits in some states:** a deposit waits as idle, withdrawable BTC when the pool is outside the oracle band, in Recovery Mode, before the vault holds enough to open a trove (~0.11 BTC at today's price), when it would leave idle BTC under 1% of the vault (small deposits wait until together they pass that, so each does not pay MUSD's borrowing fee alone; their shares earn from the start), and in rare states after a redemption, a liquidation or exits settled inside the vault, where a deployment step can fail its collateral-ratio check ([details](contracts/SECURITY.md#review-findings-october-2026)). A large deposit is deployed over several keeper steps, each adding at most a tenth of the pool.
+- **Idle deposits in some states:** a deposit waits as idle, withdrawable BTC when the pool is outside the oracle band, in Recovery Mode, before the vault holds enough to open a trove (~0.11 BTC at today's price), when it would leave idle BTC under 1% of the vault (small deposits wait until together they pass that, so each does not pay MUSD's borrowing fee alone; their shares earn from the start), and when a tenth of the pool's MUSD is under MUSD's 1,800 minimum debt (a pool under ~18,000 MUSD; mainnet's holds ~35,000), so no trove can open. Before v6 a deployment step could also fail its collateral-ratio check after a redemption, a liquidation or exits settled inside the vault; v6 caps new debt by the ratio it leaves ([details](contracts/SECURITY.md#review-findings-october-2026)). A large deposit is deployed over several keeper steps, each adding at most a tenth of the pool.
 - **Testnet pool drift:** the testnet pool sits 4-7% from the oracle with no arbitrage, so earlier testnet vaults (6% band) can stay idle; v5 and v6 use a 10% band there. Mainnet uses 2%.
 
 ## Roadmap

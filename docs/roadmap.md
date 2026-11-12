@@ -5,7 +5,7 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 
 ## Where it stands (Wave 2, November 2026)
 
-- Vault v6 live on Mezo testnet, source verified, staked in Mezo's live BTC/MUSD gauge; 96 tests, the
+- Vault v6 live on Mezo testnet, source verified, staked in Mezo's live BTC/MUSD gauge; 142 tests, the
   invariant suite and eight fork tests (testnet and mainnet); every finding in [SECURITY.md](../contracts/SECURITY.md)
 - Mainnet deploy script with address checks, a dry run and a required deposit cap; not run
 

@@ -35,6 +35,8 @@ reproduce it.
 | `IncentiveRouter.t.sol` (7) | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
 | `Sandwich.t.sol` (2) | Pushing the pool to the band edge around a rebalance, a deposit or a withdrawal never profits the attacker (2%, 6% and 10% bands, both directions); after a fall, an off-band delever is never worth more than the plain arbitrage |
 | `WithdrawValue.t.sol` (5) | `withdrawMinValue` floors BTC plus MUSD at the oracle price: passes below the payout, reverts above it, holds when a pushed pool shifts the mix, needs the oracle |
+| `Guards.t.sol` (9) | First deposit above the dead shares, a deposit that would round to zero shares after a donation, an emptied vault, a value floor without an oracle, a Recovery Mode exit that would take the debt under MUSD's minimum, a small vault held at the minimum debt after a fall, a pool too thin for the minimum debt, an empty pool |
+| `MainnetOrder.t.sol` (37) | The unit, borrowing-cap, Recovery Mode and sandwich suites rerun with the mock tokens at the mainnet addresses, so BTC is the pool's token0 (on testnet MUSD sorts first) |
 | `CrashExit.t.sol` (1) | Oracle -45% with the pool left behind: `rebalance()` cuts the debt and the trove is back above `minCR` |
 | `Manipulation.t.sol` (7) | Deposit, push the pool off the oracle, withdraw, push it back, with the attacker's own capital: never profitable (512-run fuzz over 1–2,000 BTC and 2–80% skews), exits revert when the pool is pushed down |
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
@@ -43,10 +45,11 @@ reproduce it.
 | `Fork.t.sol` (5) | Against the deployed testnet contracts: full cycle, MEZO earned from Mezo's live BTC/MUSD gauge, and fees booked as incentives on its incentive contract |
 | `MainnetFork.t.sol` (3) | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day in October (1,595 at 12 Nov emissions) and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
 
-96 tests in 14 suites (the invariant suite counts as one), plus eight fork tests: five against the testnet contracts and three against Mezo mainnet.
+142 tests in 21 suites (the invariant suite counts as one), plus eight fork tests: five against the testnet contracts and three against Mezo mainnet.
 
-Coverage of `src/` (`forge coverage`, November 2026): 97% of lines, 94% of statements, 100% of functions,
-74% of branches (79% before the Wave 2 additions).
+Coverage of `src/` (`forge coverage --fuzz-seed 1 --no-match-contract Fork`, November 2026): 97% of lines, 95% of
+statements, 100% of functions, 81% of branches (74% before the guard and mainnet-order suites). The
+invariant suite's random seed moves these by a few points, so the seed is fixed for a comparable number.
 
 ## Static analysis (Slither 0.11.6)
 

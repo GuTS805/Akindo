@@ -263,7 +263,8 @@ cd contracts && MEZO_MAINNET_RPC=https://mezo.drpc.org forge test --mc MainnetFo
 
 ## Tests and analysis
 
-- 96 tests in 14 suites (unit, fuzz, recovery, Recovery Mode, borrowing cap, sandwich, crash, value floor, gauge,
-  router, manipulation, v2 deposit and edge cases, plus the 65,536-action invariant suite and its regression replay),
-  and eight fork tests (five on testnet, three on Mezo mainnet); 97% line and 100% function coverage of `src/`
+- 142 tests in 21 suites (unit, fuzz, recovery, Recovery Mode, borrowing cap, sandwich, crash, value floor, guards,
+  gauge, router, manipulation, v2 deposit and edge cases, the 65,536-action invariant suite and its regression replay,
+  and the main suites rerun in mainnet token order), and eight fork tests (five on testnet, three on Mezo mainnet);
+  97% line, 100% function and 81% branch coverage of `src/` (`--fuzz-seed 1`)
 - Slither: 48 results on the current code, each reviewed in [`contracts/SECURITY.md`](../contracts/SECURITY.md)
