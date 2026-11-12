@@ -1715,3 +1715,40 @@ ul.plain li { line-height: 1.45; }
 .step p { margin: 4px 0 0; color: var(--muted); line-height: 1.45; }
 @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
 
+
+/* Eight nav links: keep the header inside the viewport between the phone menu and wide screens. */
+@media (min-width: 1025px) and (max-width: 1380px) {
+  .site-nav a,
+  .site-nav a[aria-current="page"] {
+    padding: 8px 11px;
+    font-size: 13.5px;
+  }
+  .topbar { gap: 12px; }
+  .topbar-right { gap: 10px; }
+  .topbar .btn { padding: 11px 16px; }
+}
+@media (min-width: 1025px) and (max-width: 1200px) {
+  .site-nav a,
+  .site-nav a[aria-current="page"] {
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+  .topbar .badge:not(.wrong) { display: none; }
+}
+@media (max-width: 1024px) {
+  .site-nav.open a:nth-child(8) { transition-delay: 180ms; }
+  .site-nav.open a:nth-child(9) { transition-delay: 210ms; }
+}
+/* Small phones (320-360px): seven vault buttons wrap, and the header gives the menu button room. */
+@media (max-width: 380px) {
+  .vault-switch .segmented { flex-wrap: wrap; }
+}
+@media (max-width: 360px) {
+  .topbar { gap: 6px; padding-left: 10px; }
+  .topbar-right { gap: 6px; }
+  .brand strong { font-size: 22px; }
+  .logo { width: 36px; height: 36px; }
+  .topbar .btn { padding: 8px 9px; font-size: 13px; }
+}
+ol.plain-ol { margin: 10px 0 6px; padding-left: 22px; display: grid; gap: 8px; }
+ol.plain-ol li { line-height: 1.5; }

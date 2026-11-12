@@ -149,8 +149,15 @@ export const GITHUB = "https://github.com/GuTS805/Akindo";
 /** Faucet that sends Mezo testnet BTC. */
 export const FAUCET = "https://faucet.test.mezo.org";
 
-/** The deployer wallet that seeded the vaults. Every other depositor is counted as "other". */
+/** The deployer wallet that seeded the vaults. */
 export const DEPLOYER = "0x6E82652eDb746f6E4132B064E11753D7A7B2ED40";
+
+/** Every wallet the team controls: the deployer, the keeper and a test wallet. Never counted as users. */
+export const TEAM_WALLETS = [
+  DEPLOYER,
+  "0x3e68A7eA5A9140dE973778402C7a14d24F75228F", // keeper (GitHub Action)
+  "0xA80fB557259Cbd623B07d0e361bC78c4F8923bE4", // team test wallet
+];
 
 /** Mainnet contracts used only to show what the same strategy earns there today. */
 export const MAINNET = {

@@ -1,7 +1,7 @@
 import type { Address } from "viem";
-import { DEPLOYER, FAUCET, GITHUB, VAULTS } from "../config";
+import { DEPLOYER, FAUCET, GITHUB, TEAM_WALLETS, VAULTS } from "../config";
 import { readDeposits, type DepositLog } from "../lib/chain";
-import { $, addressLink, ago, btc, esc, txLink } from "../lib/format";
+import { $, EXPLORER, addressLink, ago, btc, esc, txLink } from "../lib/format";
 import { mountShell, pageUrl } from "../lib/layout";
 import { connect, initWallet, onWalletChange, wallet } from "../lib/wallet";
 
@@ -14,11 +14,13 @@ const SCANNED = [VAULTS.v6, VAULTS.v5, VAULTS.v4].map((v) => ({
 
 let deposits: DepositLog[] | undefined;
 
+const TEAM = new Set(TEAM_WALLETS.map((a) => a.toLowerCase()));
+const isTeam = (a: string) => TEAM.has(a.toLowerCase());
 const isDeployer = (a: string) => a.toLowerCase() === DEPLOYER.toLowerCase();
 
 function render() {
   if (!deposits) return;
-  const others = deposits.filter((d) => !isDeployer(d.user));
+  const others = deposits.filter((d) => !isTeam(d.user));
   const mine = deposits.filter((d) => isDeployer(d.user));
   const byUser = new Map<string, DepositLog[]>();
   for (const d of others) byUser.set(d.user.toLowerCase(), [...(byUser.get(d.user.toLowerCase()) ?? []), d]);
@@ -30,7 +32,7 @@ function render() {
   $("c-seed").textContent = `${btc(mine.filter((d) => d.vault === "v6").reduce((s, d) => s + d.btcIn, 0n), 2)} BTC`;
 
   if (byUser.size === 0) {
-    $("c-table").innerHTML = `<tbody><tr><td>No one besides the deployer has deposited into v4, v5 or v6 yet. Be the first: the three steps above take about three minutes.</td></tr></tbody>`;
+    $("c-table").innerHTML = `<tbody><tr><td>No one outside the team has deposited into v4, v5 or v6 yet. Be the first: the three steps above take about three minutes.</td></tr></tbody>`;
   } else {
     const rows = [...byUser.values()]
       .map((list) => ({
@@ -52,7 +54,7 @@ function render() {
       `</tbody>`;
   }
   $("c-note").textContent =
-    "Counted from the Deposit events of v4, v5 and v6. The deployer wallet is excluded; any other wallet the team controls would still appear here, so check the addresses.";
+    "Counted from the Deposit events of v4, v5 and v6. The team's own wallets (deployer, keeper and a test wallet, listed in the app's config) are excluded.";
 
   const me = wallet.account?.toLowerCase();
   const deposited = !!me && others.some((d) => d.user.toLowerCase() === me);
@@ -81,6 +83,7 @@ function init() {
   ($("c-deposit") as HTMLAnchorElement).href = pageUrl("vault");
   ($("c-break") as HTMLAnchorElement).href = pageUrl("break");
   ($("c-issues") as HTMLAnchorElement).href = `${GITHUB}/issues`;
+  ($("c-write") as HTMLAnchorElement).href = `${EXPLORER}/address/${VAULTS.v6.address}?tab=write_contract`;
   $("c-connect").addEventListener("click", () => void connect());
   onWalletChange(render);
   void load();

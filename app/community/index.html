@@ -15,15 +15,15 @@
         <span class="eyebrow">Community</span>
         <h1>Real depositors, read from chain</h1>
         <p>
-          Every row below is a Deposit event on the Wave 2 vaults (v4, v5 and v6) from an address other than the
-          deployer's. Nothing here is typed in by hand: click any transaction to check it on the explorer.
+          Every row below is a Deposit event on the Wave 2 vaults (v4, v5 and v6) from an address outside the
+          team (the deployer, keeper and test wallets are left out). Nothing here is typed in by hand: click any transaction to check it on the explorer.
         </p>
       </section>
 
       <div id="alert" class="alert" hidden></div>
 
       <section class="grid stats-4">
-        <div class="card stat"><span class="label">Other depositors</span><span class="value" id="c-users">–</span><span class="sub">distinct addresses</span></div>
+        <div class="card stat"><span class="label">Outside depositors</span><span class="value" id="c-users">–</span><span class="sub">distinct addresses, team excluded</span></div>
         <div class="card stat"><span class="label">Their deposits</span><span class="value" id="c-count">–</span><span class="sub">transactions</span></div>
         <div class="card stat"><span class="label">BTC they deposited</span><span class="value" id="c-btc">–</span><span class="sub">testnet BTC, all vaults</span></div>
         <div class="card stat"><span class="label">Deployer's seed in v6</span><span class="value" id="c-seed">–</span><span class="sub">for comparison</span></div>
@@ -54,8 +54,25 @@
         <p class="note" id="c-you"></p>
       </section>
 
+      <section class="card" id="explorer-route">
+        <h2>MetaMask shows a warning? Deposit from Mezo's explorer</h2>
+        <p>
+          MetaMask's site scanner flags some new hackathon domains, this one included, before it has seen them. The
+          app only asks to connect and to send the transactions you confirm. If you would rather not click past the
+          warning, the vault's verified contract works the same from Mezo's own explorer, which MetaMask does not flag:
+        </p>
+        <ol class="plain-ol">
+          <li>In MetaMask, choose <strong>Mezo Testnet</strong> (chain ID <code>31611</code>, RPC <code>https://rpc.test.mezo.org</code>).</li>
+          <li>Open the vault's <a id="c-write" target="_blank" rel="noopener">Write contract tab</a> and press <strong>Connect your wallet</strong>.</li>
+          <li>Open <strong>deposit</strong>. Put <code>0</code> in <code>minShares</code>.</li>
+          <li>Set the unit next to <strong>Send native BTC</strong> to <strong>×10⁰</strong>, then paste <code>2000000000000000</code> (0.002 BTC, a 2 and fifteen zeros). Less than <code>1000000000000000</code> (0.001 BTC) is refused as <code>DepositTooSmall</code>.</li>
+          <li>Press <strong>Simulate</strong>: it should show a number of shares. Then <strong>Write</strong> and confirm.</li>
+        </ol>
+        <p class="note">Withdraw the same way with <strong>withdraw</strong>: your share balance is on the Read tab under <code>balanceOf</code>.</p>
+      </section>
+
       <section class="card">
-        <h2>Depositors <span class="muted small-text">other than the deployer wallet, newest first</span></h2>
+        <h2>Depositors <span class="muted small-text">outside the team, newest first</span></h2>
         <div class="table-wrap">
           <table class="data" id="c-table"><tbody><tr><td class="muted">Reading deposits from chain…</td></tr></tbody></table>
         </div>
