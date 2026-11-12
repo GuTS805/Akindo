@@ -35,7 +35,8 @@ a collateral ratio.
 
 Mezo has plenty of BTC, but almost none of it is liquid. On mainnet (20 Oct 2026) about
 **806 BTC is locked in veBTC**, while all BTC/MUSD pools together hold about **1.07 BTC**. Buying
-BTC with MUSD costs 1–2% against the oracle at $1k–$10k sizes.
+BTC with MUSD costs 1–2% against the oracle at $1k–$10k sizes. On 12 Nov 2026 it was still 804 BTC in veBTC
+against 0.90 BTC in the two BTC/MUSD pools.
 
 ```mermaid
 xychart-beta
@@ -45,7 +46,7 @@ xychart-beta
     bar [806, 1.07]
 ```
 
-The gauges already pay for liquidity (the volatile BTC/MUSD gauge streams ~42k MEZO a day), but
+The gauges already pay for liquidity (the volatile BTC/MUSD gauge streamed ~42k MEZO a day in October, ~15k on 12 Nov), but
 providing it takes a trove, a borrow, a pool deposit, a gauge stake and constant attention to the
 collateral ratio. mbLP collapses that into one deposit, and every deposit adds MUSD debt and
 BTC/MUSD depth to Mezo.
@@ -167,7 +168,8 @@ result against simply holding the BTC, and your transaction history.
 The app reads the mainnet gauge live. On 20 Oct 2026 the volatile BTC/MUSD gauge paid ~42k MEZO a
 day on ~82k MUSD of staked LP, about a **55% LP APR** in MEZO. Roughly half of the vault's value is
 LP, so a depositor would earn about **24% a year before MUSD interest** (1%), falling as more
-liquidity joins the gauge.
+liquidity joins the gauge. On 12 Nov the gauge paid ~15k MEZO a day and the app showed a 42.5% LP APR,
+about 19% for a depositor: emissions vary week to week with veBTC votes.
 
 <p align="center">
   <img src="assets/readme/simulator.png" alt="Simulator comparing mbLP with holding BTC" width="100%">
@@ -213,7 +215,7 @@ withdraw on the rewards vault.
 - **Stale oracle:** MUSD reads the oracle on every trove change, so deposits and exits wait while it is stale.
 - **MUSD Recovery Mode** (system CR under 150%) blocks collateral withdrawals, closing troves and new borrowing. v4 and v5 keep exits open: a leaver is paid their NAV share from idle assets and LP, with debt repaid from the LP's MUSD. Beyond the idle assets about a quarter of the NAV can leave this way, larger exits wait for Recovery Mode to end, and deposits wait idle (still withdrawable).
 - **The last exit** buys the LP's MUSD gap on the DEX and waits rather than sell BTC below the oracle band. Not binding on testnet; it can be on a thin mainnet pool.
-- **Idle deposits in some states:** a deposit waits as idle, withdrawable BTC when the pool is outside the oracle band, in Recovery Mode, before the vault holds enough to open a trove (~0.11 BTC at today's price), and in rare states after a redemption, a liquidation or exits settled inside the vault, where a deployment step can fail its collateral-ratio check ([details](contracts/SECURITY.md#review-findings-october-2026)). A large deposit is deployed over several keeper steps, each adding at most a tenth of the pool.
+- **Idle deposits in some states:** a deposit waits as idle, withdrawable BTC when the pool is outside the oracle band, in Recovery Mode, before the vault holds enough to open a trove (~0.11 BTC at today's price), when it would leave idle BTC under 1% of the vault (small deposits wait until together they pass that, so each does not pay MUSD's borrowing fee alone; their shares earn from the start), and in rare states after a redemption, a liquidation or exits settled inside the vault, where a deployment step can fail its collateral-ratio check ([details](contracts/SECURITY.md#review-findings-october-2026)). A large deposit is deployed over several keeper steps, each adding at most a tenth of the pool.
 - **Testnet pool drift:** the testnet pool sits 4-7% from the oracle with no arbitrage, so earlier testnet vaults (6% band) can stay idle; v5 and v6 use a 10% band there. Mainnet uses 2%.
 
 ## Roadmap

@@ -64,8 +64,8 @@ at October's mainnet gas price.
 
 - **Depositors** earn the gauge's MEZO on the LP half of their value. At October's mainnet rates
   that is about 24% a year before 1% MUSD interest, falling as liquidity grows.
-- **The protocol** takes 10% of rewards. The whole volatile BTC/MUSD gauge emits about 42k MEZO a
-  day, roughly $45k a year at today's price, so fee revenue on this gauge alone is small. The fee
+- **The protocol** takes 10% of rewards. The whole volatile BTC/MUSD gauge emitted about 42k MEZO a
+  day in October (about 15k on 12 Nov), roughly $45k a year at October's price, so fee revenue on this gauge alone is small. The fee
   is better used to pull more emissions to the pool than to be kept.
 - **That is what the incentive router is for.** Posting part of the fee as gauge incentives buys
   veBTC votes for BTC/MUSD, raising the emissions the vault earns. Every deposit deepens the pool
