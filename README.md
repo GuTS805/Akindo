@@ -137,7 +137,7 @@ owner; its split and destinations are fixed at deployment.
 
 1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
 2. Open **[mblp.neocities.org](https://mblp.neocities.org)** and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
-   MetaMask's site scanner marks whole free-hosting domains as unsafe (vercel.app, github.io and, since November, surge.sh), so the app moved to Neocities, which it does not flag (checked 12 Nov). The mirrors at [mblp.vercel.app](https://mblp.vercel.app) and [GitHub Pages](https://guts805.github.io/Akindo/) still work but show that warning. Mezo's explorer is another route: the [Community page](https://mblp.neocities.org/community/#explorer-route) has the five steps.
+   MetaMask's site scanner marks whole free-hosting domains as unsafe (vercel.app, github.io and, since November, surge.sh), so the app moved to Neocities, which it does not flag (checked 12 Nov). The old addresses (mblp.surge.sh, mblp.vercel.app, guts805.github.io/Akindo) now redirect every page to the same page on Neocities. Mezo's explorer is another route: the [Community page](https://mblp.neocities.org/community/#explorer-route) has the five steps.
 3. **Deposit** from 0.001 BTC. It goes into the trove and pool in the same transaction.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
