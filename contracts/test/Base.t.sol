@@ -33,8 +33,7 @@ abstract contract BaseTest is Test {
     address internal feeRecipient = makeAddr("feeRecipient");
 
     function setUp() public virtual {
-        btc = new MockBTC();
-        musd = new MockToken("Mezo USD", "MUSD");
+        _deployTokens();
         mezo = new MockToken("Mezo", "MEZO");
         feed = new MockPriceFeed(PRICE);
         troves = new MockTroveSystem(musd, feed);
@@ -58,6 +57,13 @@ abstract contract BaseTest is Test {
 
         vm.deal(alice, 100e18);
         vm.deal(bob, 100e18);
+    }
+
+    /// @dev Default order: MUSD sorts before BTC in the pool, as on Mezo testnet
+    ///      (MUSD 0x1189… < BTC 0x7b7C…). MainnetOrder overrides this.
+    function _deployTokens() internal virtual {
+        btc = new MockBTC();
+        musd = new MockToken("Mezo USD", "MUSD");
     }
 
     function _config() internal view returns (BtcLpVault.Config memory c) {
