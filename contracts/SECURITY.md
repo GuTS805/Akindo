@@ -135,4 +135,5 @@ share, stale-oracle pauses, MUSD recovery mode, and the last exit on a thin pool
 
 ## Reporting
 
-Please open an issue on [GuTS805/Akindo](https://github.com/GuTS805/Akindo/issues).
+Please open an issue on [GuTS805/Akindo](https://github.com/GuTS805/Akindo/issues). Reviewers: [REVIEW.md](REVIEW.md)
+has the scope, the properties we believe hold and where we would look first.

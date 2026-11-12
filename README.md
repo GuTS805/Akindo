@@ -216,7 +216,7 @@ withdraw on the rewards vault.
 - Slither: 48 results on the current code, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
 - Two review passes and what each finding led to: [October](contracts/SECURITY.md#review-findings-october-2026) and [November (Wave 2)](contracts/SECURITY.md#review-findings-november-2026-wave-2), where attacking the vault found five more gaps, each fixed with a test that failed first
 - [Try to break it](https://mblp.surge.sh/break/): twelve attacks sent live to the deployed vault from a stranger's address, with the revert reasons shown
-- Source verified on the Mezo explorer. **Not audited.**
+- Source verified on the Mezo explorer. **Not audited.** Reviewers welcome: [`contracts/REVIEW.md`](contracts/REVIEW.md) has the scope, the eight properties we believe hold and how to check each
 
 ## Known limits
 
