@@ -27,7 +27,9 @@ reproduce it.
 | Suite | What it shows |
 | --- | --- |
 | `BtcLpVault.t.sol` (27) | Unit and fuzz tests of pricing, deposits, exits, rebalancing, slippage, donations, rewards |
-| `Recovery.t.sol` (5) | Liquidation fallback and reopening, redemption surplus, transfer reward leaks, donation attacks |
+| `Recovery.t.sol` (6) | Liquidation fallback and reopening, redemption surplus, transfer reward leaks, donation attacks, debt redistributed from a liquidation counted once |
+| `Capacity.t.sol` (3) | MUSD's borrowing cap: a small deposit does not refinance, a 20x deposit refinances and deploys in full over keeper steps, a deposit in Recovery Mode waits idle and deploys after |
+| `RecoveryMode.t.sol` (4) | Exits in Recovery Mode pay the NAV share in BTC and repay debt, wait once LP runs out, refuse a skewed pool, and a deposit made then stays withdrawable |
 | `RewardGauge.t.sol` (9) | Reward streaming and the vault's harvest → claim path |
 | `DepositV2.t.sol` (5) | v2 deposits: a newcomer pays its own deployment cost, the deposit cap, a reverted deployment leaves the deposit idle, `deployIdle` is vault-only |
 | `IncentiveRouter.t.sol` (7) | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
@@ -38,13 +40,13 @@ reproduce it.
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
 | `Invariant.t.sol` | 1,024 runs × 64 random actions, including pool manipulation, oracle moves, liquidations and redemptions: shares and rewards add up, the trove obeys MUSD's rules, no LP left unstaked, every holder can exit |
 | `InvariantRegression.t.sol` (1) | Replays the invariant suite's one CI failure (a test-harness artifact, below) and asserts the deployment step no longer reverts with `BelowMinCR` |
-| `Fork.t.sol` (3) | Against the deployed testnet contracts: full cycle, MEZO earned from Mezo's live BTC/MUSD gauge, and fees booked as incentives on its incentive contract |
-| `MainnetFork.t.sol` | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
+| `Fork.t.sol` (5) | Against the deployed testnet contracts: full cycle, MEZO earned from Mezo's live BTC/MUSD gauge, and fees booked as incentives on its incentive contract |
+| `MainnetFork.t.sol` (3) | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day in October (1,595 at 12 Nov emissions) and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
 
-78 unit and fuzz tests, plus the invariant suite, its regression replay and two fork tests.
+96 tests in 14 suites (the invariant suite counts as one), plus eight fork tests: five against the testnet contracts and three against Mezo mainnet.
 
-Coverage of `src/` (`forge coverage`): 97% of lines, 95% of statements, 100% of functions,
-79% of branches.
+Coverage of `src/` (`forge coverage`, November 2026): 97% of lines, 94% of statements, 100% of functions,
+74% of branches (79% before the Wave 2 additions).
 
 ## Static analysis (Slither 0.11.6)
 

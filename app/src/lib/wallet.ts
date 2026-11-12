@@ -243,7 +243,7 @@ export async function connect() {
     const hint = setTimeout(
       () =>
         showNotice(
-          "Waiting for your wallet. No popup? Click the wallet's icon in the browser toolbar (the MetaMask fox) and approve the request there.",
+          "Waiting for your wallet. No popup? Click the wallet's icon in the browser toolbar (the MetaMask fox) and approve the request there. If MetaMask flags this new site, the Community page shows how to deposit from Mezo's explorer instead.",
         ),
       4_000,
     );

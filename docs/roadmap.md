@@ -3,7 +3,13 @@
 mbLP exists to deepen BTC/MUSD liquidity on Mezo. This page is the plan for getting it from a
 tested testnet product to a mainnet vault Mezo can list, and an honest look at its economics.
 
-## Where it stands (end of Wave 1)
+## Where it stands (Wave 2, November 2026)
+
+- Vault v6 live on Mezo testnet, source verified, staked in Mezo's live BTC/MUSD gauge; 96 tests, the
+  invariant suite and eight fork tests (testnet and mainnet); every finding in [SECURITY.md](../contracts/SECURITY.md)
+- Mainnet deploy script with address checks, a dry run and a required deposit cap; not run
+
+## Where it stood (end of Wave 1)
 
 - Vault, reward gauge and incentive router written, tested (78 tests, an invariant suite, testnet
   and mainnet fork tests, 97% line coverage) and reviewed with Slither
@@ -15,17 +21,18 @@ tested testnet product to a mainnet vault Mezo can list, and an honest look at i
 - Six-page app with EVM wallets and Bitcoin wallets through Mezo Passport; a real Unisat wallet
   has run deposit, claim and withdraw through it
 
-## Wave 2 (2–15 Nov 2026)
+## Wave 2 (2–15 Nov 2026): what was planned and what happened
 
-1. **Concentrated BTC/MUSD pool.** The CL gauge receives the larger share of emissions on mainnet
-   (69k MEZO a day against 42k on the volatile gauge in October). A range-managed strategy for it
-   is the biggest yield lever.
-2. **Deployment sizing after a redemption.** Cap the extra debt `_lever` takes so the trove stays
-   at its target ratio when the vault holds more LP than its trove supports (today such a deposit
-   waits as idle BTC; see SECURITY.md).
-3. **Incentive router in the mainnet deployment.** The mainnet vault takes the `IncentiveRouter`
-   as its fee recipient, as v3 already does on testnet.
-4. **Address the Wave 1 feedback** from the Mezo team.
+| Plan | Status |
+| --- | --- |
+| Address the Wave 1 feedback from the Mezo team | **Four of five done**: borrowing cap (refinance), Recovery Mode exits, the debt double-count, verified sources. The fifth, real third-party usage, has started: the first outside deposit is on v6 and the [Community page](https://mblp.surge.sh/community/) lists every one |
+| Deployment sizing after a redemption | **Done in v6**: new debt is capped by the collateral ratio it leaves, so a deployment no longer reverts |
+| Incentive router in the mainnet deployment | **Ready**: `script/deploy-mainnet.sh` deploys the router as the vault's fee recipient. Not run: mainnet waits for an audit |
+| Concentrated BTC/MUSD pool | **Not started.** Moved after the audit: a range-managed strategy is a large change to audited code, and the review pass came first |
+
+Added during the wave: an attack pass that found five more gaps (deployment sandwich, a fall with the pool
+left behind, owed deployment work, the deployment revert above, and a value floor for exits), each fixed with a
+test that failed first; a live [attack lab](https://mblp.surge.sh/break/); and vaults v4, v5 and v6.
 
 ## Path to mainnet and a Mezo Market listing
 
@@ -36,19 +43,19 @@ functionality.
 | Requirement | Status | Plan |
 | --- | --- | --- |
 | MUSD integration | Done | The vault's core is a MUSD trove |
-| Mainnet functionality | Configured, fork-tested | Deploy after the audit, with a deposit cap added to the Wave 2 vault; no team seed needed (below) |
+| Mainnet functionality | Configured, fork-tested, deploy script ready | Deploy after the audit with a deposit cap (built in since v2; the mainnet script refuses to run without one); no team seed needed (below) |
 | Third-party audit | Not started | Apply for an audit after Wave 2 with the frozen Wave 2 code; Slither triage and test suite ready for auditors |
 
-Launch steps, in order: freeze code, add a deposit cap, audit, deploy, run the keeper, raise the cap
-as the position proves itself.
+Launch steps, in order: freeze code, audit, deploy with a small deposit cap, run the keeper, and
+redeploy with a higher cap as the position proves itself (the cap is immutable, like every parameter).
 
 **Why not mainnet in Wave 1.** The vault has no owner and no pause, by design. That is the right
 property for a finished, audited vault and the wrong one for unaudited code holding real BTC, so it
 stays on testnet until the audit. Mezo's rules welcome testnet entries; the mainnet configuration is
 exercised on every push by the mainnet fork test instead.
 
-**No team capital needed at launch.** MUSD's 1,800 MUSD minimum debt means a trove needs about
-0.09 BTC behind it, more than a typical first deposit. The vault handles this already: until the
+**No team capital needed at launch.** MUSD's 1,800 MUSD minimum debt means the vault's first trove
+needs about 0.11 BTC at its 300% target and a BTC price near $73,000, more than a typical first deposit. The vault handles this already: until the
 pooled deposits can carry the minimum debt, they wait as idle BTC that every depositor can withdraw
 in full, and once they can, anyone's `rebalance()` opens the trove. Deploying costs about $1 of gas
 at October's mainnet gas price.

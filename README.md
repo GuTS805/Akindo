@@ -3,7 +3,7 @@
 [![CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml)
 ![Network](https://img.shields.io/badge/network-Mezo%20testnet-e36b32)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.28-363636)
-![Tests](https://img.shields.io/badge/tests-78%20%2B%20invariant%20%2B%202%20forks-1f8a4c)
+![Tests](https://img.shields.io/badge/tests-96%20%2B%208%20fork-1f8a4c)
 ![Admin keys](https://img.shields.io/badge/admin%20keys-none-0e1c3b)
 
 **Deposit BTC, hold one token, earn as BTC/MUSD liquidity on Mezo.** In a single transaction the
@@ -124,8 +124,8 @@ flowchart LR
 It runs live on testnet: the v3 vault's router posted its first fees on the live BTC/MUSD gauge's
 incentive contract in [`0xa7724a6c…cb26`](https://explorer.test.mezo.org/tx/0xa7724a6c5cda61f678b71d477412c39f16a59e210ba448544ed7f89ea48dcb26)
 (0.0961 MEZO as an incentive, 0.0961 MEZO to the treasury). On a Mezo mainnet fork, one day of
-fees from a 0.2 BTC deposit posted **184 MEZO** on the mainnet gauge's incentive contract, booked
-to the current epoch ([`MainnetFork.t.sol`](contracts/test/MainnetFork.t.sol)). The router has no
+fees from a 0.2 BTC deposit posted **89 MEZO** on the mainnet gauge's incentive contract (184 MEZO in October,
+when emissions were higher), booked to the current epoch ([`MainnetFork.t.sol`](contracts/test/MainnetFork.t.sol)). The router has no
 owner; its split and destinations are fixed at deployment.
 
 **No owner, no admin key, no upgrades.** The fee and every parameter are fixed at deployment, and
@@ -134,7 +134,8 @@ owner; its split and destinations are fixed at deployment.
 ## Try it on testnet
 
 1. Get testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org).
-2. Open **[mblp.surge.sh](https://mblp.surge.sh)** (or the [Vercel mirror](https://mblp.vercel.app), which MetaMask flags like every free `*.vercel.app` domain) and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
+2. Open **[mblp.surge.sh](https://mblp.surge.sh)** (mirrors: [GitHub Pages](https://guts805.github.io/Akindo/), [Vercel](https://mblp.vercel.app)) and connect an EVM wallet (the app adds Mezo Testnet for you) or a Bitcoin wallet through Mezo Passport. A Bitcoin wallet acts through a Mezo smart account, shown in the header; fund that address from the faucet.
+   MetaMask's site scanner flags these new hackathon domains as unsafe before it has seen them; the app only asks to connect and to send transactions you confirm. To avoid the warning, deposit from Mezo's own explorer instead: the [Community page](https://mblp.surge.sh/community/#explorer-route) has the five steps.
 3. **Deposit** from 0.001 BTC. It goes into the trove and pool in the same transaction.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
@@ -192,16 +193,17 @@ withdraw on the rewards vault.
 | Manipulation | 7 | Deposit → push the pool off the oracle → withdraw → push it back, with the attacker's own capital. Never profitable (512-run fuzz, 1–2,000 BTC, 2–80% skews, at mainnet's real 0.3% pool fee) |
 | Edge cases | 18 | Every config guard, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, and the last exit after a 15% fall (waits for arbitrage rather than sell below the band, then pays in full) |
 | Invariant | 65,536 random actions | Deposits, withdrawals, transfers, reward streams, oracle moves, pool manipulation, liquidations and redemptions. Checks that shares and rewards add up, the trove obeys MUSD's rules, no LP is left unstaked and **every holder can exit**. A replay of its one CI failure (a test-harness artifact, see [SECURITY.md](contracts/SECURITY.md#review-findings-october-2026)) runs with it |
-| Testnet fork | 3 | Against the deployed testnet contracts: full deposit → partial → full withdraw (0.9997 BTC back per BTC), MEZO earned from Mezo's live testnet gauge (652 MEZO in a day on 1 BTC), and fees booked as incentives on its incentive contract |
-| **Mainnet fork** | 1 | The same cycle against **mainnet** MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned **3,309 MEZO in one day** and returned 0.19995 BTC; the fee flywheel posts 184 MEZO on the gauge's real incentive contract |
+| Testnet fork | 5 | Against the deployed testnet contracts: full deposit → partial → full withdraw (0.9997 BTC back per BTC), a 13x deposit past MUSD's borrowing cap (cap 7,590 → 106,843 MUSD, 1.9995 of 2 BTC back), an exit in Recovery Mode (0.3999 of 0.4 BTC back), MEZO earned from Mezo's live testnet gauge (691 MEZO in a day on 1 BTC), and fees booked as incentives on its incentive contract |
+| **Mainnet fork** | 3 | The same cycle against **mainnet** MUSD, the BTC/MUSD pool and the live MEZO gauge: 0.2 BTC earned **1,595 MEZO in one day** at 12 Nov emissions (3,309 in October) and returned 0.19995 BTC; a 13x deposit past the borrowing cap (cap 10,076 → 109,371 MUSD, 1.9995 of 2 BTC back); the fee flywheel posts 89 MEZO a day on the gauge's real incentive contract |
 
 - Oracle-band guard on adding liquidity and rebalancing, oracle-based minimum outputs on every swap; exits skip the band so holders can always leave, and the manipulation suite shows that cannot be exploited
 - LP valued at the manipulation-resistant fair price; dead shares against first-depositor inflation; reentrancy guards
 - The tests caught five real bugs before deployment (liquidation recovery, redemption surplus, reward leak on transfer, exits blocked by minimum debt, exits walking a thin pool); each fix is its own `fix:` commit
-- Coverage of `src/`: **97% of lines, 100% of functions**, 79% of branches (`forge coverage`)
+- Coverage of `src/`: **97% of lines, 94% of statements, 100% of functions**, 74% of branches (`forge coverage`, November 2026)
 - [CI](https://github.com/GuTS805/Akindo/actions/workflows/ci.yml) runs every suite, both fork tests and the app build on each push
-- Slither: 41 results, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
-- A second review pass (security, TypeScript, failure paths) and what each finding led to: [`contracts/SECURITY.md#review-findings-october-2026`](contracts/SECURITY.md#review-findings-october-2026)
+- Slither: 48 results on the current code, each reviewed in [`contracts/SECURITY.md`](contracts/SECURITY.md); none needed a code change
+- Two review passes and what each finding led to: [October](contracts/SECURITY.md#review-findings-october-2026) and [November (Wave 2)](contracts/SECURITY.md#review-findings-november-2026-wave-2), where attacking the vault found five more gaps, each fixed with a test that failed first
+- [Try to break it](https://mblp.surge.sh/break/): twelve attacks sent live to the deployed vault from a stranger's address, with the revert reasons shown
 - Source verified on the Mezo explorer. **Not audited.**
 
 ## Known limits

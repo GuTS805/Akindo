@@ -216,8 +216,8 @@ on 22 Oct 2026:
 | Claim | 0.0182 MEZO from Mezo's gauge to the wallet | [`0x08b84374…35cd1`](https://explorer.test.mezo.org/tx/0x08b84374d1914380bc21016c4535a2b76066cd8f2f3a439805365b0201235cd1) |
 | Withdraw 50% | 0.005 mbLP burned for 0.0049987 BTC and no MUSD (the app had simulated 0.004998 BTC before signing) | [`0xdff587eb…2817`](https://explorer.test.mezo.org/tx/0xdff587ebe9c0cae4eaa484fccd9b804694d8f60a2df56fe3845515d160362817) |
 
-The testnet fork tests run the same against the live gauge: 1 BTC earned 652 MEZO in a day, and
-one day of its fees booked 36.25 MEZO as an incentive for the current epoch
+The testnet fork tests run the same against the live gauge: 1 BTC earned 652 MEZO in a day in October
+(691 on 12 Nov 2026), and one day of its fees booked 36.25 MEZO as an incentive (38.37 on 12 Nov)
 ([`Fork.t.sol`](../contracts/test/Fork.t.sol)).
 
 ### A lagging RPC backend
@@ -263,6 +263,7 @@ cd contracts && MEZO_MAINNET_RPC=https://mezo.drpc.org forge test --mc MainnetFo
 
 ## Tests and analysis
 
-- 78 unit, fuzz, recovery, gauge, router, manipulation, v2 deposit and edge-case tests, an invariant suite and two fork tests;
-  97% line and 100% function coverage of `src/`
-- Slither: 41 results, each reviewed in [`contracts/SECURITY.md`](../contracts/SECURITY.md)
+- 96 tests in 14 suites (unit, fuzz, recovery, Recovery Mode, borrowing cap, sandwich, crash, value floor, gauge,
+  router, manipulation, v2 deposit and edge cases, plus the 65,536-action invariant suite and its regression replay),
+  and eight fork tests (five on testnet, three on Mezo mainnet); 97% line and 100% function coverage of `src/`
+- Slither: 48 results on the current code, each reviewed in [`contracts/SECURITY.md`](../contracts/SECURITY.md)
