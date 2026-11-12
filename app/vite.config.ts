@@ -17,6 +17,8 @@ export default defineConfig({
         portfolio: page("portfolio"),
         analytics: page("analytics"),
         simulator: page("simulator"),
+        community: page("community"),
+        break: page("break"),
         docs: page("docs"),
       },
     },

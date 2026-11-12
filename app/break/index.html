@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Try to break it · mbLP</title>
+    <meta name="description" content="Twelve attacks run live against the mbLP vault on Mezo testnet from a stranger's address, plus the economic attacks measured in tests. Read the revert reasons yourself." />
+    <meta name="theme-color" content="#fbf4ea" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero hero-compact">
+        <span class="eyebrow">Try to break it</span>
+        <h1>Attack the live vault. No wallet needed.</h1>
+        <p>
+          Each row below is a real call to the deployed v6 vault on Mezo testnet, sent from a stranger's address that
+          holds 10 test BTC. Nothing is simulated by us: the revert reason is whatever the contract (or Mezo's gauge)
+          returned. Run them again whenever you like.
+        </p>
+      </section>
+
+      <section class="grid stats-4">
+        <div class="card stat"><span class="label">Attacks run</span><span class="value" id="b-total">–</span><span class="sub">live, from a stranger</span></div>
+        <div class="card stat"><span class="label">Refused</span><span class="value good" id="b-refused">–</span><span class="sub">reverted on chain</span></div>
+        <div class="card stat"><span class="label">Ran, gained nothing</span><span class="value" id="b-noop">–</span><span class="sub">allowed, harmless</span></div>
+        <div class="card stat"><span class="label">Got through</span><span class="value" id="b-bad">–</span><span class="sub">should always be 0</span></div>
+      </section>
+
+      <section class="card">
+        <h2>Live attacks <span class="muted small-text" id="b-target">v6</span></h2>
+        <div class="btn-row"><button class="btn primary" id="b-run">Run all attacks again</button></div>
+        <div class="table-wrap">
+          <table class="data" id="b-table"></table>
+        </div>
+        <p class="note" id="b-note"></p>
+      </section>
+
+      <section class="card">
+        <h2>Economic attacks, measured <span class="muted small-text">in tests that run on every push</span></h2>
+        <p>
+          A contract can refuse every bad call and still be milked by well-timed trades. These tests give an attacker
+          their own capital, let them push the pool to the edge of the oracle band around someone else's transaction,
+          and push it back. The number is the attacker's profit in sats (1 BTC = 100,000,000), the least negative of
+          pushing the pool up or down. Negative means the attacker paid to try.
+        </p>
+        <div class="table-wrap">
+          <table class="data" id="b-econ"></table>
+        </div>
+        <p class="note">
+          Reproduce: <code>cd contracts &amp;&amp; forge test --match-contract SandwichTest -vv</code>. An earlier
+          version of the vault lost here: a sandwich around a keeper step earned about 0.002 BTC per 20 BTC deployed at
+          a 6% band, which is why one deployment step now adds at most a tenth of the pool.
+        </p>
+      </section>
+
+      <section class="grid cols-2">
+        <div class="card">
+          <h2>Also covered by tests</h2>
+          <ul class="plain" id="b-tests"></ul>
+        </div>
+        <div class="card">
+          <h2>What we do not claim</h2>
+          <ul class="plain">
+            <li>The code is unaudited. This page is evidence, not an audit.</li>
+            <li>The vault trusts Mezo's price feed. A stale oracle pauses deposits and trove exits until it recovers.</li>
+            <li>A thin pool can delay the last exit, and in Recovery Mode only about a quarter of the NAV beyond idle assets can leave at once.</li>
+            <li>Test BTC and MUSD have no value. Nothing here is investment advice.</li>
+            <li>Found something? Open an issue on <a id="b-issues" target="_blank" rel="noopener">GitHub</a>.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/pages/break.ts"></script>
+  </body>
+</html>

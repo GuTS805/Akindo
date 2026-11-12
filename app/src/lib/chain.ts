@@ -67,12 +67,21 @@ const LAGGING = /must be less than or equal to the current block|header not foun
 /** Position of the block-tag parameter for state reads. */
 const BLOCK_ARG: Record<string, number> = { eth_call: 1, eth_estimateGas: 1, eth_getBalance: 1, eth_getCode: 1, eth_getTransactionCount: 1, eth_getStorageAt: 2 };
 
+/** A reverted call: JSON-RPC code 3, with the revert data in `cause.data` for viem to decode. */
+function isRevert(e: unknown): boolean {
+  const x = e as { code?: number; details?: unknown };
+  return x?.code === 3 || (typeof x?.details === "string" && /^execution reverted/i.test(x.details));
+}
+
 async function guarded({ method, params }: { method: string; params?: unknown }): Promise<unknown> {
   const p = Array.isArray(params) ? [...params] : [];
   // Mezo's RPC first; drpc only when Mezo's cannot be reached (drpc's testnet endpoint no longer
   // serves eth_call or eth_getLogs, so it cannot stand in for those).
   const send = () =>
     (mezoTestnetRpc.request({ method, params: p } as never) as Promise<unknown>).catch((e) => {
+      // A revert is an answer, not an outage: drpc cannot answer eth_call, and trying it would
+      // replace the revert reason with a generic failure.
+      if (isRevert(e)) throw e;
       if (LAGGING.test(String((e as Error)?.message ?? e))) throw e;
       return drpcTestnet.request({ method, params: p } as never) as Promise<unknown>;
     });
@@ -521,4 +530,74 @@ export function explain(e: unknown): string {
     return "Your wallet already has a request waiting. Click its icon in the browser toolbar (the MetaMask fox), finish or reject it, then try again.";
   if (code === 4100) return "Your wallet is locked or has not authorised this site. Unlock it and try again.";
   return e instanceof Error ? e.message : String(e);
+}
+
+// ---------------------------------------------------------------- community
+
+export type DepositLog = { vault: string; user: Address; btcIn: bigint; shares: bigint; block: bigint; tx: string; time: bigint };
+
+type DepositVault = { id: string; address: Address; deployBlock: bigint };
+
+/** keccak256("Deposit(address,uint256,uint256)") */
+const DEPOSIT_TOPIC = "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15";
+const EXPLORER_API = "https://api.explorer.test.mezo.org/api";
+
+/** One request per vault to the explorer's log index, which also carries block times. */
+async function depositsFromExplorer(v: DepositVault): Promise<DepositLog[]> {
+  const url = `${EXPLORER_API}?module=logs&action=getLogs&fromBlock=${v.deployBlock}&toBlock=latest&address=${v.address}&topic0=${DEPOSIT_TOPIC}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) throw new Error(`explorer ${res.status}`);
+  const body = (await res.json()) as { result?: unknown; message?: string };
+  if (!Array.isArray(body.result)) throw new Error(`explorer: ${body.message ?? "unexpected answer"}`);
+  return (body.result as { topics: (string | null)[]; data: string; blockNumber: string; transactionHash: string; timeStamp: string }[]).map((l) => ({
+    vault: v.id,
+    user: `0x${(l.topics[1] ?? "").slice(26)}` as Address,
+    btcIn: BigInt(`0x${l.data.slice(2, 66)}`),
+    shares: BigInt(`0x${l.data.slice(66, 130)}`),
+    block: BigInt(l.blockNumber),
+    tx: l.transactionHash,
+    time: BigInt(l.timeStamp),
+  }));
+}
+
+/** Every Deposit event of the given vaults, newest first: from the explorer, or from the RPC if it fails. */
+export async function readDeposits(vaults: DepositVault[]): Promise<DepositLog[]> {
+  try {
+    const all = (await Promise.all(vaults.map(depositsFromExplorer))).flat();
+    return all.sort((a, b) => Number(b.block - a.block));
+  } catch {
+    return readDepositsRpc(vaults);
+  }
+}
+
+/** Every Deposit event of the given vaults since their deployment, newest first, with block times. */
+async function readDepositsRpc(vaults: DepositVault[]): Promise<DepositLog[]> {
+  const latest = await testnet.getBlockNumber();
+  const jobs: { id: string; address: Address; from: bigint; to: bigint }[] = [];
+  for (const v of vaults) {
+    for (let from = v.deployBlock; from <= latest; from += LOG_RANGE) {
+      const to = from + LOG_RANGE - 1n;
+      jobs.push({ id: v.id, address: v.address, from, to: to < latest ? to : latest });
+    }
+  }
+  const found: DepositLog[] = [];
+  for (let i = 0; i < jobs.length; i += LOG_CONCURRENCY) {
+    const part = await Promise.all(
+      jobs.slice(i, i + LOG_CONCURRENCY).map(async (j) => {
+        const get = () =>
+          testnet.getContractEvents({ address: j.address, abi: vaultAbi, eventName: "Deposit", fromBlock: j.from, toBlock: j.to });
+        const logs = await get().catch(get);
+        return logs.map((l) => {
+          const a = l.args as { user: Address; btcIn: bigint; shares: bigint };
+          return { vault: j.id, user: a.user, btcIn: a.btcIn, shares: a.shares, block: l.blockNumber!, tx: l.transactionHash!, time: 0n };
+        });
+      }),
+    );
+    found.push(...part.flat());
+  }
+  const blocks = [...new Set(found.map((d) => d.block))];
+  const times = new Map(
+    await Promise.all(blocks.map(async (n) => [n, (await testnet.getBlock({ blockNumber: n })).timestamp] as const)),
+  );
+  return found.map((d) => ({ ...d, time: times.get(d.block) ?? 0n })).sort((a, b) => Number(b.block - a.block));
 }

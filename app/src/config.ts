@@ -146,6 +146,12 @@ export function selectVault(id: VaultId) {
 export const MUSD = "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503" as const;
 export const GITHUB = "https://github.com/GuTS805/Akindo";
 
+/** Faucet that sends Mezo testnet BTC. */
+export const FAUCET = "https://faucet.test.mezo.org";
+
+/** The deployer wallet that seeded the vaults. Every other depositor is counted as "other". */
+export const DEPLOYER = "0x6E82652eDb746f6E4132B064E11753D7A7B2ED40";
+
 /** Mainnet contracts used only to show what the same strategy earns there today. */
 export const MAINNET = {
   priceFeed: "0xc5aC5A8892230E0A3e1c473881A2de7353fFcA88",

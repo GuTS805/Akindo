@@ -1,7 +1,7 @@
 import { ACTIVE_VAULT, GITHUB, VAULT, VAULTS, selectVault, type VaultId } from "../config";
 import { $, EXPLORER } from "./format";
 
-export type PageId = "home" | "vault" | "portfolio" | "analytics" | "simulator" | "docs";
+export type PageId = "home" | "vault" | "portfolio" | "analytics" | "simulator" | "community" | "break" | "docs";
 
 /** Pages that show one vault's state get the vault switch. */
 const VAULT_PAGES: PageId[] = ["vault", "portfolio", "analytics"];
@@ -12,6 +12,8 @@ const PAGES: { id: PageId; label: string; path: string }[] = [
   { id: "portfolio", label: "Portfolio", path: "portfolio/" },
   { id: "analytics", label: "Analytics", path: "analytics/" },
   { id: "simulator", label: "Simulator", path: "simulator/" },
+  { id: "community", label: "Community", path: "community/" },
+  { id: "break", label: "Break it", path: "break/" },
   { id: "docs", label: "Docs", path: "docs/" },
 ];
 

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community · mbLP</title>
+    <meta name="description" content="Who has deposited into the mbLP vaults on Mezo testnet besides the deployer, read live from chain, and how to join in three minutes." />
+    <meta name="theme-color" content="#fbf4ea" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%23e36b32'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>₿</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero hero-compact">
+        <span class="eyebrow">Community</span>
+        <h1>Real depositors, read from chain</h1>
+        <p>
+          Every row below is a Deposit event on the Wave 2 vaults (v4, v5 and v6) from an address other than the
+          deployer's. Nothing here is typed in by hand: click any transaction to check it on the explorer.
+        </p>
+      </section>
+
+      <div id="alert" class="alert" hidden></div>
+
+      <section class="grid stats-4">
+        <div class="card stat"><span class="label">Other depositors</span><span class="value" id="c-users">–</span><span class="sub">distinct addresses</span></div>
+        <div class="card stat"><span class="label">Their deposits</span><span class="value" id="c-count">–</span><span class="sub">transactions</span></div>
+        <div class="card stat"><span class="label">BTC they deposited</span><span class="value" id="c-btc">–</span><span class="sub">testnet BTC, all vaults</span></div>
+        <div class="card stat"><span class="label">Deployer's seed in v6</span><span class="value" id="c-seed">–</span><span class="sub">for comparison</span></div>
+      </section>
+
+      <section class="card">
+        <h2>Join in three minutes</h2>
+        <div class="steps" id="c-steps">
+          <div class="step" id="s1">
+            <span class="n">1</span>
+            <strong>Get test BTC</strong>
+            <p>The Mezo faucet sends testnet BTC to your wallet. Test BTC has no value.</p>
+            <div class="btn-row"><a class="btn small" id="c-faucet" target="_blank" rel="noopener">Open the faucet</a></div>
+          </div>
+          <div class="step" id="s2">
+            <span class="n">2</span>
+            <strong>Connect a wallet</strong>
+            <p>MetaMask on Mezo Testnet, or a Bitcoin wallet through Mezo Passport. The app adds the network for you.</p>
+            <div class="btn-row"><button class="btn small" id="c-connect">Connect wallet</button></div>
+          </div>
+          <div class="step" id="s3">
+            <span class="n">3</span>
+            <strong>Deposit and watch it work</strong>
+            <p>Deposit 0.001 BTC or more. One transaction opens the trove, borrows MUSD, adds liquidity and stakes it. You can withdraw any time.</p>
+            <div class="btn-row"><a class="btn primary small" id="c-deposit">Open the vault</a></div>
+          </div>
+        </div>
+        <p class="note" id="c-you"></p>
+      </section>
+
+      <section class="card">
+        <h2>Depositors <span class="muted small-text">other than the deployer wallet, newest first</span></h2>
+        <div class="table-wrap">
+          <table class="data" id="c-table"><tbody><tr><td class="muted">Reading deposits from chain…</td></tr></tbody></table>
+        </div>
+        <p class="note" id="c-note"></p>
+      </section>
+
+      <section class="grid cols-2">
+        <div class="card">
+          <h2>Why a first deposit is easy</h2>
+          <ul class="plain">
+            <li><strong>One asset.</strong> You only need BTC. No MUSD, no veBTC lock, no counterparty waiting for your offer.</li>
+            <li><strong>One transaction.</strong> Trove, borrow, pool deposit and gauge stake happen together.</li>
+            <li><strong>Always exitable.</strong> Withdraw any share at any time, including in MUSD's Recovery Mode.</li>
+            <li><strong>Nothing to manage.</strong> A keeper and anyone's call to <code>rebalance()</code> keep the ratio in its band.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>Tell us what broke</h2>
+          <p>
+            Try something odd: a tiny deposit, a deposit and an immediate full withdrawal, a withdrawal in several
+            parts. If anything surprises you, the quickest route is an issue on
+            <a id="c-issues" target="_blank" rel="noopener">GitHub</a>. Attack ideas are welcome on
+            <a id="c-break">Try to break it</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/pages/community.ts"></script>
+  </body>
+</html>
