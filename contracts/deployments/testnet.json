@@ -58,5 +58,17 @@
     "gauge": "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
     "depositCap": "2000000000000000000",
     "verified": true
+  },
+  "v5": {
+    "note": "v5 vault (app default): v4 plus deployment steps capped at a fifth of the pool's MUSD reserve, deposits deploy only their own BTC, and rebalance() may cut debt outside the oracle band once the trove is under minCR; fee recipient is v3's IncentiveRouter",
+    "BtcLpVault": "0xEC3cf4a5B2307897d9C90C616737e2c6418456D9",
+    "deployTx": "0x27adb63798049ab1e41edc2b993f7cbd04f31510e4c245b6a9e60b757b81fdf7",
+    "deployBlock": 16729069,
+    "explorer": "https://explorer.test.mezo.org/address/0xEC3cf4a5B2307897d9C90C616737e2c6418456D9",
+    "seedDepositTx": "0x2ab78bf695ede36249e5f2fe298b772e3e102975d72bd823f3250408ec691435",
+    "IncentiveRouter": "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605",
+    "gauge": "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+    "depositCap": "2000000000000000000",
+    "verified": true
   }
 }

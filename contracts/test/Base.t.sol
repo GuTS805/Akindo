@@ -147,6 +147,13 @@ abstract contract BaseTest is Test {
         gauge.notify(amount, duration);
     }
 
+    /// @dev What the keeper does: rebalance until the vault has nothing left to deploy.
+    function _deployFully() internal {
+        for (uint256 i; i < 40 && vault.needsRebalance(); i++) {
+            vault.rebalance();
+        }
+    }
+
     function _cr() internal view returns (uint256) {
         return vault.currentCR();
     }

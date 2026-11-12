@@ -82,7 +82,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     ///         and that loss goes to whoever moves it back. Keeping each step small next to the pool
     ///         makes pushing the pool to the edge cost more than it earns, for any allowed band.
     ///         A larger deposit is deployed over several rebalances.
-    uint256 public constant MAX_ADD_BPS = 2_000;
+    uint256 public constant MAX_ADD_BPS = 1_000;
     uint8 internal constant TROVE_ACTIVE = 1;
     uint8 internal constant TROVE_CLOSED_BY_REDEMPTION = 4;
 

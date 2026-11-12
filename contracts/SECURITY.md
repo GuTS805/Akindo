@@ -11,7 +11,7 @@ reproduce it.
 - **Oracle-priced shares.** Deposits and exits are priced from Mezo's PriceFeed. LP is valued at
   the fair price `2·√(k·price)`, so moving the pool's spot price cannot inflate or dilute shares.
 - **Oracle band.** Adding liquidity and rebalancing revert when the pool is more than
-  `maxDeviationBps` from the oracle (testnet 6%, mainnet 2%), and every swap has an oracle-based
+  `maxDeviationBps` from the oracle (testnet v5 10%, earlier testnet vaults 6%, mainnet 2%), and every swap has an oracle-based
   minimum output. Exits deliberately skip the band check so holders can always leave; what that
   allows is measured in `Manipulation.t.sol` (see the review findings below).
 - **Reentrancy.** Every external entry point is `nonReentrant`. External calls go only to the
@@ -31,6 +31,8 @@ reproduce it.
 | `RewardGauge.t.sol` (9) | Reward streaming and the vault's harvest → claim path |
 | `DepositV2.t.sol` (5) | v2 deposits: a newcomer pays its own deployment cost, the deposit cap, a reverted deployment leaves the deposit idle, `deployIdle` is vault-only |
 | `IncentiveRouter.t.sol` (7) | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
+| `Sandwich.t.sol` (2) | Pushing the pool to the band edge around a rebalance, a deposit or a withdrawal never profits the attacker (2%, 6% and 10% bands, both directions); after a fall, an off-band delever is never worth more than the plain arbitrage |
+| `CrashExit.t.sol` (1) | Oracle -45% with the pool left behind: `rebalance()` cuts the debt and the trove is back above `minCR` |
 | `Manipulation.t.sol` (7) | Deposit, push the pool off the oracle, withdraw, push it back, with the attacker's own capital: never profitable (512-run fuzz over 1–2,000 BTC and 2–80% skews), exits revert when the pool is pushed down |
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
 | `Invariant.t.sol` | 1,024 runs × 64 random actions, including pool manipulation, oracle moves, liquidations and redemptions: shares and rewards add up, the trove obeys MUSD's rules, no LP left unstaked, every holder can exit |
@@ -97,8 +99,9 @@ with each suspected gap measured in a test before it was fixed or accepted.
 | `_snapshot`, `_troveCR` and `_netDebt` added `pendingInterest` to MUSD's `interest`, which already includes it: NAV and share price read low after a liquidation was redistributed to the vault's trove | **Fixed.** The mock now models redistribution like MUSD; `test_redistribution_pendingDebtCountedOnce` failed before the fix. |
 | MUSD caps a trove's debt at its opening collateral over 110%, so the vault stopped borrowing at about 2.7x its first deposit and later deposits sat idle | **Fixed** by refinancing when a lever would pass the cap (`Capacity.t.sol`, and a 13x deposit in both fork suites). |
 | In Recovery Mode every exit that touched the trove reverted, so holders were stuck | **Fixed.** Exits pay the NAV share from idle assets and LP, repay debt with LP MUSD, leave collateral alone (`RecoveryMode.t.sol`, `test_fork_recoveryModeExit`). |
-| A third party could push the pool to the edge of the oracle band, call `rebalance()` (or let a deposit deploy), and push it back: liquidity added at the edge loses value when the price returns, and that loss went to the attacker. At a 6% band, with a step half the pool's size, the attacker made about 0.002 BTC per 20 BTC deployed. Mainnet's pool is ~0.8 BTC, so any real deposit there would be that large | **Fixed.** One deployment step adds at most `MAX_ADD_BPS` (20%) of the pool's MUSD reserve; larger deposits deploy over several keeper steps. `Sandwich.t.sol` asserts that sandwiching a rebalance, a deposit or a withdrawal loses money at both the 2% and 6% bands, pushing either way. |
+| A third party could push the pool to the edge of the oracle band, call `rebalance()` (or let a deposit deploy), and push it back: liquidity added at the edge loses value when the price returns, and that loss went to the attacker. At a 6% band, with a step half the pool's size, the attacker made about 0.002 BTC per 20 BTC deployed. Mainnet's pool is ~0.8 BTC, so any real deposit there would be that large | **Fixed.** One deployment step adds at most `MAX_ADD_BPS` of the pool's MUSD reserve; larger deposits deploy over several keeper steps. `Sandwich.t.sol` asserts that sandwiching a rebalance, a deposit or a withdrawal loses money at the 2%, 6% and 10% bands, pushing either way. The cap matters: with steps of a fifth of the pool the 6% band held, but at 8% and 10% the attacker still made 0.0004 and 0.0014 BTC per 20 BTC deployed, so the cap is a tenth of the pool, which holds up to the contract's widest allowed band |
 | A small deposit could trigger deployment work the vault already owed (such as the rest of a large deposit) and pay its borrowing fee, minting it fewer shares or none (found by the fuzz test once deployment became step-limited) | **Fixed.** A deposit deploys only when it creates the need; owed work is the keeper's, paid by all holders. |
+| After a fast fall in BTC the pool trails the oracle, and `rebalance()` reverted on the oracle band, so a trove under its minimum ratio could not cut its debt while the pool lagged (on a thin pool that can take long) | **Fixed.** Outside the band `rebalance()` may still run when the trove is under `minCR` and the step is a delever; adding liquidity still needs the band. `CrashExit.t.sol` reproduces the revert at an oracle -45% and passes after the fix; `test_offBandDelever_neverProfits` pushes the pool further away before the call: the attacker never earns more than the plain arbitrage of the stale pool, and what holders lose is within 5% of what it costs the attacker (griefing at parity, accepted) |
 | Could anyone claim the vault's gauge rewards to it outside `_harvest`, leaving them uncredited? | **Not possible.** Mezo's gauges revert `getReward(vault)` from any other caller (`NotAuthorized`, checked on testnet and mainnet). |
 
 Accepted, with their bounds:
@@ -112,8 +115,9 @@ Accepted, with their bounds:
   the oracle band.
 - Holding the pool outside the oracle band blocks Recovery Mode exits and deployment while it
   lasts, at the cost of the trades that keep it there.
-- The testnet vaults use a 6% band because the testnet pool drifts with no arbitrage; mainnet uses
-  2%. New deployments should use 2%.
+- The testnet pool drifts 4-7% from the oracle with no arbitrage (6.7% on 12 Nov 2026, which left the
+  6% band's v4 and v5 deposits idle). The v5 vault uses the widest allowed band, 10%, which
+  `Sandwich.t.sol` shows is safe with 10% steps; mainnet uses 2%.
 
 ## Known limits
 

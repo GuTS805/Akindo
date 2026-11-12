@@ -25,6 +25,7 @@ DEPLOYER=$("$CAST" wallet address --private-key "$PRIVATE_KEY")
 FEE_RECIPIENT="${FEE_RECIPIENT:-$DEPLOYER}"
 GAUGE="${GAUGE:-0x72D88B0795373437E86792DEd8362D66dC43Cd2c}" # live BTC/MUSD gauge (MezoTestnet.GAUGE)
 DEPOSIT_CAP="${DEPOSIT_CAP:-0}" # max vault value in BTC wei after a deposit; 0 = no cap
+BAND="${BAND:-1000}" # oracle band in bps; the testnet pool drifts ~4-7% with no arbitrage, mainnet uses 200
 
 # Must match script/Addresses.sol (MezoTestnet.config)
 CONFIG="(\
@@ -39,7 +40,7 @@ CONFIG="(\
 0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9,\
 $GAUGE,\
 $FEE_RECIPIENT,\
-3000000000000000000,2500000000000000000,3500000000000000000,600,1000,1000000000000000,$DEPOSIT_CAP)"
+3000000000000000000,2500000000000000000,3500000000000000000,$BAND,1000,1000000000000000,$DEPOSIT_CAP)"
 
 echo "deployer $DEPLOYER"
 "$FORGE" create src/BtcLpVault.sol:BtcLpVault \

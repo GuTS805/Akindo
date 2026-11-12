@@ -10,6 +10,7 @@ import {BtcLpVault} from "../src/BtcLpVault.sol";
 contract CrashExitTest is BaseTest {
     function test_crash_poolLags_rebalanceStillDelevers() public {
         _deposit(alice, 10e18);
+        _deployFully();
         uint256 cr0 = _cr();
         feed.set(PRICE * 55 / 100); // oracle -45%, pool stays
         uint256 crHit = _cr();

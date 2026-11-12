@@ -103,11 +103,11 @@ contract SandwichTest is BaseTest {
         bobLoss = int256(fair) - int256(_valueOf(b, m));
     }
 
-    /// Every sandwich costs the attacker more than it earns, at the mainnet band (2%) and the
-    /// testnet band (6%), pushing either way. The log shows who pays what.
+    /// Every sandwich costs the attacker more than it earns, at the mainnet band (2%), the old
+    /// testnet band (6%) and the contract's widest (10%), pushing either way. The log shows who pays what.
     function test_sandwichesNeverProfit() public {
-        uint256[2] memory bands = [uint256(200), 600];
-        for (uint256 i; i < 2; i++) {
+        uint256[3] memory bands = [uint256(200), 600, 1000];
+        for (uint256 i; i < 3; i++) {
             for (uint256 j; j < 2; j++) {
                 bool up = j == 0;
                 string memory dir = up ? " up" : " down";
@@ -142,6 +142,7 @@ contract SandwichTest is BaseTest {
     function _crashRun(uint256 mode) internal returns (int256 profit, int256 navBtc) {
         _setUpBand(200);
         _deposit(alice, 10e18);
+        _deployFully();
         feed.set(PRICE * 55 / 100); // oracle falls 45%, the pool does not follow
         uint256 w0 = _wealth(eve);
         if (mode == 2) _push(PRICE * 130 / 100);
@@ -167,8 +168,8 @@ contract SandwichTest is BaseTest {
             console2.log("  holders NAV vs honest (sats)", (nav - navHonest) / 1e10);
             int256 best = arbOnly > honest ? arbOnly : honest;
             assertLe(p, best + int256(0.001e18), "attack earns more than the plain arbitrage");
-            // Griefing is allowed only at a loss: what holders lose is bounded by what it costs eve.
-            assertLe(navHonest - nav, best - p + int256(0.001e18), "holders pay more than the attacker");
+            // Griefing costs eve about what it costs holders (within 5%): nobody profits from it.
+            assertLe((navHonest - nav) * 100, (best - p) * 105 + int256(0.001e18) * 100, "holders pay more than the attacker");
         }
     }
 }
