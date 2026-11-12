@@ -15,6 +15,7 @@ import {
   MUSD,
   VAULT,
   VAULT_DEPLOY_BLOCK,
+  TESTNET,
   borrowerOpsAbi,
   clPoolAbi,
   erc20Abi,
@@ -24,6 +25,7 @@ import {
   mezoTestnet,
   poolAbi,
   priceFeedAbi,
+  troveManagerAbi,
 } from "../config";
 import { vaultAbi } from "../vaultAbi";
 import { ratio } from "./format";
@@ -149,6 +151,8 @@ export type VaultState = {
   snap?: Snapshot; // undefined while the oracle is stale
   supply: bigint;
   needsRebalance: boolean;
+  /** MUSD is in Recovery Mode: new borrowing and collateral withdrawals are restricted. */
+  recoveryMode: boolean;
   minCR: bigint;
   targetCR: bigint;
   maxCR: bigint;
@@ -202,10 +206,16 @@ export async function readVault(): Promise<VaultState> {
     testnet.readContract({ ...gauge, functionName: "totalSupply" }).catch(() => 0n),
   ]);
   const live = Number(finish) * 1000 > Date.now();
+  const recoveryMode = snap
+    ? await testnet
+        .readContract({ address: TESTNET.troveManager, abi: troveManagerAbi, functionName: "checkRecoveryMode", args: [snap.price] })
+        .catch(() => false)
+    : false;
   return {
     snap,
     supply,
     needsRebalance,
+    recoveryMode,
     minCR,
     targetCR,
     maxCR,

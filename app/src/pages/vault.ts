@@ -175,16 +175,29 @@ function renderDepositPreview() {
     const nav = navBtc(vault);
     const shares = vault.supply === 0n || nav === 0n ? amount : (amount * vault.supply) / nav;
     const inBand = Math.abs(poolGap(vault.snap)) <= Number(vault.maxDeviationBps) / 10_000;
+    const opens = firstTroveBtc(vault);
     el.innerHTML =
       `You get ≈ <strong>${btc(shares, 6)} mbLP</strong>.<br/>` +
-      (inBand
-        ? "Your BTC goes into the position in the same transaction."
-        : "The pool is outside the oracle band, so your BTC waits idle until the next rebalance.") +
+      (vault.recoveryMode
+        ? "MUSD is in Recovery Mode, which blocks new borrowing. Your BTC waits idle, and you can withdraw it any time, until Recovery Mode ends."
+        : opens > 0n && amount < opens
+          ? `No position is open yet. MUSD needs at least ${musd(vault.minNetDebt, 0)} MUSD of debt, which takes about ${btc(opens, 3)} BTC. Your BTC waits idle, and you can withdraw it any time, until deposits reach that.`
+          : inBand
+            ? "Your BTC goes into the position in the same transaction."
+            : "The pool is outside the oracle band, so your BTC waits idle until the next rebalance.") +
       (vault.depositCap > 0n
         ? `<br/><span class="muted">Deposit cap: ${btc(navBtc(vault), 3)} of ${btc(vault.depositCap, 0)} BTC used.</span>`
         : "");
   }
   renderButtons();
+}
+
+/** BTC a vault with no trove needs before it can open one (mirrors the vault's `_openableDebt`). */
+function firstTroveBtc(v: VaultState): bigint {
+  if (!v.snap || v.snap.troveActive) return 0n;
+  const gasComp = 200n * WAD;
+  const musdNeeded = (v.minNetDebt * (v.targetCR + WAD)) / WAD + (v.targetCR * gasComp) / WAD;
+  return (musdNeeded * WAD) / v.snap.price;
 }
 
 /** Mirrors the vault: an exit that leaves less than MUSD's minimum debt unwinds everything. */

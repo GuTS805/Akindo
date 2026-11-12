@@ -168,6 +168,7 @@ export const gaugeAbi = parseAbi([
 export const priceFeedAbi = parseAbi(["function fetchPrice() view returns (uint256)"]);
 
 export const borrowerOpsAbi = parseAbi(["function minNetDebt() view returns (uint256)"]);
+export const troveManagerAbi = parseAbi(["function checkRecoveryMode(uint256 price) view returns (bool)"]);
 
 export const clPoolAbi = parseAbi([
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)",
