@@ -32,11 +32,12 @@ reproduce it.
 | `DepositV2.t.sol` (5) | v2 deposits: a newcomer pays its own deployment cost, the deposit cap, a reverted deployment leaves the deposit idle, `deployIdle` is vault-only |
 | `IncentiveRouter.t.sol` (7) | Fee split between gauge incentives and treasury, permissionless push, config guards, refused incentives fall back to the treasury |
 | `Sandwich.t.sol` (2) | Pushing the pool to the band edge around a rebalance, a deposit or a withdrawal never profits the attacker (2%, 6% and 10% bands, both directions); after a fall, an off-band delever is never worth more than the plain arbitrage |
+| `WithdrawValue.t.sol` (5) | `withdrawMinValue` floors BTC plus MUSD at the oracle price: passes below the payout, reverts above it, holds when a pushed pool shifts the mix, needs the oracle |
 | `CrashExit.t.sol` (1) | Oracle -45% with the pool left behind: `rebalance()` cuts the debt and the trove is back above `minCR` |
 | `Manipulation.t.sol` (7) | Deposit, push the pool off the oracle, withdraw, push it back, with the attacker's own capital: never profitable (512-run fuzz over 1–2,000 BTC and 2–80% skews), exits revert when the pool is pushed down |
 | `EdgeCases.t.sol` (18) | Config guards, stale oracle, slippage limits, empty and idle vaults, approved transfers, surplus claims, last exit after a 15% fall |
 | `Invariant.t.sol` | 1,024 runs × 64 random actions, including pool manipulation, oracle moves, liquidations and redemptions: shares and rewards add up, the trove obeys MUSD's rules, no LP left unstaked, every holder can exit |
-| `InvariantRegression.t.sol` (1) | Replays the invariant suite's one CI failure: a test-harness artifact (below), kept so it cannot return |
+| `InvariantRegression.t.sol` (1) | Replays the invariant suite's one CI failure (a test-harness artifact, below) and asserts the deployment step no longer reverts with `BelowMinCR` |
 | `Fork.t.sol` (3) | Against the deployed testnet contracts: full cycle, MEZO earned from Mezo's live BTC/MUSD gauge, and fees booked as incentives on its incentive contract |
 | `MainnetFork.t.sol` | Full cycle against mainnet MUSD, the BTC/MUSD pool and the MEZO gauge: 0.2 BTC earned 3,309 MEZO in a day and returned 0.19995 BTC. The vault's fee, routed through `IncentiveRouter`, lands on the gauge's real `BribeVotingReward` (184 MEZO from one day) |
 
@@ -82,7 +83,7 @@ finding was checked against a test before deciding.
 | `IncentiveRouter.push` reverted entirely if the incentive contract refused the token | **Fixed.** A refused incentive now sends the whole balance to the treasury (`test_push_refusedIncentives_goToTreasury`). |
 | `notifyRewardAmount` on `RewardGauge` is permissionless, so dust can stretch the stream | Accepted: it slows a stream but cannot take or lock rewards. |
 | The invariant suite failed intermittently in CI with `K` (October 2026) | **Test harness, not the vault.** In the failing sequence a v2 deposit's deployment step reverted with `BelowMinCR` after MockBTC had moved BTC; the vault caught the revert as designed, but MockBTC moves balances with `vm.deal`, which a revert does not undo, so the mock pool held less BTC than its reserves. On Mezo the revert undoes the BTC moves. MockBTC now counts its moves in storage and in a sentinel balance, and the handler drops any call that leaves them out of step (`InvariantRegression.t.sol`). |
-| In some states after a redemption, a liquidation or exits settled inside the vault, a deposit's deployment step reverts with `BelowMinCR` | **Open, safe.** `_lever` sizes new debt from total NAV; when the vault holds more LP than its trove supports, that debt would take the trove under `minCR`, so the final check reverts the deployment and the deposit waits as idle, withdrawable BTC while that state lasts. Funds are never at risk and every holder can still exit (checked by the invariant suite), but less of the vault earns. Planned fix for the next vault: cap the extra debt so the trove stays at the target ratio. |
+| In some states after a redemption, a liquidation or exits settled inside the vault, a deposit's deployment step reverts with `BelowMinCR` | **Fixed in v6.** `_lever` sized new debt from total NAV; when the vault held more LP than its trove supported, that debt took the trove under `minCR` and the final check reverted the deployment, leaving the deposit idle. The debt is now also capped so the trove ends above the midpoint of `minCR` and `targetCR` (`_crRoom`), and spare BTC goes into the collateral. The sequence in `InvariantRegression.t.sol` hit the revert on v5 and no longer does |
 
 App and keeper fixes from the same pass: event history now pages through the testnet RPC's
 10,000-block log limit (history on the older vault had gone silently empty), read failures are
@@ -110,9 +111,10 @@ Accepted, with their bounds:
   by all holders (0.1% of the step's new debt, about 0.025% of the value it deploys).
 - A refinance moves the trove to MUSD's current interest rate. A large deposit can trigger one; it
   pays the refinancing fee itself, but the rate change is shared.
-- `minBtcOut` bounds only the BTC of a withdrawal. A sandwich shifts a leaver's payout from MUSD to
-  BTC, and the leaver comes out ahead in `Sandwich.t.sol`; the last exit's top-up swap is bounded by
-  the oracle band.
+- `withdraw`'s `minBtcOut` bounds only the BTC of a withdrawal. A sandwich shifts a leaver's payout from MUSD to
+  BTC, and the leaver comes out ahead in `Sandwich.t.sol`. v6 adds `withdrawMinValue`, which also
+  floors the total value (BTC plus MUSD at the oracle price); the app uses it. The last exit's
+  top-up swap is bounded by the oracle band.
 - Holding the pool outside the oracle band blocks Recovery Mode exits and deployment while it
   lasts, at the cost of the trades that keep it there.
 - The testnet pool drifts 4-7% from the oracle with no arbitrage (6.7% on 12 Nov 2026, which left the

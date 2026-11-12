@@ -20,7 +20,8 @@ contract InvariantRegressionTest is BaseTest {
 
     function test_caughtDeploymentRevert_doesNotCorruptPool() public {
         // The CI sequence stopped reaching the caught revert once deposits stopped deploying
-        // work the vault already owed; this generated one (seed 2, 20 steps) reaches it again.
+        // work the vault already owed; this generated one (seed 2, 20 steps) reached it again.
+        // Since the lever is capped by the collateral ratio (`_crRoom`) it no longer reverts.
         uint256 r = 2;
         for (uint256 i; i < 20; i++) {
             r = uint256(keccak256(abi.encode(r)));
@@ -38,6 +39,6 @@ contract InvariantRegressionTest is BaseTest {
         (uint256 r0, uint256 r1,) = pool.getReserves();
         assertEq(address(pool).balance, pool.token0() == address(btc) ? r0 : r1, "pool BTC != reserves");
         h.setPoolPrice(feed.price()); // reverted with "K" before the fix
-        assertGt(h.unmodelled("deposit"), 0, "sequence no longer hits the caught revert");
+        assertEq(h.unmodelled("deposit"), 0, "a deployment step reverted again (BelowMinCR)");
     }
 }

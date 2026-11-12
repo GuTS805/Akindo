@@ -243,6 +243,24 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     ///         unwound (LP removed, trove closed) and everyone keeps their share as idle assets.
     ///         So nobody is ever stuck behind the minimum-debt rule.
     function withdraw(uint256 shares, uint256 minBtcOut) external nonReentrant returns (uint256 btcOut, uint256 musdOut) {
+        return _withdraw(shares, minBtcOut, 0);
+    }
+
+    /// @notice `withdraw` with a floor on the total value paid out: BTC plus MUSD at the oracle
+    ///         price, in BTC. `minBtcOut` alone does not cover it, because an exit can be paid
+    ///         partly in MUSD and a sandwiched pool shifts that mix.
+    function withdrawMinValue(uint256 shares, uint256 minBtcOut, uint256 minValueBtc)
+        external
+        nonReentrant
+        returns (uint256 btcOut, uint256 musdOut)
+    {
+        return _withdraw(shares, minBtcOut, minValueBtc);
+    }
+
+    function _withdraw(uint256 shares, uint256 minBtcOut, uint256 minValueBtc)
+        internal
+        returns (uint256 btcOut, uint256 musdOut)
+    {
         if (shares == 0) revert ZeroShares();
         _harvest();
         _claimSurplus();
@@ -275,6 +293,10 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         }
 
         if (btcOut < minBtcOut) revert Slippage();
+        if (minValueBtc != 0) {
+            if (price == 0) revert OracleUnavailable();
+            if (btcOut + Math.mulDiv(musdOut, 1e18, price) < minValueBtc) revert Slippage();
+        }
         emit Withdraw(msg.sender, shares, btcOut, musdOut);
         if (musdOut > 0) musd.safeTransfer(msg.sender, musdOut);
         Address.sendValue(payable(msg.sender), btcOut);
@@ -470,7 +492,7 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
     ///      In Recovery Mode MUSD refuses both the refinance and a debt increase that lowers the
     ///      ratio, so this reverts and a deposit's BTC waits idle, where it can still be withdrawn.
     function _lever(Snapshot memory s, uint256 extraDebt) internal {
-        extraDebt = Math.min(extraDebt, _addRoom(s));
+        extraDebt = Math.min(Math.min(extraDebt, _addRoom(s)), _crRoom(s));
         if (extraDebt == 0) {
             if (s.idleBtc > 0) {
                 (address u, address l) = _hints(s.coll + s.idleBtc, s.debt);
@@ -816,6 +838,23 @@ contract BtcLpVault is ERC20, ReentrancyGuard {
         (uint256 r0, uint256 r1,) = pool.getReserves();
         uint256 room = Math.mulDiv(btcIsToken0 ? r1 : r0, MAX_ADD_BPS, BPS);
         return room > s.idleMusd ? room - s.idleMusd : 0;
+    }
+
+    /// @dev Most new debt a lever can take while the trove stays above the midpoint of minCR and
+    ///      targetCR. The new debt is paired with BTC taken from collateral, so the ratio after is
+    ///      (coll + idle BTC - (extra + idle MUSD) / poolPrice) * price / (debt + extra). Sizing the
+    ///      debt from NAV alone ignores this: when the vault holds more LP than its trove supports
+    ///      (after a redemption, a liquidation or an exit settled inside the vault), that debt
+    ///      would take the trove under minCR and the deployment would revert. Any BTC left over
+    ///      goes into the collateral.
+    function _crRoom(Snapshot memory s) internal view returns (uint256) {
+        if (s.poolPrice == 0) return 0;
+        uint256 floorCR = minCR + (targetCR - minCR) / 2;
+        uint256 r = Math.mulDiv(s.price, 1e18, s.poolPrice); // MUSD per MUSD of BTC bought from the pool
+        uint256 assets = Math.mulDiv(s.coll + s.idleBtc, s.price, 1e18);
+        uint256 spent = Math.mulDiv(s.idleMusd, r, 1e18) + Math.mulDiv(floorCR, s.debt, 1e18);
+        if (assets <= spent) return 0;
+        return Math.mulDiv(assets - spent, 1e18, r + floorCR);
     }
 
     /// @dev Trove debt after borrowing `extra` more, MUSD's borrowing fee included.
