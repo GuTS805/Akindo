@@ -79,6 +79,30 @@ function renderHistory() {
   $("k-last").textContent = last ? ago(last.time) || `block ${last.block}` : "never";
 }
 
+/** Upkeep measured from events: last harvest, harvests and rebalances in the last day, and MEZO a day. */
+function renderUpkeep() {
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const harvests = events.filter((e) => e.name === "Harvest");
+  const lastHarvest = harvests[0];
+  $("k-harvest").textContent = lastHarvest ? ago(lastHarvest.time) || `block ${lastHarvest.block}` : "never";
+
+  const recent = events.filter((e) => e.time > 0n && now - e.time < 86_400n);
+  const h = recent.filter((e) => e.name === "Harvest").length;
+  const r = recent.filter((e) => e.name === "Rebalance").length;
+  $("k-24h").textContent = `${h} harvest${h === 1 ? "" : "s"}, ${r} rebalance${r === 1 ? "" : "s"}`;
+
+  // Gross gauge rewards (harvested plus pending) over the time since the vault's first event.
+  const timed = events.filter((e) => e.time > 0n);
+  const oldest = timed[timed.length - 1];
+  const earned = harvests.reduce((s, e) => s + (e.args.reward as bigint), 0n) + (vault?.stream.pending ?? 0n);
+  const days = oldest ? Number(now - oldest.time) / 86_400 : 0;
+  const symbol = vault?.rewardSymbol ?? "";
+  $("k-rate").textContent =
+    days >= 2 / 24 && earned > 0n
+      ? `${num(Number(earned) / 1e18 / days, 1)} ${symbol}/day over the last ${days < 2 ? `${Math.round(days * 24)} hours` : `${num(days, 1)} days`}`
+      : "Not enough history yet";
+}
+
 async function renderCharts() {
   const deposits = events.filter((e) => e.name === "Deposit");
   if (deposits.length === 0) {
@@ -197,12 +221,13 @@ async function init() {
   try {
     events = await readEvents();
     renderHistory();
+    renderUpkeep();
     renderRewards();
   } catch (e) {
     console.error("events", e);
     $("a-history").innerHTML = `<li class="muted">History unavailable from the RPC right now. Reload to retry.</li>`;
     $("chart-rewards").innerHTML = `<p class="muted">Reward history unavailable from the RPC right now.</p>`;
-    $("k-last").textContent = "–";
+    $("k-last").textContent = $("k-harvest").textContent = $("k-24h").textContent = $("k-rate").textContent = "–";
   }
   renderCharts().catch(() => {
     $("chart-pps").innerHTML = $("chart-nav").innerHTML = `<p class="muted">History unavailable from the RPC right now.</p>`;
