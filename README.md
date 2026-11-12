@@ -205,9 +205,10 @@ withdraw on the rewards vault.
 - **MEZO rewards** have little on-chain liquidity today. The vault pays them out and never sells them.
 - **Impermanent loss** applies to the ~25% of value in the pool.
 - **Stale oracle:** MUSD reads the oracle on every trove change, so deposits and exits wait while it is stale.
-- **MUSD recovery mode** (system CR under 150%) blocks closing troves and restricts collateral withdrawals; exits that need either wait for the system to recover.
+- **MUSD Recovery Mode** (system CR under 150%) blocks collateral withdrawals, closing troves and new borrowing. v4 and v5 keep exits open: a leaver is paid their NAV share from idle assets and LP, with debt repaid from the LP's MUSD. Beyond the idle assets about a quarter of the NAV can leave this way, larger exits wait for Recovery Mode to end, and deposits wait idle (still withdrawable).
 - **The last exit** buys the LP's MUSD gap on the DEX and waits rather than sell BTC below the oracle band. Not binding on testnet; it can be on a thin mainnet pool.
-- **Idle deposits in some states:** after a redemption, a liquidation or exits settled inside the vault, a deposit's deployment step can fail its collateral-ratio check; the deposit still succeeds and waits as idle, withdrawable BTC. Fix planned for the next vault ([details](contracts/SECURITY.md#review-findings-october-2026)).
+- **Idle deposits in some states:** a deposit waits as idle, withdrawable BTC when the pool is outside the oracle band, in Recovery Mode, before the vault holds enough to open a trove (~0.11 BTC at today's price), and in rare states after a redemption, a liquidation or exits settled inside the vault, where a deployment step can fail its collateral-ratio check ([details](contracts/SECURITY.md#review-findings-october-2026)). A large deposit is deployed over several keeper steps, each adding at most a tenth of the pool.
+- **Testnet pool drift:** the testnet pool sits 4-7% from the oracle with no arbitrage, so earlier testnet vaults (6% band) can stay idle; v5 uses a 10% band there. Mainnet uses 2%.
 
 ## Roadmap
 

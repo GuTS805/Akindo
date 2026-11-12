@@ -52,7 +52,7 @@ pip install slither-analyzer
 cd contracts && slither . --filter-paths "lib/|test/|script/"
 ```
 
-41 results on `src/` (re-run after v2 and the incentive router), all reviewed. None needed a code change.
+48 results on `src/` (re-run on v5, November 2026; counts in the table below are from the v2 run, the detector classes are unchanged and nothing new is High), all reviewed. None needed a code change. The additions are in the Wave 2 code: `unused-return` for the ignored `getReserves` members in `_addRoom`, and the same `reentrancy-balance` pattern in `deposit` and `deployIdle`, which stays a false positive for the reason given below.
 
 | Detector | Count | Finding | Assessment |
 | --- | --- | --- | --- |
