@@ -189,7 +189,7 @@ function renderDepositPreview() {
           : !inBand
             ? "The pool is outside the oracle band, so your BTC waits idle until the next rebalance."
             : vault.needsRebalance
-              ? "The vault has a keeper step pending, so your BTC joins the position at the next rebalance (the keeper runs every 30 minutes, and anyone can call it)."
+              ? "The vault has a keeper step pending, so your BTC joins the position at the next rebalance (the keeper runs every few hours, and anyone can call it from this page)."
               : deploysNow(vault, amount)
                 ? "Your BTC goes into the position in the same transaction."
                 : `Deposits that leave idle BTC under 1% of the vault (about ${btc(idleRoom(vault), 4)} BTC now) wait idle until the total passes it, so a small deposit does not pay MUSD's borrowing fee on its own. Your shares count in full and earn rewards from the start.`) +
