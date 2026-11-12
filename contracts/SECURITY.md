@@ -11,7 +11,7 @@ reproduce it.
 - **Oracle-priced shares.** Deposits and exits are priced from Mezo's PriceFeed. LP is valued at
   the fair price `2·√(k·price)`, so moving the pool's spot price cannot inflate or dilute shares.
 - **Oracle band.** Adding liquidity and rebalancing revert when the pool is more than
-  `maxDeviationBps` from the oracle (testnet v5 10%, earlier testnet vaults 6%, mainnet 2%), and every swap has an oracle-based
+  `maxDeviationBps` from the oracle (testnet v5 and v6 10%, earlier testnet vaults 6%, mainnet 2%), and every swap has an oracle-based
   minimum output. Exits deliberately skip the band check so holders can always leave; what that
   allows is measured in `Manipulation.t.sol` (see the review findings below).
 - **Reentrancy.** Every external entry point is `nonReentrant`. External calls go only to the
@@ -118,7 +118,7 @@ Accepted, with their bounds:
 - Holding the pool outside the oracle band blocks Recovery Mode exits and deployment while it
   lasts, at the cost of the trades that keep it there.
 - The testnet pool drifts 4-7% from the oracle with no arbitrage (6.7% on 12 Nov 2026, which left the
-  6% band's v4 and v5 deposits idle). The v5 vault uses the widest allowed band, 10%, which
+  6% band's v4 and v5 deposits idle). The v5 and v6 vaults use the widest allowed band, 10%, which
   `Sandwich.t.sol` shows is safe with 10% steps; mainnet uses 2%.
 
 ## Known limits

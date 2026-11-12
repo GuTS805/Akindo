@@ -20,7 +20,7 @@ a collateral ratio.
   <a href="https://mblp.surge.sh/docs/">Docs</a> ·
   <a href="https://youtu.be/ICVxyTolYig">Demo video</a> ·
   <a href="docs/mbLP-deck.pdf">Deck</a> ·
-  <a href="https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D?tab=contract">Verified contract</a> ·
+  <a href="https://explorer.test.mezo.org/address/0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0?tab=contract">Verified contract</a> ·
   <a href="contracts/">Contracts &amp; tests</a> ·
   <a href="docs/evidence.md">Evidence (every tx)</a> ·
   <a href="docs/roadmap.md">Roadmap</a>
@@ -136,12 +136,13 @@ owner; its split and destinations are fixed at deployment.
 4. Watch **claimable MEZO** grow on the Vault and Portfolio pages, then **Claim**.
 5. **Withdraw** any share of your position.
 
-The testnet runs six deployments, selectable at the top of the Vault, Portfolio and Analytics
+The testnet runs seven deployments, selectable at the top of the Vault, Portfolio and Analytics
 pages:
 
 | Vault | Gauge | Why |
 | --- | --- | --- |
-| **v5** (default) — [`0xB1CF…914D`](https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D?tab=contract) | Mezo's live BTC/MUSD [gauge](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c) | Wave 2 review fixes: deployment steps of a tenth of the pool, so pushing the pool to the band edge around a deposit or rebalance loses money; a rebalance that can cut debt while the pool trails a falling oracle. A 10% oracle band on testnet, where the pool drifts 4-7% (mainnet: 2%). Same fee recipient as v3. |
+| **v6** (default) — [`0x1309…E0C0`](https://explorer.test.mezo.org/address/0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0?tab=contract) | Mezo's live BTC/MUSD [gauge](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c) | v5 plus new debt capped by the collateral ratio it leaves (no deployment revert after a redemption or liquidation) and `withdrawMinValue`, which floors the total value a withdrawal pays, not only its BTC. Same 10% testnet band and fee recipient. |
+| **v5** — [`0xB1CF…914D`](https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D?tab=contract) | Mezo's live BTC/MUSD [gauge](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c) | Wave 2 review fixes: deployment steps of a tenth of the pool, so pushing the pool to the band edge around a deposit or rebalance loses money; a rebalance that can cut debt while the pool trails a falling oracle. A 10% oracle band on testnet, where the pool drifts 4-7% (mainnet: 2%). Same fee recipient as v3. |
 | **v4** — [`0x897F…8D9f`](https://explorer.test.mezo.org/address/0x897F89aBf67dACC3634E169a3896bfCaFd388D9f?tab=contract) | Mezo's live BTC/MUSD [gauge](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c) | Wave 2: refinances its trove to grow past MUSD's borrowing cap, keeps exits open in Recovery Mode, and counts debt redistributed from a liquidation once. Same fee recipient as v3. |
 | **v3** — [`0x7553…BFEC`](https://explorer.test.mezo.org/address/0x75532765bfBa32E8DC796292937F9c571a2dBFEC) | Mezo's live BTC/MUSD [gauge](https://explorer.test.mezo.org/address/0x72D88B0795373437E86792DEd8362D66dC43Cd2c), paid MEZO by Mezo's Voter each epoch | The v2 contract, earning real MEZO emissions exactly as it would on mainnet. Its fee recipient, an [`IncentiveRouter`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605), posts fees on that gauge's incentive contract, where MEZO is whitelisted. |
 | **v2** — [`0x652e…9102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102) | [`RewardGauge`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b) | The current contract. Fixes from the [review pass](contracts/SECURITY.md#review-findings-october-2026): a deposit pays its own MUSD borrowing fee, a 2 BTC deposit cap, and a failed deployment leaves the deposit idle instead of reverting it. Its fee recipient is the [`IncentiveRouter`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2). |
@@ -208,7 +209,7 @@ withdraw on the rewards vault.
 - **MUSD Recovery Mode** (system CR under 150%) blocks collateral withdrawals, closing troves and new borrowing. v4 and v5 keep exits open: a leaver is paid their NAV share from idle assets and LP, with debt repaid from the LP's MUSD. Beyond the idle assets about a quarter of the NAV can leave this way, larger exits wait for Recovery Mode to end, and deposits wait idle (still withdrawable).
 - **The last exit** buys the LP's MUSD gap on the DEX and waits rather than sell BTC below the oracle band. Not binding on testnet; it can be on a thin mainnet pool.
 - **Idle deposits in some states:** a deposit waits as idle, withdrawable BTC when the pool is outside the oracle band, in Recovery Mode, before the vault holds enough to open a trove (~0.11 BTC at today's price), and in rare states after a redemption, a liquidation or exits settled inside the vault, where a deployment step can fail its collateral-ratio check ([details](contracts/SECURITY.md#review-findings-october-2026)). A large deposit is deployed over several keeper steps, each adding at most a tenth of the pool.
-- **Testnet pool drift:** the testnet pool sits 4-7% from the oracle with no arbitrage, so earlier testnet vaults (6% band) can stay idle; v5 uses a 10% band there. Mainnet uses 2%.
+- **Testnet pool drift:** the testnet pool sits 4-7% from the oracle with no arbitrage, so earlier testnet vaults (6% band) can stay idle; v5 and v6 use a 10% band there. Mainnet uses 2%.
 
 ## Roadmap
 

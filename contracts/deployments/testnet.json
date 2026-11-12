@@ -72,5 +72,19 @@
     "maxDeviationBps": 1000,
     "verified": true,
     "superseded": "0xEC3cf4a5B2307897d9C90C616737e2c6418456D9 (20% steps, 6% band; its seed waited idle because the pool was 6.7% off the oracle; withdrawn in 0xedd11c19a2a4ca67f3de99184cdce583b368893fef487708677b7f4508308521, never used)"
+  },
+  "v6": {
+    "note": "v6 vault (app default): v5 plus new debt capped by the collateral ratio it leaves (no BelowMinCR deployment revert) and withdrawMinValue, which floors the total value paid; 10 percent oracle band on testnet; fee recipient is v3's IncentiveRouter",
+    "BtcLpVault": "0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0",
+    "deployTx": "0x06c195fc31f5df1ff9b701ef2e86f801979743f9d7afd33ac9683e53793cef52",
+    "deployBlock": 16729614,
+    "explorer": "https://explorer.test.mezo.org/address/0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0",
+    "seedDepositTx": "0x7c61486e7c56622d9b7125ba3ffea2b1367e787aa154bb42ee06ed26a2d5d6bd",
+    "IncentiveRouter": "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605",
+    "gauge": "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+    "depositCap": "2000000000000000000",
+    "maxDeviationBps": 1000,
+    "verified": true,
+    "v5Withdrawn": "0x481634903a509c752c58535a452cc0c461a170d2225b6a0ae1811ebc48d89c67"
   }
 }

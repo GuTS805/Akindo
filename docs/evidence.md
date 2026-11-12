@@ -7,17 +7,18 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
 
 | Contract | Address | Deploy tx |
 | --- | --- | --- |
-| **BtcLpVault v5** (app default) | [`0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D`](https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D?tab=contract) | [`0x39d2be69…69a6`](https://explorer.test.mezo.org/tx/0x39d2be6920afd0a820cac62579bd9f01682f483421f47f544bf16b7939a369a6) |
+| **BtcLpVault v6** (app default) | [`0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0`](https://explorer.test.mezo.org/address/0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0?tab=contract) | [`0x06c195fc…ef52`](https://explorer.test.mezo.org/tx/0x06c195fc31f5df1ff9b701ef2e86f801979743f9d7afd33ac9683e53793cef52) |
+| **BtcLpVault v5** | [`0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D`](https://explorer.test.mezo.org/address/0xB1CF6f9F21bEE3421e0C99a435741dCdB1Ba914D?tab=contract) | [`0x39d2be69…69a6`](https://explorer.test.mezo.org/tx/0x39d2be6920afd0a820cac62579bd9f01682f483421f47f544bf16b7939a369a6) |
 | **BtcLpVault v4** | [`0x897F89aBf67dACC3634E169a3896bfCaFd388D9f`](https://explorer.test.mezo.org/address/0x897F89aBf67dACC3634E169a3896bfCaFd388D9f?tab=contract) | [`0x030aa50e…de46`](https://explorer.test.mezo.org/tx/0x030aa50e230e53f3edb71e59cbd6b2ae13e86ca3055bd0add016efd6aaf4de46) |
 | **BtcLpVault v3** | [`0x75532765bfBa32E8DC796292937F9c571a2dBFEC`](https://explorer.test.mezo.org/address/0x75532765bfBa32E8DC796292937F9c571a2dBFEC) | [`0x734f475b…046e`](https://explorer.test.mezo.org/tx/0x734f475b06a20cd8a29c0e94884bd1a6c3157392d0cb586ba6825c4603f7046e) |
-| IncentiveRouter (v3, v4 and v5 fee recipient) | [`0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605) | [`0xe3edf374…8beb`](https://explorer.test.mezo.org/tx/0xe3edf37469743381a1c46f090a53ce243cb79753a753021b6614442dafe38beb) |
+| IncentiveRouter (v3 to v6 fee recipient) | [`0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605`](https://explorer.test.mezo.org/address/0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605) | [`0xe3edf374…8beb`](https://explorer.test.mezo.org/tx/0xe3edf37469743381a1c46f090a53ce243cb79753a753021b6614442dafe38beb) |
 | **BtcLpVault v2** | [`0x652e31Ba2658CC27ff0E36431cA008De7D439102`](https://explorer.test.mezo.org/address/0x652e31Ba2658CC27ff0E36431cA008De7D439102?tab=contract) | [`0x24e9ec15…f6409`](https://explorer.test.mezo.org/tx/0x24e9ec1599a462f6c614e71082279303267b8093ff4b4e7bf9eb363e84ff6409) |
 | IncentiveRouter (v2 fee recipient) | [`0x924b8a4585B659D78041569fE0074719116126F2`](https://explorer.test.mezo.org/address/0x924b8a4585B659D78041569fE0074719116126F2?tab=contract) | [`0x275be767…56f41`](https://explorer.test.mezo.org/tx/0x275be76796e08a2e42e3b73f74ebdc25b058f2631de685f6cd65858184e56f41) |
 | BtcLpVault v1, MEZO rewards | [`0xc41192A186C0ee2F593D611b0D0C00501B5Eea03`](https://explorer.test.mezo.org/address/0xc41192A186C0ee2F593D611b0D0C00501B5Eea03?tab=contract) | [`0xf6e25d64…5af1`](https://explorer.test.mezo.org/tx/0xf6e25d6458b4f2bcdd607c2fd3f3caa4c988b06124e7df4c95fc6071f1b45af1) |
 | RewardGauge (testnet MEZO) | [`0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b`](https://explorer.test.mezo.org/address/0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b?tab=contract) | [`0x6f18affd…d14a`](https://explorer.test.mezo.org/tx/0x6f18affd16e0a207c9ab67d13f0a52ecacf9310088bcb059c447f2693e7bd14a) |
 | BtcLpVault, legacy gauge | [`0x187958091532733eF2f8703F8029Cd72aA85B2d4`](https://explorer.test.mezo.org/address/0x187958091532733eF2f8703F8029Cd72aA85B2d4?tab=contract) | [`0x494f7cbd…45a5`](https://explorer.test.mezo.org/tx/0x494f7cbdb55db1cd30eae97bf74574949fe51fc5a91ca26bf513770c396e45a5) |
 
-v5, v4, v3 and the IncentiveRouter are source-verified through the explorer's Blockscout verifier
+v6, v5, v4, v3 and the IncentiveRouter are source-verified through the explorer's Blockscout verifier
 (`forge verify-contract --verifier blockscout`); v3 from the commit it was deployed from.
 
 v4 was deployed on 3 Nov 2026 and seeded with 0.2 BTC in
@@ -41,6 +42,22 @@ v4 adds what Wave 1's review asked for:
 - **Redistributed debt.** MUSD's `getEntireDebtAndColl` already includes pending interest; v3 added
   it again, understating NAV after a liquidation was redistributed to its trove until the next trove
   operation.
+
+v6 was deployed on 12 Nov 2026 and seeded with 0.2 BTC in
+[`0x7c61486e…d6bd`](https://explorer.test.mezo.org/tx/0x7c61486e7c56622d9b7125ba3ffea2b1367e787aa154bb42ee06ed26a2d5d6bd):
+the trove opened at 306.0% CR and 12.55 LP were staked in the live gauge. The 0.2 BTC came from v5's
+seed, withdrawn in [`0x48163490…9c67`](https://explorer.test.mezo.org/tx/0x481634903a509c752c58535a452cc0c461a170d2225b6a0ae1811ebc48d89c67).
+On the live contract, `withdrawMinValue` returns 0.0019995 BTC for 0.002 BTC of shares with a floor of
+0.0019, and reverts with `Slippage` when the floor is 0.003. v6 changes two things:
+
+- **Deployment revert.** v5 sized new debt from total NAV. When the vault holds more LP than its trove
+  supports (after a redemption, a liquidation or an exit settled inside the vault) that debt would take
+  the trove under `minCR` and the deployment reverted, leaving the deposit idle. The debt is now also
+  capped so the trove ends above the midpoint of `minCR` and `targetCR`. The random sequence in
+  `InvariantRegression.t.sol` reached the revert on v5 and no longer does.
+- **Value floor.** `withdraw`'s `minBtcOut` covers only the BTC of a payout, but an exit can be paid
+  partly in MUSD. `withdrawMinValue(shares, minBtcOut, minValueBtc)` also floors BTC plus MUSD at the
+  oracle price, and the app uses it.
 
 v5 was deployed on 12 Nov 2026 and seeded with 0.2 BTC in
 [`0x49f5f746…1359`](https://explorer.test.mezo.org/tx/0x49f5f7461a95b9157383f64dad7a78bc51ac1cb48d17b478ee1a2fe565ec1359):

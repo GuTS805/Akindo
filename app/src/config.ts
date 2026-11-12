@@ -22,11 +22,23 @@ export const mezoMainnet = defineChain({
 });
 
 /**
- * Deployments of the vault contract on testnet. v5, v4 and v3 stake in Mezo's live BTC/MUSD gauge (the
+ * Deployments of the vault contract on testnet. v6, v5, v4 and v3 stake in Mezo's live BTC/MUSD gauge (the
  * Voter pays it MEZO each epoch); v1 and v2 stake in a RewardGauge that anyone can fund with testnet
  * MEZO; Legacy stakes in the BTC/MUSD gauge of Mezo's older Voter, which has paid nothing since Nov 2025.
  */
 export const VAULTS = {
+  v6: {
+    id: "v6",
+    label: "v6",
+    address: "0x1309FdcFB8394dC63b350409F44b311D7B0dE0C0",
+    deployBlock: 16_729_614n,
+    gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+    rewardSymbol: "MEZO",
+    hasCap: true,
+    hasMinValue: true,
+    gaugeNote:
+      "v6: v5 plus new debt capped by the collateral ratio it leaves (no deployment reverts after a redemption or liquidation) and withdrawals that floor the total value paid, not just the BTC. Staked in Mezo's live BTC/MUSD gauge.",
+  },
   v5: {
     id: "v5",
     label: "v5",
@@ -35,6 +47,7 @@ export const VAULTS = {
     gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
     rewardSymbol: "MEZO",
     hasCap: true,
+    hasMinValue: false,
     gaugeNote:
       "v5: v4 plus deployment steps of a tenth of the pool (sandwiching a deposit or rebalance loses money, even at its 10% oracle band) and a rebalance that can cut debt while the pool trails a falling oracle. Staked in Mezo's live BTC/MUSD gauge.",
   },
@@ -46,6 +59,7 @@ export const VAULTS = {
     gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
     rewardSymbol: "MEZO",
     hasCap: true,
+    hasMinValue: false,
     gaugeNote:
       "v4: staked in Mezo's live BTC/MUSD gauge like v3, and refinances its trove to grow past MUSD's borrowing cap, keeps exits open in Recovery Mode and counts redistributed debt once.",
   },
@@ -57,6 +71,7 @@ export const VAULTS = {
     gauge: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
     rewardSymbol: "MEZO",
     hasCap: true,
+    hasMinValue: false,
     gaugeNote:
       "v3: the v2 contract staked in Mezo's live BTC/MUSD gauge, so it earns the MEZO emissions Mezo distributes each epoch; its fees are posted as incentives on that gauge.",
   },
@@ -68,6 +83,7 @@ export const VAULTS = {
     gauge: "0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b",
     rewardSymbol: "MEZO",
     hasCap: true,
+    hasMinValue: false,
     gaugeNote:
       "v2: a deposit pays its own MUSD borrowing fee, 2 BTC cap, fees go to the incentive router. Streams testnet MEZO.",
   },
@@ -79,6 +95,7 @@ export const VAULTS = {
     gauge: "0x204ef88B33e5d35De7b52F8c1FFa58cf89d4f45b",
     rewardSymbol: "MEZO",
     hasCap: false,
+    hasMinValue: false,
     gaugeNote: "v1: stakes in a reward gauge that streams testnet MEZO, so rewards accrue and can be claimed.",
   },
   official: {
@@ -89,13 +106,14 @@ export const VAULTS = {
     gauge: "0xeF07B6852f4F877fB3BBD90b8f358Fb3E07D0Cc3",
     rewardSymbol: "BTC", // the legacy gauge pays in the BTC precompile
     hasCap: false,
+    hasMinValue: false,
     gaugeNote: "Stakes in the BTC/MUSD gauge on Mezo's older testnet Voter, which has paid no emissions since Nov 2025. v3 uses the live gauge.",
   },
 } as const;
 export type VaultId = keyof typeof VAULTS;
 
-const VAULT_KEY = "mblp.vault.v5"; // renamed with v5 so earlier visitors land on the new default
-const DEFAULT_VAULT: VaultId = "v5";
+const VAULT_KEY = "mblp.vault.v6"; // renamed with v6 so earlier visitors land on the new default
+const DEFAULT_VAULT: VaultId = "v6";
 
 /** Selected with ?vault=<id> (remembered) or a previous choice; pages reload to switch. */
 function pickVault(): VaultId {

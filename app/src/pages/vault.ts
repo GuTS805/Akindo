@@ -1,5 +1,5 @@
 import { formatUnits, parseEther } from "viem";
-import { VAULT, mezoTestnet } from "../config";
+import { ACTIVE_VAULT, VAULT, mezoTestnet } from "../config";
 import { vaultAbi } from "../vaultAbi";
 import {
   WAD,
@@ -304,6 +304,20 @@ async function withdraw() {
         args: [shares, 0n],
         account,
       });
+      const price = vault?.snap?.price;
+      if (ACTIVE_VAULT.hasMinValue && price) {
+        // v6 floors the whole payout (BTC plus MUSD at the oracle price), so a pool pushed around
+        // between simulation and mining can shift the mix but not the value.
+        const value = result[0] + (result[1] * WAD) / price;
+        return walletClient().writeContract({
+          address: VAULT,
+          abi: vaultAbi,
+          functionName: "withdrawMinValue",
+          args: [shares, 0n, slip(value)],
+          account,
+          chain: mezoTestnet,
+        });
+      }
       return walletClient().writeContract({
         address: VAULT,
         abi: vaultAbi,

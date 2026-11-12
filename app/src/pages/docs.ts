@@ -4,10 +4,11 @@ import { mountShell } from "../lib/layout";
 import { initWallet } from "../lib/wallet";
 
 const CONTRACTS: [string, string, string][] = [
-  ["mbLP vault v5 (default)", VAULTS.v5.address, "v4 plus deployment in steps of a fifth of the pool, so sandwiching a deposit or rebalance loses money, and a rebalance that may cut debt outside the oracle band once the trove is under its minimum ratio"],
+  ["mbLP vault v6 (default)", VAULTS.v6.address, "v5 plus new debt capped by the collateral ratio it leaves, so a deployment no longer reverts after a redemption or liquidation, and withdrawMinValue, which floors the total value a withdrawal pays"],
+  ["mbLP vault v5", VAULTS.v5.address, "v4 plus deployment in steps of a fifth of the pool, so sandwiching a deposit or rebalance loses money, and a rebalance that may cut debt outside the oracle band once the trove is under its minimum ratio"],
   ["mbLP vault v4", VAULTS.v4.address, "Staked in Mezo's live BTC/MUSD gauge; refinances its trove to grow past MUSD's borrowing cap, keeps exits open in Recovery Mode, counts redistributed debt once"],
   ["mbLP vault v3", VAULTS.v3.address, "The v2 contract staked in Mezo's live BTC/MUSD gauge: earns the MEZO emissions Mezo distributes each epoch"],
-  ["IncentiveRouter (v3, v4, v5)", "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605", "Fee recipient of v3, v4 and v5: posts half of each fee as a MEZO incentive on the live gauge's incentive contract, the rest to the treasury"],
+  ["IncentiveRouter (v3, v4, v5, v6)", "0x28bAf157D84aa72Bf7Ac3800c8243F1557cf2605", "Fee recipient of v3 to v6: posts half of each fee as a MEZO incentive on the live gauge's incentive contract, the rest to the treasury"],
   ["mbLP vault v2", VAULTS.v2.address, "Shares from the NAV change, 2 BTC deposit cap, isolated deployment; staked in the reward gauge"],
   ["IncentiveRouter (v2)", "0x924b8a4585B659D78041569fE0074719116126F2", "v2's fee recipient; its incentive contract (legacy Voter) does not whitelist MEZO, so fees fall back to the treasury"],
   ["mbLP vault v1", VAULTS.rewards.address, "First release, staked in the same reward gauge; harvest and claim pay testnet MEZO"],

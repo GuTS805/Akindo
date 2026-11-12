@@ -187,6 +187,19 @@ export const vaultAbi = [
   },
   {
     "type": "function",
+    "name": "MAX_ADD_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_DEVIATION_BPS",
     "inputs": [],
     "outputs": [
@@ -929,6 +942,40 @@ export const vaultAbi = [
       },
       {
         "name": "minBtcOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "btcOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "musdOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawMinValue",
+    "inputs": [
+      {
+        "name": "shares",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minBtcOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minValueBtc",
         "type": "uint256",
         "internalType": "uint256"
       }
