@@ -20,6 +20,11 @@ Every claim in the README, backed by a transaction or a reproducible test. Testn
   full exit through `withdrawMinValue` with a 0.0019 BTC value floor in
   [`0xeecae225…b3f4`](https://explorer.test.mezo.org/tx/0xeecae2258027b80ffe50abcbf4c4d4dbd1bc0acb6cc92ffda03985c7f7c5b3f4):
   0.0020005 BTC back for 0.002 BTC in, and the vault stayed at about 306% CR.
+- **First outside deposit on v6.** Address `0xb3c02afb…4ac0` (not the deployer, the keeper wallet or the
+  team's test wallet) deposited 0.002 BTC and received 0.002001 mbLP in
+  [`0x00634449…0163`](https://explorer.test.mezo.org/tx/0x006344492ac95de801ed2b19c384d5d1cad970f42ae9703a9e866cbc059a0163)
+  (block 16,732,986), through the explorer's Write contract tab. The same address list is read live on the
+  [Community page](https://mblp.surge.sh/community/).
 - **Wave 2 deck:** [`docs/mbLP-wave2-deck.pdf`](mbLP-wave2-deck.pdf).
 
 ## Contracts (Mezo testnet, source verified)
