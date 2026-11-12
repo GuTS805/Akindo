@@ -90,7 +90,7 @@ deployer's v4 position, withdrawn in
 [`0xd42c2e60…a9da`](https://explorer.test.mezo.org/tx/0xd42c2e60f7ac2e2a87cdb8c8002a518a5f64669ef665fefa844c0e92a18da4a9).
 A first v5, `0xEC3c…56D9` (steps of a fifth of the pool, 6% band), was withdrawn unused: the testnet pool
 stood 6.7% above the oracle that day, outside its band, so its seed deposit waited idle (as designed). The
-final v5 uses the widest band the contract allows, 10%, because the testnet pool drifts 4-7% from the
+final v5 uses the widest band the contract allows, 10%, because the testnet pool drifts 4-8% from the
 oracle with no arbitrage; mainnet uses 2%. v5 changes two things, both found by attacking v4:
 
 - **Deployment sandwich.** An attacker can push the pool to the band edge, let a deposit or a keeper

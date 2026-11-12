@@ -43,7 +43,7 @@ library MezoTestnet {
             targetCR: 3e18,
             minCR: 2.5e18,
             maxCR: 3.5e18,
-            // The testnet pool drifts 4-7% from the oracle (no arbitrage); mainnet uses 200.
+            // The testnet pool drifts 4-8% from the oracle (no arbitrage); mainnet uses 200.
             maxDeviationBps: 1000,
             feeBps: 1_000,
             minDeposit: 0.001e18,

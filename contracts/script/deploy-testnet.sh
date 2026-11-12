@@ -25,7 +25,7 @@ DEPLOYER=$("$CAST" wallet address --private-key "$PRIVATE_KEY")
 FEE_RECIPIENT="${FEE_RECIPIENT:-$DEPLOYER}"
 GAUGE="${GAUGE:-0x72D88B0795373437E86792DEd8362D66dC43Cd2c}" # live BTC/MUSD gauge (MezoTestnet.GAUGE)
 DEPOSIT_CAP="${DEPOSIT_CAP:-0}" # max vault value in BTC wei after a deposit; 0 = no cap
-BAND="${BAND:-1000}" # oracle band in bps; the testnet pool drifts ~4-7% with no arbitrage, mainnet uses 200
+BAND="${BAND:-1000}" # oracle band in bps; the testnet pool drifts ~4-8% with no arbitrage, mainnet uses 200
 
 # Must match script/Addresses.sol (MezoTestnet.config)
 CONFIG="(\
