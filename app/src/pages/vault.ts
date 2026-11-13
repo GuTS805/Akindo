@@ -76,8 +76,20 @@ function renderVault(v: VaultState) {
   $("b-idle").textContent = `${btc(s.idleBtc, 6)} BTC / ${musd(s.idleMusd)} MUSD`;
   $("b-price").textContent = `${musd(s.price)} MUSD`;
 
-  $("needs-rebalance").textContent = v.needsRebalance ? "Yes" : "No";
+  $("needs-rebalance").textContent = !v.needsRebalance
+    ? "No"
+    : rebalanceAllowed(v)
+      ? "Yes"
+      : `Yes, waiting: the pool is outside the ±${pct(band, 0)} oracle band`;
   $("needs-rebalance").className = v.needsRebalance ? "warn" : "";
+}
+
+/** Mirrors `rebalance()`: it needs the pool inside the oracle band, unless the trove is under its minimum ratio. */
+function rebalanceAllowed(v: VaultState): boolean {
+  if (!v.needsRebalance || !v.snap) return false;
+  const inBand = Math.abs(poolGap(v.snap)) <= Number(v.maxDeviationBps) / 10_000;
+  const underMin = v.snap.troveActive && collateralRatio(v.snap) < ratio(v.minCR, WAD);
+  return inBand || underMin;
 }
 
 function renderUser() {
@@ -129,7 +141,7 @@ function renderButtons() {
     : wallet.busy;
   $("withdraw-btn").textContent = account ? "Withdraw" : "Connect wallet";
   $<HTMLButtonElement>("claim-btn").disabled = !(ready && (user?.claimable ?? 0n) > 0n);
-  $<HTMLButtonElement>("rebalance-btn").disabled = !(ready && vault?.needsRebalance);
+  $<HTMLButtonElement>("rebalance-btn").disabled = !(ready && vault && rebalanceAllowed(vault));
   $<HTMLButtonElement>("harvest-btn").disabled = !ready;
 }
 
