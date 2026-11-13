@@ -97,12 +97,13 @@ and the keeper fails its run when a transaction reverts.
 
 ## Review findings (November 2026, Wave 2)
 
-Wave 1's judge review found the first item; the rest come from a pass over every public path,
+Wave 1's judge review found the first item, and KupiaSec, a security firm, reported the same issue
+independently by email on 29 Oct (fixed in `3f7bf78`, 31 Oct). The rest come from a pass over every public path,
 with each suspected gap measured in a test before it was fixed or accepted.
 
 | Finding | Status |
 | --- | --- |
-| `_snapshot`, `_troveCR` and `_netDebt` added `pendingInterest` to MUSD's `interest`, which already includes it: NAV and share price read low after a liquidation was redistributed to the vault's trove | **Fixed.** The mock now models redistribution like MUSD; `test_redistribution_pendingDebtCountedOnce` failed before the fix. |
+| `_snapshot`, `_troveCR` and `_netDebt` added `pendingInterest` to MUSD's `interest`, which already includes it: NAV and share price read low after a liquidation was redistributed to the vault's trove | **Fixed** in `3f7bf78` (v4 onward; v3 is no longer the app's default). The mock now models redistribution like MUSD; `test_redistribution_pendingDebtCountedOnce` failed before the fix. Also reported independently by KupiaSec. |
 | MUSD caps a trove's debt at its opening collateral over 110%, so the vault stopped borrowing at about 2.7x its first deposit and later deposits sat idle | **Fixed** by refinancing when a lever would pass the cap (`Capacity.t.sol`, and a 13x deposit in both fork suites). |
 | In Recovery Mode every exit that touched the trove reverted, so holders were stuck | **Fixed.** Exits pay the NAV share from idle assets and LP, repay debt with LP MUSD, leave collateral alone (`RecoveryMode.t.sol`, `test_fork_recoveryModeExit`). |
 | A third party could push the pool to the edge of the oracle band, call `rebalance()` (or let a deposit deploy), and push it back: liquidity added at the edge loses value when the price returns, and that loss went to the attacker. At a 6% band, with a step half the pool's size, the attacker made about 0.002 BTC per 20 BTC deployed. Mainnet's pool is ~0.8 BTC, so any real deposit there would be that large | **Fixed.** One deployment step adds at most `MAX_ADD_BPS` of the pool's MUSD reserve; larger deposits deploy over several keeper steps. `Sandwich.t.sol` asserts that sandwiching a rebalance, a deposit or a withdrawal loses money at the 2%, 6% and 10% bands, pushing either way. The cap matters: with steps of a fifth of the pool the 6% band held, but at 8% and 10% the attacker still made 0.0004 and 0.0014 BTC per 20 BTC deployed, so the cap is a tenth of the pool, which holds up to the contract's widest allowed band |
