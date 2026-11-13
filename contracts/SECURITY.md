@@ -123,9 +123,9 @@ Accepted, with their bounds:
   top-up swap is bounded by the oracle band.
 - Holding the pool outside the oracle band blocks Recovery Mode exits and deployment while it
   lasts, at the cost of the trades that keep it there.
-- The testnet pool drifts 4-8% from the oracle with no arbitrage (6.7% and later 8.1% on 12 Nov 2026; 6.7% left
-  the 6% band's v4 and v5 deposits idle). Past 10% v6's deposits would wait idle and a rebalance
-  could only cut debt under `minCR` until it came back; outside Recovery Mode exits do not
+- The testnet pool drifts from the oracle with no arbitrage: 4-8% through 12 Nov 2026 (6.7% left the 6% band's
+  v4 and v5 deposits idle), then 13.9% on 13 Nov. Past 10%, as on 13 Nov, v6's deposits wait idle and a rebalance
+  can only cut debt under `minCR` until it comes back; outside Recovery Mode exits do not
   check the band. The v5 and v6 vaults use the widest allowed band, 10%, which
   `Sandwich.t.sol` shows is safe with 10% steps; mainnet uses 2%.
 

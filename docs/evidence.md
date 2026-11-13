@@ -91,7 +91,7 @@ deployer's v4 position, withdrawn in
 A first v5, `0xEC3c…56D9` (steps of a fifth of the pool, 6% band), was withdrawn unused: the testnet pool
 stood 6.7% above the oracle that day, outside its band, so its seed deposit waited idle (as designed). The
 final v5 uses the widest band the contract allows, 10%, because the testnet pool drifts 4-8% from the
-oracle with no arbitrage; mainnet uses 2%. v5 changes two things, both found by attacking v4:
+oracle with no arbitrage (it reached 13.9% on 13 Nov, so new deposits waited idle); mainnet uses 2%. v5 changes two things, both found by attacking v4:
 
 - **Deployment sandwich.** An attacker can push the pool to the band edge, let a deposit or a keeper
   step add liquidity there, and push it back. With steps of a fifth of the pool the attacker still made
