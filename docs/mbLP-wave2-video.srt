@@ -1,59 +1,59 @@
 1
-00:00:00,000 --> 00:00:04,090
+00:00:00,000 --> 00:00:04,802
 mbLP Wave 2 · deposit BTC, earn MEZO as BTC/MUSD liquidity · v6 live on Mezo testnet
 
 2
-00:00:04,090 --> 00:00:08,800
+00:00:04,802 --> 00:00:09,935
 The Vault page defaults to v6: one deposit opens a MUSD trove, borrows, adds liquidity and stakes it in Mezo's live gauge
 
 3
-00:00:08,800 --> 00:00:14,370
-Live from the chain: trove collateral ratio 288% (target 300%), idle 0.002000 BTC / 0 MUSD
+00:00:09,935 --> 00:00:18,002
+Live from the chain: trove at 267% (target 300%). The testnet pool is +16.33% from the oracle, outside the ±10% band, so the vault waits and exits stay open
 
 4
-00:00:14,370 --> 00:00:20,950
+00:00:18,002 --> 00:00:25,036
 Try to break it: 12 live attacks on the deployed vault from a stranger's address. 11 refused, 1 harmless, 0 got through
 
 5
-00:00:20,950 --> 00:00:28,520
+00:00:25,036 --> 00:00:33,082
 Every row shows the contract's own revert reason: OnlySelf, DepositCapReached, ERC20InsufficientBalance, NotAuthorized from Mezo's gauge
 
 6
-00:00:28,520 --> 00:00:36,080
+00:00:33,082 --> 00:00:41,130
 Economic attacks, measured in tests: sandwiching a keeper step, deposit or withdrawal costs the attacker at 2%, 6% and 10% bands
 
 7
-00:00:36,080 --> 00:00:41,160
+00:00:41,130 --> 00:00:46,725
 Wave 2: I attacked the vault against MUSD's real rules. Every fix has a test that failed before it
 
 8
-00:00:41,160 --> 00:00:46,230
+00:00:46,725 --> 00:00:52,313
 MUSD's borrowing cap: the vault now refinances its trove, so a 13x deposit deploys in full
 
 9
-00:00:46,230 --> 00:00:51,290
+00:00:52,313 --> 00:00:57,878
 Recovery Mode: exits now stay open and pay each holder their NAV share
 
 10
-00:00:51,290 --> 00:00:57,370
+00:00:57,878 --> 00:01:04,423
 Deployment sandwich: steps are a tenth of the pool, so sandwiching it loses money
 
 11
-00:00:57,370 --> 00:01:03,440
+00:01:04,423 --> 00:01:11,038
 A fall with the pool left behind: rebalance may cut debt, and attacking it earns nothing
 
 12
-00:01:03,440 --> 00:01:09,500
+00:01:11,038 --> 00:01:17,603
 v6: new debt is capped by the collateral ratio it leaves, so a deployment no longer reverts
 
 13
-00:01:09,500 --> 00:01:17,080
+00:01:17,603 --> 00:01:25,845
 Community page: 1 outside depositor so far, read from chain with the transaction (team wallets excluded)
 
 14
-00:01:17,080 --> 00:01:22,660
-v6 source verified on the Mezo explorer · 96 tests including a 65,536-action invariant suite, 8 fork tests on testnet and mainnet
+00:01:25,845 --> 00:01:31,909
+v6 source verified on the Mezo explorer · 142 tests in 21 suites, a 65,536-action invariant suite, and 8 fork tests on testnet and mainnet
 
 15
-00:01:22,660 --> 00:01:26,210
-mblp.surge.sh · github.com/GuTS805/Akindo · testnet only, unaudited
+00:01:31,909 --> 00:01:37,022
+mblp.neocities.org · github.com/GuTS805/Akindo · testnet only, unaudited
