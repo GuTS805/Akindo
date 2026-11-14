@@ -1,107 +1,111 @@
 1
-00:00:00,350 --> 00:00:04,658
-This is mbLP, a Bitcoin-only vault on Mezo.
+00:00:00,350 --> 00:00:05,426
+Earning on Bitcoin in Mezo's BTC/MUSD pool takes five steps: a trove,
 
 2
-00:00:04,678 --> 00:00:10,031
-One deposit opens a MUSD trove, adds BTC/MUSD liquidity,
+00:00:05,426 --> 00:00:11,018
+a borrow, a pool deposit, a gauge stake, and watching your collateral ratio.
 
 3
-00:00:10,031 --> 00:00:12,898
-and stakes it in Mezo's gauge.
+00:00:11,038 --> 00:00:14,746
+mbLP does all five in one deposit.
 
 4
-00:00:13,499 --> 00:00:16,823
-This is version six, live on testnet.
+00:00:14,766 --> 00:00:20,565
+You put in BTC, the vault borrows MUSD against it, pairs the two in the pool,
 
 5
-00:00:16,843 --> 00:00:19,495
-I connect a real MetaMask wallet.
+00:00:20,565 --> 00:00:22,674
+and stakes for MEZO rewards.
 
 6
-00:00:20,095 --> 00:00:24,835
-MetaMask opens beside the page, and asks before it connects.
+00:00:22,694 --> 00:00:28,202
+You hold one token, stay about 1x BTC, and exit any time.
 
 7
-00:00:29,017 --> 00:00:31,573
-I deposit a thousandth of a bitcoin.
+00:00:29,000 --> 00:00:32,324
+This is version six, live on testnet.
 
 8
-00:00:31,593 --> 00:00:34,515
-MetaMask shows exactly what I'm signing,
+00:00:32,344 --> 00:00:34,996
+I connect a real MetaMask wallet.
 
 9
-00:00:34,515 --> 00:00:37,437
-and my shares arrive in one transaction.
+00:00:35,596 --> 00:00:40,336
+MetaMask opens beside the page, and asks before it connects.
 
 10
-00:00:38,037 --> 00:00:39,414
-The network, the site,
+00:00:42,877 --> 00:00:45,433
+I deposit a thousandth of a bitcoin.
 
 11
-00:00:39,414 --> 00:00:43,545
-the vault's address and the amount are all there before I confirm.
+00:00:45,453 --> 00:00:48,375
+MetaMask shows exactly what I'm signing,
 
 12
-00:00:46,243 --> 00:00:51,457
-Right now the testnet pool sits outside the vault's ten percent oracle band,
+00:00:48,375 --> 00:00:51,297
+and my shares arrive in one transaction.
 
 13
-00:00:51,457 --> 00:00:56,671
-so the vault keeps new BTC idle, instead of adding liquidity at a bad price.
+00:00:51,897 --> 00:00:53,274
+The network, the site,
 
 14
-00:00:56,691 --> 00:00:59,103
-That's the guard, working live.
+00:00:53,274 --> 00:00:57,405
+the vault's address and the amount are all there before I confirm.
 
 15
-00:00:59,704 --> 00:01:01,876
-Exits stay open.
+00:00:58,592 --> 00:01:03,806
+Right now the testnet pool sits outside the vault's ten percent oracle band,
 
 16
-00:01:01,896 --> 00:01:06,108
-I withdraw half, and the BTC is back in my wallet.
+00:01:03,806 --> 00:01:09,020
+so the vault keeps new BTC idle, instead of adding liquidity at a bad price.
 
 17
-00:01:06,708 --> 00:01:11,832
-The app simulated this exit first, and MetaMask asks me to confirm it.
+00:01:09,040 --> 00:01:11,452
+That's the guard, working live.
 
 18
-00:01:15,643 --> 00:01:18,079
-Don't trust me, try to break it.
+00:01:12,053 --> 00:01:14,225
+Exits stay open.
 
 19
-00:01:18,099 --> 00:01:22,095
-This page fires twelve live attacks at the deployed vault.
+00:01:14,245 --> 00:01:18,457
+I withdraw half, and the BTC is back in my wallet.
 
 20
-00:01:22,115 --> 00:01:26,711
-Eleven are refused, one is harmless, and none gets through.
+00:01:19,057 --> 00:01:24,181
+The app simulated this exit first, and MetaMask asks me to confirm it.
 
 21
-00:01:27,312 --> 00:01:31,788
-For Wave two, I worked through the review, then attacked my own vault.
+00:01:26,348 --> 00:01:28,784
+Don't trust me, try to break it.
 
 22
-00:01:31,808 --> 00:01:35,811
-Every fix has a test that failed first: the borrowing cap,
+00:01:28,804 --> 00:01:32,800
+This page fires twelve live attacks at the deployed vault.
 
 23
-00:01:35,811 --> 00:01:39,884
-Recovery Mode exits, and a sandwich that paid the attacker.
+00:01:32,820 --> 00:01:37,416
+Eleven are refused, one is harmless, and none gets through.
 
 24
-00:01:40,484 --> 00:01:45,350
-The source is verified on Mezo's explorer, with one hundred forty-two tests,
+00:01:38,017 --> 00:01:42,493
+For Wave two, I worked through the review, then attacked my own vault.
 
 25
-00:01:45,350 --> 00:01:48,488
-and a sixty-five-thousand-action invariant suite.
+00:01:42,513 --> 00:01:46,516
+Every fix has a test that failed first: the borrowing cap,
 
 26
-00:01:49,089 --> 00:01:52,077
-Testnet only, and unaudited.
+00:01:46,516 --> 00:01:50,589
+Recovery Mode exits, and a sandwich that paid the attacker.
 
 27
-00:01:52,097 --> 00:01:55,349
+00:01:51,189 --> 00:01:54,177
+Testnet only, and unaudited.
+
+28
+00:01:54,197 --> 00:01:57,449
 Try it at mblp.neocities.org.
