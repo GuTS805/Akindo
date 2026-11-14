@@ -218,7 +218,7 @@ on 22 Oct 2026:
 
 ### The Wave 2 video, from MetaMask
 
-The Wave 2 video runs a deposit and a withdrawal on v6 from MetaMask on 14 Nov 2026, with the team's
+The [Wave 2 video](https://youtu.be/Epvbev5zaj8) runs a deposit and a withdrawal on v6 from MetaMask on 14 Nov 2026, with the team's
 video wallet [`0x10Dd…526e`](https://explorer.test.mezo.org/address/0x10Dd90993e9C7AD7a0E394A807382bEaC2bd526e)
 (listed in the app's config, so the Community page does not count it; earlier takes of the same
 recording are in its history). The testnet pool stood 19.7% from the oracle that day, outside v6's

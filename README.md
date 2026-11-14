@@ -19,6 +19,7 @@ a collateral ratio.
   <a href="https://mblp.neocities.org"><b>Live app</b></a> ·
   <a href="https://mblp.neocities.org/docs/">Docs</a> ·
   <a href="https://youtu.be/ICVxyTolYig">Wave 1 video</a> ·
+  <a href="https://youtu.be/Epvbev5zaj8">Wave 2 video</a> ·
   <a href="docs/mbLP-wave2-video.srt">Wave 2 video script</a> ·
   <a href="docs/mbLP-wave2-deck.pdf">Wave 2 deck</a> ·
   <a href="docs/mbLP-deck.pdf">Wave 1 deck</a> ·
