@@ -216,6 +216,19 @@ on 22 Oct 2026:
 | Claim | 0.0182 MEZO from Mezo's gauge to the wallet | [`0x08b84374…35cd1`](https://explorer.test.mezo.org/tx/0x08b84374d1914380bc21016c4535a2b76066cd8f2f3a439805365b0201235cd1) |
 | Withdraw 50% | 0.005 mbLP burned for 0.0049987 BTC and no MUSD (the app had simulated 0.004998 BTC before signing) | [`0xdff587eb…2817`](https://explorer.test.mezo.org/tx/0xdff587ebe9c0cae4eaa484fccd9b804694d8f60a2df56fe3845515d160362817) |
 
+### The Wave 2 video, from MetaMask
+
+The Wave 2 video runs a deposit and a withdrawal on v6 from MetaMask on 14 Nov 2026, with the team's
+video wallet [`0x10Dd…526e`](https://explorer.test.mezo.org/address/0x10Dd90993e9C7AD7a0E394A807382bEaC2bd526e)
+(listed in the app's config, so the Community page does not count it; earlier takes of the same
+recording are in its history). The testnet pool stood 19.7% from the oracle that day, outside v6's
+10% band, so the deposit waited idle as designed and the exit stayed open:
+
+| Step | Result | Tx |
+| --- | --- | --- |
+| Deposit 0.001 BTC | the app showed about 0.001002 mbLP before signing; the BTC waits idle while the pool is outside the band | [`0xee43490a…d43b`](https://explorer.test.mezo.org/tx/0xee43490a2b4ea3f6eabd87906e0c9099d6d908de679e1e0d0b7e3b4d388bd43b) |
+| Withdraw 50% | the app had simulated 0.000986 BTC before signing | [`0x38c8ca2c…3461`](https://explorer.test.mezo.org/tx/0x38c8ca2c561da8f00b64c6547080329a82c715936b1823e12d2e9e55ee0f3461) |
+
 The testnet fork tests run the same against the live gauge: 1 BTC earned 652 MEZO in a day in October
 (691 on 12 Nov 2026), and one day of its fees booked 36.25 MEZO as an incentive (38.37 on 12 Nov)
 ([`Fork.t.sol`](../contracts/test/Fork.t.sol)).
